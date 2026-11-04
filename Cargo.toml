@@ -1,0 +1,22 @@
+[workspace]
+resolver = "3"
+members = [
+  "contexts/tab-library",
+  "apps/tabfinder/application",
+  "apps/tabfinder/presentation",
+  "apps/tabfinder/adapters/ffi",
+  "tools/uniffi-bindgen",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace.dependencies]
+mt-tab-library = { path = "contexts/tab-library" }
+mt-tabfinder-application = { path = "apps/tabfinder/application" }
+mt-tabfinder-presentation = { path = "apps/tabfinder/presentation" }
+uniffi = "0.32.2"
+fluent-bundle = "0.16.0"
+unic-langid = "0.9.6"

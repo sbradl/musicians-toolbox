@@ -1,0 +1,12 @@
+[package]
+name = "mt-tabfinder-ffi"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+mt-tabfinder-presentation.workspace = true
+uniffi.workspace = true

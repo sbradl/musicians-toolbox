@@ -1,0 +1,29 @@
+[tools]
+rust = { version = "1.99.1", components = "rustfmt,clippy" }
+java = "temurin-21.0.13+9.0.LTS"
+ktlint = "1.8.0"
+
+[tasks.fmt]
+run = [
+  "cargo fmt --all",
+  "ktlint --format '**/*.kt' '**/*.kts' '!**/build/**'",
+]
+
+[tasks.lint]
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy --workspace --all-targets --locked -- -D warnings",
+  "ktlint '**/*.kt' '**/*.kts' '!**/build/**'",
+]
+
+[tasks.test]
+run = [
+  "cargo test --workspace --locked",
+  "./gradlew check",
+]
+
+[tasks.check]
+depends = ["lint", "test"]
+
+[tasks."run:tabfinder"]
+run = "./gradlew :apps:tabfinder:ui:desktop:run"

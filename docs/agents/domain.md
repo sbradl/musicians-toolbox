@@ -4,43 +4,35 @@ How the engineering skills should consume this repo's domain documentation when 
 
 ## Before exploring, read these
 
-- **`GLOSSARY.md`** at the repo root, or
-- **`GLOSSARY-MAP.md`** at the repo root if it exists: it points at one `GLOSSARY.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
+This repo is **multi-context**.
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+- **`GLOSSARY-MAP.md`** at the repo root: lists the bounded contexts, how they relate, and which apps compose them. Read the `GLOSSARY.md` of each context relevant to the topic.
+- **`docs/adr/`**: system-wide decisions. Also check `docs/contexts/<context>/adr/` for context-scoped decisions.
+
+If a context's `adr/` doesn't exist, proceed silently; the `/domain-modeling` skill creates files lazily.
 
 ## File structure
-
-Single-context repo (most repos):
-
-```
-/
-├── GLOSSARY.md
-├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
-└── src/
-```
-
-Multi-context repo (presence of `GLOSSARY-MAP.md` at the root):
 
 ```
 /
 ├── GLOSSARY-MAP.md
-├── docs/adr/                          ← system-wide decisions
-└── src/
-    ├── ordering/
-    │   ├── GLOSSARY.md
-    │   └── docs/adr/                  ← context-specific decisions
-    └── billing/
-        ├── GLOSSARY.md
-        └── docs/adr/
+├── docs/
+│   ├── adr/                           ← system-wide decisions
+│   └── contexts/
+│       ├── score/
+│       │   ├── GLOSSARY.md
+│       │   └── adr/                   ← context-specific decisions
+│       └── tab-library/
+│           └── GLOSSARY.md
 ```
+
+Context docs live under `docs/contexts/` until the code layout is decided; they may then move next to each context's code, with `GLOSSARY-MAP.md` updated.
+
+A word may mean different things in different contexts (e.g. Beat in Drum Pattern vs Onset in Score). Use the term of the context you're working in.
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
+When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in that context's `GLOSSARY.md`. Don't drift to synonyms the glossary explicitly avoids.
 
 If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
 

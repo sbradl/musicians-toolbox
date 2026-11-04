@@ -18,4 +18,4 @@ Default five labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for
 
 ### Domain docs
 
-Single-context: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
+Multi-context: root `GLOSSARY-MAP.md` lists the bounded contexts; each has `docs/contexts/<context>/GLOSSARY.md` (+ `adr/`). System-wide decisions in `docs/adr/`. See `docs/agents/domain.md`.

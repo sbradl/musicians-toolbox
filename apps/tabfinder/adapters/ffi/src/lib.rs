@@ -1,3 +1,5 @@
+use std::fmt;
+
 use mt_tabfinder_presentation as presentation;
 use presentation::{Action, AppViewModel, LibraryViewModel};
 
@@ -36,6 +38,12 @@ impl presentation::ViewModelListener for ForeignViewModelListener {
 #[derive(uniffi::Object)]
 pub struct App(presentation::App);
 
+impl fmt::Debug for App {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.debug_tuple("App").field(&self.0).finish()
+    }
+}
+
 #[uniffi::export]
 impl App {
     #[uniffi::constructor]
@@ -50,7 +58,7 @@ impl App {
         self.0.start();
     }
 
-    pub fn choose_folder(&self) {
+    pub const fn choose_folder(&self) {
         self.0.choose_folder();
     }
 }

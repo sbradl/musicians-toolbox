@@ -3,6 +3,3 @@ name = "mt-tabfinder-application"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
-
-[dependencies]
-mt-tab-library.workspace = true

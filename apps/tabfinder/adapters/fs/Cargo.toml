@@ -1,0 +1,11 @@
+[package]
+name = "mt-tabfinder-fs"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+mt-tabfinder-application.workspace = true
+
+[lints]
+workspace = true

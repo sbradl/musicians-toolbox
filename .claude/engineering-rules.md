@@ -28,8 +28,9 @@ Not picked: Kotlin linter, complexity, architecture and dead-code tools; GitHub 
 
 Layers (clean architecture dependency rule: dependencies point inward only):
 - `mt-tab-library` (context) ← application, presentation, ffi
-- `mt-tabfinder-application` ← presentation, ffi
+- `mt-tabfinder-application` ← presentation, fs, ffi
 - `mt-tabfinder-presentation` ← ffi
+- `mt-tabfinder-fs` (desktop driven adapters) ← ffi
 - `mt-tabfinder-ffi` ← nothing (cdylib, consumed by Kotlin `ui/`)
 - `uniffi` ← ffi, uniffi-bindgen only (ADR 0002)
 - Kotlin: `ui:desktop` → `ui:shared` (Gradle rejects the reverse as a cycle)

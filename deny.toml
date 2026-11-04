@@ -22,8 +22,9 @@ skip = [
 ]
 deny = [
   { crate = "mt-tab-library", wrappers = ["mt-tabfinder-application", "mt-tabfinder-presentation", "mt-tabfinder-ffi"], reason = "clean architecture: only outer layers depend on a context" },
-  { crate = "mt-tabfinder-application", wrappers = ["mt-tabfinder-presentation", "mt-tabfinder-ffi"], reason = "clean architecture: only outer layers depend on application" },
+  { crate = "mt-tabfinder-application", wrappers = ["mt-tabfinder-presentation", "mt-tabfinder-fs", "mt-tabfinder-ffi"], reason = "clean architecture: only outer layers depend on application" },
   { crate = "mt-tabfinder-presentation", wrappers = ["mt-tabfinder-ffi"], reason = "clean architecture: only the ffi adapter depends on presentation" },
+  { crate = "mt-tabfinder-fs", wrappers = ["mt-tabfinder-ffi"], reason = "clean architecture: only the ffi adapter wires driven adapters" },
   { crate = "mt-tabfinder-ffi", wrappers = ["mt-tabfinder-ffi"], reason = "clean architecture: the ffi adapter is outermost; only Kotlin uses it" },
   { crate = "uniffi", wrappers = ["mt-tabfinder-ffi", "mt-uniffi-bindgen"], reason = "ADR 0002: only the ffi crate and its bindgen use UniFFI" },
   { crate = "reqwest", reason = "ADR 0005: offline, no network crates" },

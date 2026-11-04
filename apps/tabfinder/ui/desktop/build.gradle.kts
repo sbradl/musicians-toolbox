@@ -8,6 +8,8 @@ kotlin {
             implementation(project(":apps:tabfinder:ui:shared"))
             implementation(libs.compose.material3)
             implementation(compose.desktop.currentOs)
+            implementation(libs.dbus.java.core)
+            implementation(libs.dbus.java.transport.native.unixsocket)
         }
     }
 }

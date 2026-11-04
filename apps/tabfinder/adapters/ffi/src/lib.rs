@@ -1,7 +1,8 @@
 use std::fmt;
 
+use mt_tabfinder_fs::FsLibraryFolder;
 use mt_tabfinder_presentation as presentation;
-use presentation::{Action, AppViewModel, LibraryViewModel};
+use presentation::{Action, AppViewModel, Effect, LibraryViewModel, SongRow};
 
 uniffi::setup_scaffolding!();
 
@@ -14,6 +15,13 @@ pub struct AppViewModel {
 pub struct LibraryViewModel {
     pub status: String,
     pub choose_folder: Action,
+    pub songs: Vec<SongRow>,
+}
+
+#[uniffi::remote(Record)]
+pub struct SongRow {
+    pub id: String,
+    pub title: String,
 }
 
 #[uniffi::remote(Record)]
@@ -22,9 +30,15 @@ pub struct Action {
     pub is_enabled: bool,
 }
 
+#[uniffi::remote(Enum)]
+pub enum Effect {
+    PickFolder,
+}
+
 #[uniffi::export(callback_interface)]
 pub trait ViewModelListener: Send + Sync {
     fn on_view_model(&self, view_model: AppViewModel);
+    fn on_effect(&self, effect: Effect);
 }
 
 struct ForeignViewModelListener(Box<dyn ViewModelListener>);
@@ -32,6 +46,10 @@ struct ForeignViewModelListener(Box<dyn ViewModelListener>);
 impl presentation::ViewModelListener for ForeignViewModelListener {
     fn on_view_model(&self, view_model: AppViewModel) {
         self.0.on_view_model(view_model);
+    }
+
+    fn on_effect(&self, effect: Effect) {
+        self.0.on_effect(effect);
     }
 }
 
@@ -49,16 +67,25 @@ impl App {
     #[uniffi::constructor]
     #[must_use]
     pub fn new(listener: Box<dyn ViewModelListener>) -> Self {
-        Self(presentation::App::new(Box::new(ForeignViewModelListener(
-            listener,
-        ))))
+        Self(presentation::App::new(
+            Box::new(ForeignViewModelListener(listener)),
+            Box::new(FsLibraryFolder),
+        ))
     }
 
     pub fn start(&self) {
         self.0.start();
     }
 
-    pub const fn choose_folder(&self) {
+    pub fn choose_folder(&self) {
         self.0.choose_folder();
+    }
+
+    pub fn folder_picked(&self, location: &str) {
+        self.0.folder_picked(location);
+    }
+
+    pub const fn folder_pick_cancelled(&self) {
+        self.0.folder_pick_cancelled();
     }
 }

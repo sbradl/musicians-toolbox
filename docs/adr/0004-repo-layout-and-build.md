@@ -11,6 +11,7 @@ apps/<app>/
   presentation/                 App, presenters, ViewModels, navigation, Fluent texts (ADR 0003); no UniFFI
   adapters/ffi/                 driving adapter for Compose (UniFFI mapping only, ADR 0002) + driven adapters forwarding ports to Kotlin
   adapters/cli/                 CLIs (e.g. tabscan, tabreorg) on application (+ texts from presentation)
+  adapters/<name>/              driven adapters in Rust implementing application ports (e.g. fs: desktop Library folder), wired by ffi
   ui/shared/                    KMP module: Compose rendering only
   ui/desktop/, ui/android/      entry points + Kotlin driven adapters (SAF, FileProvider, launching a tab editor)
   CHANGELOG.json
@@ -19,7 +20,7 @@ ui-shared/                      Compose modules shared by apps
 build-logic/                    Gradle convention plugins
 ```
 
-- **Dependencies point inward**: `ui → ffi → presentation → application → contexts`. Contexts know no apps.
+- **Dependencies point inward**: `ui → ffi → presentation → application → contexts`; Rust driven adapters depend only on application and are wired in by ffi. Contexts know no apps.
 - **One Cargo workspace** at the root: shared `[workspace.dependencies]` and `[workspace.lints]`. Packages are named `mt-<name>` (folders without prefix), all `publish = false`, version `0.0.0`. CLI binaries keep product names.
 - **One Gradle build** at the root with a version catalog and convention plugins. Gradle drives Cargo through our own task (cargo / cargo-ndk + uniffi-bindgen); UniFFI bindings are generated into `build/`, never committed. Compose per app is split into `ui/shared`, `ui/desktop`, `ui/android` (AGP 9 keeps the Android application plugin out of KMP modules).
 - **Toolchain pinned in `mise.toml` wherever possible** (Rust with targets and components, JDK, cargo-ndk, Android SDK/NDK). Exceptions: the Gradle wrapper (IDE default, checksummed) and uniffi-bindgen as a workspace crate (must match the runtime version).

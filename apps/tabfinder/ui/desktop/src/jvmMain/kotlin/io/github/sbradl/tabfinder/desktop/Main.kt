@@ -8,7 +8,7 @@ import io.github.sbradl.tabfinder.ui.TabFinder
 import io.github.sbradl.tabfinder.ui.TabFinderCore
 
 fun main() {
-    val core = TabFinderCore()
+    val core = TabFinderCore(PortalFolderPicker())
     core.start()
     application {
         Window(onCloseRequest = ::exitApplication, title = "TabFinder") {

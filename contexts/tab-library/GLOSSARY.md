@@ -10,6 +10,10 @@ A musician's collection of tab files: finding songs in it and reorganizing it on
 All Songs found under one chosen folder.
 _Avoid_: Collection, catalog
 
+**Library location**:
+Where a Library's folder is: a path on desktop, a folder grant (tree URI) on Android.
+_Avoid_: Path, root
+
 **Song**:
 One Tab file in a Library, known by its Song summary.
 _Avoid_: Score (Score's word), tab, entry

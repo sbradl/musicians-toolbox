@@ -363,13 +363,24 @@ version = "0.0.0"
 [[package]]
 name = "mt-tabfinder-application"
 version = "0.0.0"
+dependencies = [
+ "mt-tab-library",
+]
 
 [[package]]
 name = "mt-tabfinder-ffi"
 version = "0.0.0"
 dependencies = [
+ "mt-tabfinder-fs",
  "mt-tabfinder-presentation",
  "uniffi",
+]
+
+[[package]]
+name = "mt-tabfinder-fs"
+version = "0.0.0"
+dependencies = [
+ "mt-tabfinder-application",
 ]
 
 [[package]]
@@ -377,6 +388,8 @@ name = "mt-tabfinder-presentation"
 version = "0.0.0"
 dependencies = [
  "fluent-bundle",
+ "mt-tab-library",
+ "mt-tabfinder-application",
  "unic-langid",
 ]
 

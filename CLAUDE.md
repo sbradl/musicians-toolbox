@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-The repo is new. It holds only a README with the project name ("musicians-toolbox"). There's no code, build system, tests or tooling yet. Update this file with commands and architecture once they exist.
+No code yet. Architecture is decided in `docs/adr/`: bridge (0002), UI/core line (0003), repo layout and build (0004). Follow ADR 0004's layout when adding code. Add commands here once they exist.
 
 ## Agent skills
 

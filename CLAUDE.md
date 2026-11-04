@@ -8,7 +8,7 @@ No code yet. Architecture is decided in `docs/adr/`: bridge (0002), UI/core line
 
 ## Working rules (ADR 0005)
 
-- No production code without failing tests. Order: user confirms the requirement → write failing tests for it → a fresh subagent reviews the tests against the requirement only → write code until green.
+- No production code without a failing test: use the `/tdd` skill. The user confirms the requirement and the seams first; review via `/code-review`.
 - Any lint or compiler warning: ask the user whether to fix the code or loosen the rule. Never silence or loosen it yourself.
 - Ask the user before adding any dependency.
 - Don't write comments where code can say it; a needed comment is a cue to refactor.

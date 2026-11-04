@@ -26,7 +26,7 @@ If a context's `adr/` doesn't exist, proceed silently; the `/domain-modeling` sk
 │           └── GLOSSARY.md
 ```
 
-Context docs live under `docs/contexts/` until the code layout is decided; they may then move next to each context's code, with `GLOSSARY-MAP.md` updated.
+Context docs live under `docs/contexts/` until the context's crate exists; with that crate's first commit they move to `contexts/<context>/GLOSSARY.md` and `contexts/<context>/adr/`, with `GLOSSARY-MAP.md` and this file updated (ADR 0004).
 
 A word may mean different things in different contexts (e.g. Beat in Drum Pattern vs Onset in Score). Use the term of the context you're working in.
 

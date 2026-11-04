@@ -13,7 +13,7 @@ Toolchain via mise: `mise run setup` once (installs tools, enables `.githooks/`)
 - `mise run check`: lint + test + security, what CI runs on every push
 - `mise run lint`: rustfmt, clippy, cargo-deny bans (layer rules), Opengrep own rules, ktlint (pre-commit hook)
 - `mise run test`: `cargo test` + `./gradlew check` (Compose tests against the real native lib; pre-commit hook)
-- `mise run security`: Opengrep packs, Trivy vulns + secrets, licence checks, SBOM (pre-push hook)
+- `mise run security`: Opengrep packs, Trivy vulns + secrets, licence checks (pre-push hook)
 - `mise run fmt`: format Rust and Kotlin
 - `mise run run:tabfinder`: start the desktop app
 - Single Rust test file: `cargo test -p mt-tabfinder-presentation --test library_screen`

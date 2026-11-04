@@ -60,11 +60,8 @@ run = "cargo deny --locked check licenses"
 [tasks."security:gradle-licenses"]
 run = "./gradlew --no-parallel checkLicense"
 
-[tasks."security:sbom"]
-run = ["mkdir -p build", "trivy fs --exit-code 0 --format cyclonedx --output build/sbom.cdx.json ."]
-
 [tasks.security]
-depends = ["security:opengrep", "security:trivy", "security:cargo-deny", "security:gradle-licenses", "security:sbom"]
+depends = ["security:opengrep", "security:trivy", "security:cargo-deny", "security:gradle-licenses"]
 
 [tasks."security:sarif"]
 run = [

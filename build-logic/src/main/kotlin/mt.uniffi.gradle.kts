@@ -15,7 +15,7 @@ val jnaResourcePrefixForLinuxX8664 = "linux-x86-64"
 val cargoBuild =
     tasks.register<Exec>("cargoBuild") {
         workingDir = workspace.asFile
-        commandLine("cargo", "build", "--locked", "--package")
+        commandLine("cargo", "build", "--locked", "--target-dir", "target", "--package")
         argumentProviders.add { listOf(uniffi.crate.get()) }
         outputs.file(nativeLibrary)
         outputs.upToDateWhen { false }

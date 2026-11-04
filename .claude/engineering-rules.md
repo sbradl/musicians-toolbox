@@ -44,11 +44,11 @@ Run: `mise run lint`
 | rust, kotlin | Dependency vulnerabilities | Trivy fs | all severities incl. UNKNOWN; exceptions in `.trivyignore.yaml` with statement + `expired_at` |
 | rust | License compliance | cargo-deny licenses | strict: `include-dev`, `unused-allowed-license = "deny"`, confidence 0.93 |
 | kotlin | License compliance | Gradle-License-Report | allowlist, `jvmRuntimeClasspath` |
-| rust, kotlin | SBOM | Trivy | CycloneDX |
+| rust, kotlin | SBOM | Trivy | CycloneDX, generated with packaging (#21) |
 | all | Secret scanning | Trivy secret | built-in rules (working tree only, not git history) |
 
 License allow-list: MIT, Apache-2.0, Unicode-3.0, MPL-2.0 (only what is in use; ADR 0005's list caps what may be added)
-SBOM: CycloneDX → `build/sbom.cdx.json`
+SBOM: CycloneDX, wired with packaging (#21)
 Run: `mise run security`; no `dast` (no HTTP)
 
 Kotlin dependencies are visible to Trivy through Gradle dependency locking (`gradle.lockfile`, refresh with `./gradlew dependencies --write-locks` per project).

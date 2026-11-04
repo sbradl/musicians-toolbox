@@ -2,6 +2,18 @@
 rust = { version = "1.99.1", components = "rustfmt,clippy" }
 java = "temurin-21.0.13+9.0.LTS"
 ktlint = "1.8.0"
+cargo-deny = "0.20.2"
+trivy = "0.76.1"
+opengrep = "1.33.1"
+
+[vars]
+opengrep_packs = "--config p/default --config p/owasp-top-ten --config p/security-audit --config p/rust --config p/kotlin --config p/github-actions"
+
+[tasks.setup]
+run = [
+  "mise install",
+  "git config core.hooksPath .githooks",
+]
 
 [tasks.fmt]
 run = [
@@ -9,21 +21,60 @@ run = [
   "ktlint --format '**/*.kt' '**/*.kts' '!**/build/**'",
 ]
 
+[tasks."lint:rustfmt"]
+run = "cargo fmt --all --check"
+
+[tasks."lint:clippy"]
+run = "cargo clippy --workspace --all-targets --locked -- -D warnings"
+
+[tasks."lint:cargo-deny"]
+run = "cargo deny --locked check bans"
+
+[tasks."lint:opengrep"]
+run = "opengrep scan --error --quiet --config .opengrep ."
+
+[tasks."lint:ktlint"]
+run = "ktlint '**/*.kt' '**/*.kts' '!**/build/**'"
+
 [tasks.lint]
-run = [
-  "cargo fmt --all --check",
-  "cargo clippy --workspace --all-targets --locked -- -D warnings",
-  "ktlint '**/*.kt' '**/*.kts' '!**/build/**'",
-]
+depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint"]
+
+[tasks."test:cargo"]
+run = "cargo test --workspace --locked"
+
+[tasks."test:gradle"]
+run = "./gradlew check"
 
 [tasks.test]
+depends = ["test:cargo", "test:gradle"]
+
+[tasks."security:opengrep"]
+run = "opengrep scan --error --quiet {{vars.opengrep_packs}} ."
+
+[tasks."security:trivy"]
+run = "trivy fs --scanners vuln,secret ."
+
+[tasks."security:cargo-deny"]
+run = "cargo deny --locked check licenses"
+
+[tasks."security:gradle-licenses"]
+run = "./gradlew --no-parallel checkLicense"
+
+[tasks."security:sbom"]
+run = ["mkdir -p build", "trivy fs --exit-code 0 --format cyclonedx --output build/sbom.cdx.json ."]
+
+[tasks.security]
+depends = ["security:opengrep", "security:trivy", "security:cargo-deny", "security:gradle-licenses", "security:sbom"]
+
+[tasks."security:sarif"]
 run = [
-  "cargo test --workspace --locked",
-  "./gradlew check",
+  "mkdir -p build/sarif",
+  "opengrep scan --quiet {{vars.opengrep_packs}} --sarif-output=build/sarif/opengrep.sarif .",
+  "trivy fs --exit-code 0 --scanners vuln,secret --format sarif --output build/sarif/trivy.sarif .",
 ]
 
 [tasks.check]
-depends = ["lint", "test"]
+depends = ["lint", "test", "security"]
 
 [tasks."run:tabfinder"]
 run = "./gradlew :apps:tabfinder:ui:desktop:run"

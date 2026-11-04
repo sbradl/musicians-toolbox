@@ -1,0 +1,12 @@
+severity:
+  - UNKNOWN
+  - LOW
+  - MEDIUM
+  - HIGH
+  - CRITICAL
+exit-code: 1
+scan:
+  skip-dirs:
+    - target
+    - "**/build"
+    - .gradle

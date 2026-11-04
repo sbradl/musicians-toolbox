@@ -1,0 +1,8 @@
+rules:
+  - id: no-todo-comments
+    message: "ADR 0005: no TODOs in code; open an issue instead"
+    severity: ERROR
+    languages: [regex]
+    pattern-regex: '\b(TODO|FIXME|XXX)\b'
+    paths:
+      include: ["*.rs", "*.kt", "*.kts"]

@@ -10,3 +10,6 @@ crate-type = ["cdylib"]
 [dependencies]
 mt-tabfinder-presentation.workspace = true
 uniffi.workspace = true
+
+[lints]
+workspace = true

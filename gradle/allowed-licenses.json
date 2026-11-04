@@ -1,0 +1,16 @@
+{
+  "allowedLicenses": [
+    {
+      "moduleLicense": "MIT License"
+    },
+    {
+      "moduleLicense": "Apache License, Version 2.0"
+    },
+    {
+      "moduleLicense": "Unicode License v3"
+    },
+    {
+      "moduleLicense": "Mozilla Public License 2.0"
+    }
+  ]
+}

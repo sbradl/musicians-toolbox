@@ -1,0 +1,80 @@
+# Engineering rules
+
+Task runner: mise
+
+## Stacks
+
+- **rust** — Rust 1.99.1, edition 2024 · no framework · `cargo test` · cargo · `/` (Cargo workspace)
+- **kotlin** — Kotlin 2.4.21 (KMP, jvm) · Compose Multiplatform 1.9.3 desktop · JUnit 4 + Compose ui-test · Gradle 9.8.2 · `apps/*/ui/`, `build-logic/`
+- **github-actions** — GitHub Actions workflows · `.github/workflows/`
+
+## Static analysis and linting
+
+| Stack | Category | Tool | Ruleset |
+| --- | --- | --- | --- |
+| rust | Linter | Clippy | pedantic (except `missing_errors_doc`, `missing_panics_doc`: docs not required, user decision) + nursery + cargo + restriction picks (`allow_attributes`, `allow_attributes_without_reason`, `undocumented_unsafe_blocks`, `todo`, `unimplemented`, `dbg_macro`, `print_stdout`, `print_stderr`, `unwrap_used`, `expect_used`, `panic`, `cognitive_complexity`) |
+| rust | Linter | Opengrep | own rules (`.opengrep/`), offline |
+| rust | Formatter | rustfmt | defaults |
+| rust | Type strictness | rustc lint levels | allowed-by-default extras except `missing_docs` (docs not required, user decision) + lint groups; `warn` in manifests, `-D warnings` in `lint:clippy` |
+| rust | Complexity | Clippy thresholds | cognitive 15, lines 60, arguments 5, nesting 4, type complexity 250 |
+
+Exceptions: `syn` 2 + 3 duplicate allowed (UniFFI; `deny.toml` skip, `clippy.toml` allowed-duplicate-crates); workspace path deps without version allowed (`allow-wildcard-paths`).
+| rust | Architecture rules | cargo-deny bans | deny list with layer `wrappers` + network and async-runtime crates denied, `multiple-versions = "deny"`, `wildcards = "deny"` (allowlist mode cannot combine with wrappers) |
+| rust | Dead code | rustc unused lints | `unused`, `unused_crate_dependencies`, `unreachable_pub` |
+| kotlin | Formatter + linter | ktlint 1.8.0 | `ktlint_official` |
+| kotlin | Type strictness | Kotlin compiler | `allWarningsAsErrors`, `extraWarnings` except generated UniFFI bindings (own module `apps/<app>/adapters/ffi`, loosened by the user: we do not control their code) |
+
+Not picked: Kotlin linter, complexity, architecture and dead-code tools; GitHub Actions linter and formatter.
+
+Layers (clean architecture dependency rule: dependencies point inward only):
+- `mt-tab-library` (context) ← application, presentation, ffi
+- `mt-tabfinder-application` ← presentation, ffi
+- `mt-tabfinder-presentation` ← ffi
+- `mt-tabfinder-ffi` ← nothing (cdylib, consumed by Kotlin `ui/`)
+- `uniffi` ← ffi, uniffi-bindgen only (ADR 0002)
+- Kotlin: `ui:desktop` → `ui:shared` (Gradle rejects the reverse as a cycle)
+
+Run: `mise run lint`
+
+## Security analysis
+
+| Stack | Category | Tool | Ruleset |
+| --- | --- | --- | --- |
+| rust, kotlin, github-actions | SAST | Opengrep | broadest: `p/default`, `p/owasp-top-ten`, `p/security-audit`, `p/rust`, `p/kotlin`, `p/github-actions` (Semgrep registry rules: internal use only, fetched at run time, never committed) |
+| rust, kotlin | Dependency vulnerabilities | Trivy fs | all severities incl. UNKNOWN; exceptions in `.trivyignore.yaml` with statement + `expired_at` |
+| rust | License compliance | cargo-deny licenses | strict: `include-dev`, `unused-allowed-license = "deny"`, confidence 0.93 |
+| kotlin | License compliance | Gradle-License-Report | allowlist, `jvmRuntimeClasspath` |
+| rust, kotlin | SBOM | Trivy | CycloneDX |
+| all | Secret scanning | Trivy secret | built-in rules (working tree only, not git history) |
+
+License allow-list: MIT, Apache-2.0, Unicode-3.0, MPL-2.0 (only what is in use; ADR 0005's list caps what may be added)
+SBOM: CycloneDX → `build/sbom.cdx.json`
+Run: `mise run security`; no `dast` (no HTTP)
+
+Kotlin dependencies are visible to Trivy through Gradle dependency locking (`gradle.lockfile`, refresh with `./gradlew dependencies --write-locks` per project).
+
+## Accessibility
+
+| Stack | Category | Tool | Ruleset |
+| --- | --- | --- | --- |
+| kotlin | Runtime accessibility testing | androidx `ui-test-junit4-accessibility` | ATF `PRERELEASE`, `setThrowExceptionFor(WARNING)` |
+
+WCAG target: AAA + ATF best practices
+Pages checked: every screen state's Compose smoke test with `enableAccessibilityChecks()`
+Run: `mise run a11y` — not wired yet: needs the Android target and an emulator (#16)
+
+Static accessibility linting: none (Touchstone needs AGP; revisit with Android).
+
+## Enforcement
+
+| Task | pre-commit | pre-push | CI |
+| --- | --- | --- | --- |
+| lint | yes | | yes |
+| test | yes | | yes |
+| security | | yes | yes |
+| a11y | | | yes (once wired) |
+
+Hook manager: `.githooks/` via `git config core.hooksPath .githooks` (`mise run setup`)
+CI: GitHub Actions → `.github/workflows/check.yml`; SARIF upload: yes (Opengrep, Trivy)
+Dependency updates: Renovate, `config:best-practices`, grouped per stack
+Run everything: `mise run check`

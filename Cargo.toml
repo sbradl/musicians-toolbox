@@ -20,3 +20,47 @@ mt-tabfinder-presentation = { path = "apps/tabfinder/presentation" }
 uniffi = "0.32.2"
 fluent-bundle = "0.16.0"
 unic-langid = "0.9.6"
+
+[workspace.lints.rust]
+rust_2018_idioms = { level = "warn", priority = -1 }
+future_incompatible = { level = "warn", priority = -1 }
+let_underscore = { level = "warn", priority = -1 }
+keyword_idents = { level = "warn", priority = -1 }
+nonstandard_style = { level = "warn", priority = -1 }
+unused = { level = "warn", priority = -1 }
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+unused_crate_dependencies = "warn"
+unused_qualifications = "warn"
+unused_results = "warn"
+missing_debug_implementations = "warn"
+elided_lifetimes_in_paths = "warn"
+unused_lifetimes = "warn"
+single_use_lifetimes = "warn"
+redundant_lifetimes = "warn"
+trivial_casts = "warn"
+let_underscore_drop = "warn"
+meta_variable_misuse = "warn"
+unit_bindings = "warn"
+unnameable_types = "warn"
+variant_size_differences = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+# Docs not required (user decision): names, types and tests carry the meaning (ADR 0005).
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+undocumented_unsafe_blocks = "warn"
+todo = "warn"
+unimplemented = "warn"
+dbg_macro = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+cognitive_complexity = "warn"

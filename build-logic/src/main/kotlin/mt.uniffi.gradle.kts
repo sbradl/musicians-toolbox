@@ -1,5 +1,6 @@
+// Generated UniFFI bindings get their own module without allWarningsAsErrors/extraWarnings: we don't control their code.
 plugins {
-    id("org.jetbrains.kotlin.multiplatform")
+    id("mt.kotlin-multiplatform")
 }
 
 interface UniffiExtension {
@@ -52,6 +53,6 @@ kotlin.sourceSets.named("jvmMain") {
     kotlin.srcDir(generateUniffiBindings)
     resources.srcDir(bundleNativeLibrary)
     dependencies {
-        implementation(versionCatalogs.named("libs").findLibrary("jna").get())
+        api(versionCatalogs.named("libs").findLibrary("jna").get())
     }
 }

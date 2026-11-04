@@ -1,10 +1,12 @@
 plugins {
-    id("org.jetbrains.kotlin.multiplatform")
+    id("mt.kotlin-multiplatform")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
 }
 
 kotlin {
-    jvmToolchain(21)
-    jvm()
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+        extraWarnings.set(true)
+    }
 }

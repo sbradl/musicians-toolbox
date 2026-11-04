@@ -1,0 +1,10 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices"],
+  "packageRules": [
+    { "groupName": "rust", "matchManagers": ["cargo"] },
+    { "groupName": "kotlin", "matchManagers": ["gradle", "gradle-wrapper"] },
+    { "groupName": "github-actions", "matchManagers": ["github-actions"] },
+    { "groupName": "mise tools", "matchManagers": ["mise"] }
+  ]
+}

@@ -1,0 +1,40 @@
+[graph]
+all-features = true
+
+[licenses]
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "Unicode-3.0",
+  "MPL-2.0",
+]
+confidence-threshold = 0.93
+include-dev = true
+unused-allowed-license = "deny"
+private = { ignore = true }
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+allow-wildcard-paths = true
+skip = [
+  { crate = "syn@2", reason = "UniFFI's macros still use syn 2 next to syn 3; we cannot change that until UniFFI upgrades" },
+]
+deny = [
+  { crate = "mt-tab-library", wrappers = ["mt-tabfinder-application", "mt-tabfinder-presentation", "mt-tabfinder-ffi"], reason = "clean architecture: only outer layers depend on a context" },
+  { crate = "mt-tabfinder-application", wrappers = ["mt-tabfinder-presentation", "mt-tabfinder-ffi"], reason = "clean architecture: only outer layers depend on application" },
+  { crate = "mt-tabfinder-presentation", wrappers = ["mt-tabfinder-ffi"], reason = "clean architecture: only the ffi adapter depends on presentation" },
+  { crate = "mt-tabfinder-ffi", wrappers = ["mt-tabfinder-ffi"], reason = "clean architecture: the ffi adapter is outermost; only Kotlin uses it" },
+  { crate = "uniffi", wrappers = ["mt-tabfinder-ffi", "mt-uniffi-bindgen"], reason = "ADR 0002: only the ffi crate and its bindgen use UniFFI" },
+  { crate = "reqwest", reason = "ADR 0005: offline, no network crates" },
+  { crate = "hyper", reason = "ADR 0005: offline, no network crates" },
+  { crate = "ureq", reason = "ADR 0005: offline, no network crates" },
+  { crate = "curl", reason = "ADR 0005: offline, no network crates" },
+  { crate = "isahc", reason = "ADR 0005: offline, no network crates" },
+  { crate = "attohttpc", reason = "ADR 0005: offline, no network crates" },
+  { crate = "surf", reason = "ADR 0005: offline, no network crates" },
+  { crate = "tokio", reason = "ADR 0002/0005: sync core, no async runtime, offline" },
+  { crate = "async-std", reason = "ADR 0002/0005: sync core, no async runtime, offline" },
+  { crate = "socket2", reason = "ADR 0005: offline, no network crates" },
+  { crate = "mio", reason = "ADR 0005: offline, no network crates" },
+]

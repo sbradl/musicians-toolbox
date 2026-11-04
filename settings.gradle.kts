@@ -11,5 +11,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "musicians-toolbox"
 
+include(":apps:tabfinder:adapters:ffi")
 include(":apps:tabfinder:ui:shared")
 include(":apps:tabfinder:ui:desktop")

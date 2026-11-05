@@ -1,23 +1,25 @@
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use mt_tabfinder_application::{FolderFile, LibraryFolder, LibraryFolderGone};
 use mt_tabfinder_fs::FsLibraryFolder;
 
-struct TempFolder(PathBuf);
+pub mod common;
+
+use common::TempDir;
+
+struct TempFolder(TempDir);
 
 impl TempFolder {
     fn new(name: &str) -> io::Result<Self> {
-        let path =
-            std::env::temp_dir().join(format!("mt-tabfinder-fs-{}-{name}", std::process::id()));
-        drop(fs::remove_dir_all(&path));
-        fs::create_dir_all(&path)?;
-        Ok(Self(path))
+        let dir = TempDir::new(name);
+        fs::create_dir_all(dir.path())?;
+        Ok(Self(dir))
     }
 
     fn with_file(self, relative: &str) -> io::Result<Self> {
-        let file = self.0.join(relative);
+        let file = self.0.path().join(relative);
         if let Some(parent) = file.parent() {
             fs::create_dir_all(parent)?;
         }
@@ -26,23 +28,17 @@ impl TempFolder {
     }
 
     fn location(&self) -> String {
-        self.0.to_string_lossy().into_owned()
+        self.0.path().to_string_lossy().into_owned()
     }
 
     fn file(&self, relative: &str) -> FolderFile {
         FolderFile {
-            id: self.0.join(relative).to_string_lossy().into_owned(),
+            id: self.0.path().join(relative).to_string_lossy().into_owned(),
             file_name: Path::new(relative)
                 .file_name()
                 .map(|name| name.to_string_lossy().into_owned())
                 .unwrap_or_default(),
         }
-    }
-}
-
-impl Drop for TempFolder {
-    fn drop(&mut self) {
-        drop(fs::remove_dir_all(&self.0));
     }
 }
 

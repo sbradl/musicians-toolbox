@@ -1,27 +1,39 @@
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use fluent_bundle as _;
 use mt_tab_library as _;
 use unic_langid as _;
 
-use mt_tabfinder_application::{FolderFile, LibraryFolder, LibraryFolderGone};
+use mt_tabfinder_application::{
+    FolderFile, LibraryFolder, LibraryFolderGone, RememberedLibraryLocation,
+};
 use mt_tabfinder_presentation::{
     Action, App, AppViewModel, Effect, LibraryViewModel, SongRow, ViewModelListener,
 };
 
-#[derive(Default)]
-struct FakeLibraryFolder(Vec<(&'static str, Vec<&'static str>)>);
+type Folders = Vec<(&'static str, Vec<&'static str>)>;
+
+#[derive(Clone, Default)]
+struct FakeLibraryFolder(Arc<Mutex<Folders>>);
 
 impl FakeLibraryFolder {
-    fn with(mut self, location: &'static str, files: Vec<&'static str>) -> Self {
-        self.0.push((location, files));
+    fn with(self, location: &'static str, files: Vec<&'static str>) -> Self {
+        self.folders().push((location, files));
         self
+    }
+
+    fn remove(&self, location: &str) {
+        self.folders().retain(|(known, _)| *known != location);
+    }
+
+    fn folders(&self) -> MutexGuard<'_, Folders> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }
 
 impl LibraryFolder for FakeLibraryFolder {
     fn files(&self, location: &str) -> Result<Vec<FolderFile>, LibraryFolderGone> {
-        self.0
+        self.folders()
             .iter()
             .find(|(known, _)| *known == location)
             .map(|(_, files)| {
@@ -37,9 +49,57 @@ impl LibraryFolder for FakeLibraryFolder {
     }
 }
 
+#[derive(Clone, Default)]
+struct FakeRememberedLibraryLocation(Arc<Mutex<Option<String>>>);
+
+impl FakeRememberedLibraryLocation {
+    fn of(location: &str) -> Self {
+        let remembered = Self::default();
+        remembered.set(Some(location.to_owned()));
+        remembered
+    }
+
+    fn get(&self) -> Option<String> {
+        self.slot().clone()
+    }
+
+    fn set(&self, location: Option<String>) {
+        *self.slot() = location;
+    }
+
+    fn slot(&self) -> MutexGuard<'_, Option<String>> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+impl RememberedLibraryLocation for FakeRememberedLibraryLocation {
+    fn remembered(&self) -> Option<String> {
+        self.get()
+    }
+
+    fn remember(&self, location: &str) {
+        self.set(Some(location.to_owned()));
+    }
+
+    fn forget(&self) {
+        self.set(None);
+    }
+}
+
 fn app_with(folder: FakeLibraryFolder) -> (App, Recorded) {
+    app_remembering(folder, FakeRememberedLibraryLocation::default())
+}
+
+fn app_remembering(
+    folder: FakeLibraryFolder,
+    remembered: FakeRememberedLibraryLocation,
+) -> (App, Recorded) {
     let recorded = Recorded::default();
-    let app = App::new(Box::new(recorded.clone()), Box::new(folder));
+    let app = App::new(
+        Box::new(recorded.clone()),
+        Box::new(folder),
+        Box::new(remembered),
+    );
     app.start();
     (app, recorded)
 }
@@ -319,5 +379,102 @@ fn choosing_another_folder_replaces_the_library() {
                 vec![row("/new/Blackbird.gp5", "Blackbird")]
             ),
         ]
+    );
+}
+
+#[test]
+fn app_start_with_a_remembered_library_location_scans_it_and_shows_its_songs() {
+    let (_app, recorded) = app_remembering(
+        FakeLibraryFolder::default().with("/music", vec!["/music/Wonderwall.gp5"]),
+        FakeRememberedLibraryLocation::of("/music"),
+    );
+
+    assert_eq!(
+        recorded.last_view_model(),
+        Some(AppViewModel {
+            library: LibraryViewModel {
+                status: "1 Song".to_owned(),
+                choose_folder: choose_folder_action(),
+                songs: vec![row("/music/Wonderwall.gp5", "Wonderwall")],
+            },
+        })
+    );
+}
+
+#[test]
+fn app_start_with_a_remembered_library_location_goes_straight_to_scanning() {
+    let (_app, recorded) = app_remembering(
+        FakeLibraryFolder::default().with("/music", vec!["/music/Wonderwall.gp5"]),
+        FakeRememberedLibraryLocation::of("/music"),
+    );
+
+    let statuses: Vec<String> = recorded
+        .view_models()
+        .into_iter()
+        .map(|view_model| view_model.library.status)
+        .collect();
+    assert_eq!(statuses, vec!["Scanning…".to_owned(), "1 Song".to_owned()]);
+}
+
+#[test]
+fn a_picked_folder_becomes_the_remembered_library_location() {
+    let remembered = FakeRememberedLibraryLocation::default();
+    let (app, _recorded) = app_remembering(
+        FakeLibraryFolder::default().with("/music", vec!["/music/Wonderwall.gp5"]),
+        remembered.clone(),
+    );
+
+    app.folder_picked("/music");
+
+    assert_eq!(remembered.get(), Some("/music".to_owned()));
+}
+
+#[test]
+fn app_start_with_a_remembered_library_location_that_is_gone_forgets_it_and_shows_no_folder_chosen()
+{
+    let remembered = FakeRememberedLibraryLocation::of("/gone");
+    let (_app, recorded) = app_remembering(FakeLibraryFolder::default(), remembered.clone());
+
+    assert_eq!(
+        (
+            recorded
+                .last_view_model()
+                .map(|view_model| view_model.library.status),
+            remembered.get()
+        ),
+        (Some("No folder chosen".to_owned()), None)
+    );
+}
+
+#[test]
+fn picking_a_folder_that_is_gone_keeps_the_remembered_library_location() {
+    let remembered = FakeRememberedLibraryLocation::of("/music");
+    let (app, _recorded) = app_remembering(
+        FakeLibraryFolder::default().with("/music", vec!["/music/Wonderwall.gp5"]),
+        remembered.clone(),
+    );
+
+    app.folder_picked("/gone");
+
+    assert_eq!(remembered.get(), Some("/music".to_owned()));
+}
+
+#[test]
+fn a_scan_of_the_remembered_library_location_after_its_folder_is_gone_forgets_it() {
+    let folder = FakeLibraryFolder::default().with("/music", vec!["/music/Wonderwall.gp5"]);
+    let remembered = FakeRememberedLibraryLocation::of("/music");
+    let (app, recorded) = app_remembering(folder.clone(), remembered.clone());
+    folder.remove("/music");
+
+    app.folder_picked("/music");
+
+    assert_eq!(
+        (
+            recorded
+                .last_view_model()
+                .map(|view_model| view_model.library.status),
+            remembered.get()
+        ),
+        (Some("No folder chosen".to_owned()), None)
     );
 }

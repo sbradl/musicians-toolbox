@@ -19,3 +19,25 @@ pub fn scan(folder: &dyn LibraryFolder, location: &str) -> Result<Library, Libra
         files.into_iter().map(|file| (file.id, file.file_name)),
     ))
 }
+
+pub trait RememberedLibraryLocation: Send + Sync {
+    fn remembered(&self) -> Option<String>;
+    fn remember(&self, location: &str);
+    fn forget(&self);
+}
+
+pub fn open_library(
+    folder: &dyn LibraryFolder,
+    remembered: &dyn RememberedLibraryLocation,
+    location: &str,
+) -> Result<Library, LibraryFolderGone> {
+    let scanned = scan(folder, location);
+    match scanned {
+        Ok(_) => remembered.remember(location),
+        Err(LibraryFolderGone) if remembered.remembered().as_deref() == Some(location) => {
+            remembered.forget();
+        }
+        Err(LibraryFolderGone) => {}
+    }
+    scanned
+}

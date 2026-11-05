@@ -1,0 +1,21 @@
+{
+  "upcoming": {
+    "end-users": {
+      "added": [
+        {
+          "id": "desktop-choose-library-folder",
+          "en": "On desktop, choose a folder and see the Songs of every Tab file in it and its subfolders.",
+          "de": "Auf dem Desktop einen Ordner wählen und die Songs aller Tab-Dateien darin und in seinen Unterordnern sehen.",
+          "fr": "Sur ordinateur, choisissez un dossier et voyez les morceaux de tous les fichiers de tablature qu'il contient, sous-dossiers compris."
+        },
+        {
+          "id": "desktop-remembers-library",
+          "en": "On desktop, TabFinder remembers your folder and shows its Songs on the next start.",
+          "de": "Auf dem Desktop merkt sich TabFinder deinen Ordner und zeigt seine Songs beim nächsten Start.",
+          "fr": "Sur ordinateur, TabFinder retient votre dossier et affiche ses morceaux au prochain démarrage."
+        }
+      ]
+    }
+  },
+  "releases": []
+}

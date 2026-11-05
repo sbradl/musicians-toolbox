@@ -18,6 +18,7 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.deleteRecursively
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -38,8 +39,15 @@ class LibraryScreenTest {
         }
     }
 
+    private val configDir = createTempDirectory("tabfinder-config")
+
+    @AfterTest
+    fun deleteConfigDir() {
+        configDir.deleteRecursively()
+    }
+
     private fun ComposeUiTest.showTabFinder(pickedFolder: Path?) {
-        val core = TabFinderCore(FolderPicker { pickedFolder?.toString() })
+        val core = TabFinderCore(FolderPicker { pickedFolder?.toString() }, configDir.toString())
         core.start()
         setContent { TabFinder(core) }
     }

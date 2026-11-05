@@ -2,7 +2,7 @@ use std::fmt;
 
 use fluent_bundle::{FluentArgs, FluentResource, concurrent::FluentBundle};
 use mt_tab_library::Library;
-use mt_tabfinder_application::{LibraryFolder, scan};
+use mt_tabfinder_application::{LibraryFolder, RememberedLibraryLocation, open_library};
 use unic_langid::LanguageIdentifier;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,6 +42,7 @@ pub trait ViewModelListener: Send + Sync {
 pub struct App {
     listener: Box<dyn ViewModelListener>,
     library_folder: Box<dyn LibraryFolder>,
+    remembered_library_location: Box<dyn RememberedLibraryLocation>,
     texts: Texts,
 }
 
@@ -56,16 +57,21 @@ impl App {
     pub fn new(
         listener: Box<dyn ViewModelListener>,
         library_folder: Box<dyn LibraryFolder>,
+        remembered_library_location: Box<dyn RememberedLibraryLocation>,
     ) -> Self {
         Self {
             listener,
             library_folder,
+            remembered_library_location,
             texts: Texts::english(),
         }
     }
 
     pub fn start(&self) {
-        self.listener.on_view_model(self.no_folder_chosen());
+        match self.remembered_library_location.remembered() {
+            Some(location) => self.folder_picked(&location),
+            None => self.listener.on_view_model(self.no_folder_chosen()),
+        }
     }
 
     pub fn choose_folder(&self) {
@@ -74,8 +80,12 @@ impl App {
 
     pub fn folder_picked(&self, location: &str) {
         self.listener.on_view_model(self.scanning());
-        let view_model = scan(self.library_folder.as_ref(), location)
-            .map_or_else(|_| self.no_folder_chosen(), |library| self.songs(&library));
+        let view_model = open_library(
+            self.library_folder.as_ref(),
+            self.remembered_library_location.as_ref(),
+            location,
+        )
+        .map_or_else(|_| self.no_folder_chosen(), |library| self.songs(&library));
         self.listener.on_view_model(view_model);
     }
 

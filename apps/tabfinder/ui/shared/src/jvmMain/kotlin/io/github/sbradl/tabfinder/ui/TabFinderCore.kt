@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 
 class TabFinderCore(
     private val folderPicker: FolderPicker,
+    configDir: String,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private val latestViewModel = MutableStateFlow<AppViewModel?>(null)
@@ -33,6 +34,7 @@ class TabFinderCore(
                     }
                 }
             },
+            configDir,
         )
 
     fun start() = app.start()

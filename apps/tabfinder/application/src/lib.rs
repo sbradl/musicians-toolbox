@@ -1,4 +1,4 @@
-use mt_tab_library::Library;
+use mt_library::Library;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FolderFile {

@@ -27,7 +27,7 @@ Exceptions: `syn` 2 + 3 duplicate allowed (UniFFI; `deny.toml` skip, `clippy.tom
 Not picked: Kotlin linter, complexity, architecture and dead-code tools; GitHub Actions linter and formatter.
 
 Layers (clean architecture dependency rule: dependencies point inward only):
-- `mt-tab-library` (context) ← application, presentation, ffi
+- `mt-library` (context) ← application, presentation, ffi
 - `mt-tabfinder-application` ← presentation, fs, ffi
 - `mt-tabfinder-presentation` ← ffi
 - `mt-tabfinder-fs` (desktop driven adapters) ← ffi

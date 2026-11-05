@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-  "contexts/tab-library",
+  "contexts/library",
   "apps/tabfinder/application",
   "apps/tabfinder/presentation",
   "apps/tabfinder/adapters/fs",
@@ -15,7 +15,7 @@ edition = "2024"
 publish = false
 
 [workspace.dependencies]
-mt-tab-library = { path = "contexts/tab-library" }
+mt-library = { path = "contexts/library" }
 mt-tabfinder-application = { path = "apps/tabfinder/application" }
 mt-tabfinder-presentation = { path = "apps/tabfinder/presentation" }
 mt-tabfinder-fs = { path = "apps/tabfinder/adapters/fs" }

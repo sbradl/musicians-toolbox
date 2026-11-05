@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use fluent_bundle as _;
-use mt_tab_library as _;
+use mt_library as _;
 use unic_langid as _;
 
 use mt_tabfinder_application::{

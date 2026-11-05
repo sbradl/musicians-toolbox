@@ -1,4 +1,4 @@
-use mt_tab_library::Song;
+use mt_library::Song;
 use mt_tabfinder_application::{FolderFile, LibraryFolder, LibraryFolderGone, scan};
 
 struct OneFileFolder;

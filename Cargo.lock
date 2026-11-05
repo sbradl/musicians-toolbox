@@ -357,14 +357,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
-name = "mt-tab-library"
+name = "mt-library"
 version = "0.0.0"
 
 [[package]]
 name = "mt-tabfinder-application"
 version = "0.0.0"
 dependencies = [
- "mt-tab-library",
+ "mt-library",
 ]
 
 [[package]]
@@ -388,7 +388,7 @@ name = "mt-tabfinder-presentation"
 version = "0.0.0"
 dependencies = [
  "fluent-bundle",
- "mt-tab-library",
+ "mt-library",
  "mt-tabfinder-application",
  "unic-langid",
 ]

@@ -1,4 +1,4 @@
-use mt_tab_library::{Library, Song};
+use mt_library::{Library, Song};
 
 fn scanned(files: &[&str]) -> Vec<Song> {
     Library::scanned(

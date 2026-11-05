@@ -21,7 +21,7 @@ skip = [
   { crate = "syn@2", reason = "UniFFI's macros still use syn 2 next to syn 3; we cannot change that until UniFFI upgrades" },
 ]
 deny = [
-  { crate = "mt-tab-library", wrappers = ["mt-tabfinder-application", "mt-tabfinder-presentation", "mt-tabfinder-ffi"], reason = "clean architecture: only outer layers depend on a context" },
+  { crate = "mt-library", wrappers = ["mt-tabfinder-application", "mt-tabfinder-presentation", "mt-tabfinder-ffi"], reason = "clean architecture: only outer layers depend on a context" },
   { crate = "mt-tabfinder-application", wrappers = ["mt-tabfinder-presentation", "mt-tabfinder-fs", "mt-tabfinder-ffi"], reason = "clean architecture: only outer layers depend on application" },
   { crate = "mt-tabfinder-presentation", wrappers = ["mt-tabfinder-ffi"], reason = "clean architecture: only the ffi adapter depends on presentation" },
   { crate = "mt-tabfinder-fs", wrappers = ["mt-tabfinder-ffi"], reason = "clean architecture: only the ffi adapter wires driven adapters" },

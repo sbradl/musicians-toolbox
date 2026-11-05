@@ -1,4 +1,4 @@
-# Tab Library
+# Library
 
 A musician's collection of tab files: finding songs in it and reorganizing it on disk.
 

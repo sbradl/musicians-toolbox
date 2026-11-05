@@ -6,7 +6,7 @@ A song as written in a tab file: its tracks, bars and notes. Every foreign tab f
 
 **Score**:
 One song as written in one tab file.
-_Avoid_: Song (Tab Library's word), tab, file
+_Avoid_: Song (Library's word), tab, file
 
 **Tab file**:
 A file holding one Score in a foreign format such as Guitar Pro, TuxGuitar or Power Tab.

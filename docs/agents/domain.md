@@ -17,7 +17,7 @@ If a context's `adr/` doesn't exist, proceed silently; the `/domain-modeling` sk
 /
 ├── GLOSSARY-MAP.md
 ├── contexts/
-│   └── tab-library/                   ← crate mt-tab-library
+│   └── library/                       ← crate mt-library
 │       ├── GLOSSARY.md
 │       └── adr/                       ← context-specific decisions
 └── docs/

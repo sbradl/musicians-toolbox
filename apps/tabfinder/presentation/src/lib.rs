@@ -1,7 +1,7 @@
 use std::fmt;
 
 use fluent_bundle::{FluentArgs, FluentResource, concurrent::FluentBundle};
-use mt_tab_library::Library;
+use mt_library::Library;
 use mt_tabfinder_application::{LibraryFolder, RememberedLibraryLocation, open_library};
 use unic_langid::LanguageIdentifier;
 

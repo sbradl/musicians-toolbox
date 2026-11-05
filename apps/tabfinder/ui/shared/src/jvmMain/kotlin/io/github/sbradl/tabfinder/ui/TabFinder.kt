@@ -15,12 +15,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.sbradl.tabfinder.core.Action
 import io.github.sbradl.tabfinder.core.LibraryViewModel
+import io.github.sbradl.tabfinder.core.SongItem
 
 @Composable
 fun TabFinder(core: TabFinderCore) {
     val viewModel by core.viewModel.collectAsState()
-    viewModel?.let { LibraryScreen(it.library, core::chooseFolder) }
+    val library = viewModel?.library ?: return
+    LibraryScreen(library, onChooseFolder = core::chooseFolder)
 }
 
 @Composable
@@ -34,16 +37,26 @@ internal fun LibraryScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(viewModel.status)
-        Button(
-            onClick = onChooseFolder,
-            enabled = viewModel.chooseFolder.isEnabled,
-        ) {
-            Text(viewModel.chooseFolder.label)
-        }
-        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-            items(viewModel.songs, key = { it.id }) { song ->
-                Text(song.title, modifier = Modifier.padding(vertical = 4.dp))
-            }
+        ChooseFolderButton(viewModel.chooseFolder, onChooseFolder)
+        SongList(viewModel.songs)
+    }
+}
+
+@Composable
+private fun ChooseFolderButton(
+    chooseFolder: Action,
+    onClick: () -> Unit,
+) {
+    Button(onClick = onClick, enabled = chooseFolder.isEnabled) {
+        Text(chooseFolder.label)
+    }
+}
+
+@Composable
+private fun SongList(songs: List<SongItem>) {
+    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+        items(songs) { song ->
+            Text(song.title, modifier = Modifier.padding(vertical = 4.dp))
         }
     }
 }

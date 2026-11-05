@@ -9,30 +9,32 @@ interface UniffiExtension {
 
 val uniffi = extensions.create<UniffiExtension>("uniffi")
 val workspace: Directory = rootProject.layout.projectDirectory
-val nativeLibrary = uniffi.crate.map { workspace.file("target/debug/lib${it.replace('-', '_')}.so") }
-val jnaResourcePrefixForLinuxX8664 = "linux-x86-64"
+val rustLibrary = uniffi.crate.map { crate -> workspace.file("target/debug/${linuxLibraryFileName(crate)}") }
+val jnaFolderForLinuxX8664 = "linux-x86-64"
 
-val cargoBuild =
+fun linuxLibraryFileName(crate: String) = "lib${crate.replace('-', '_')}.so"
+
+val buildRustLibrary =
     tasks.register<Exec>("cargoBuild") {
         workingDir = workspace.asFile
         commandLine("cargo", "build", "--locked", "--target-dir", "target", "--package")
         argumentProviders.add { listOf(uniffi.crate.get()) }
-        outputs.file(nativeLibrary)
-        outputs.upToDateWhen { false }
+        outputs.file(rustLibrary)
+        outputs.upToDateWhen { false } // Cargo decides itself what to rebuild
     }
 
-val generateUniffiBindings =
+val generateKotlinBindings =
     tasks.register<Exec>("generateUniffiBindings") {
         val outputDirectory = layout.buildDirectory.dir("generated/uniffi/kotlin")
         workingDir = workspace.asFile
-        inputs.files(cargoBuild)
+        inputs.files(buildRustLibrary)
         outputs.dir(outputDirectory)
         commandLine("cargo", "run", "--locked", "--quiet", "--package", "mt-uniffi-bindgen", "--")
         argumentProviders.add {
             listOf(
                 "generate",
                 "--library",
-                nativeLibrary.get().asFile.path,
+                rustLibrary.get().asFile.path,
                 "--language",
                 "kotlin",
                 "--no-format",
@@ -43,15 +45,15 @@ val generateUniffiBindings =
         doFirst { delete(outputDirectory) }
     }
 
-val bundleNativeLibrary =
+val bundleRustLibrary =
     tasks.register<Sync>("bundleNativeLibrary") {
-        from(cargoBuild) { into(jnaResourcePrefixForLinuxX8664) }
+        from(buildRustLibrary) { into(jnaFolderForLinuxX8664) }
         into(layout.buildDirectory.dir("generated/uniffi/resources"))
     }
 
 kotlin.sourceSets.named("jvmMain") {
-    kotlin.srcDir(generateUniffiBindings)
-    resources.srcDir(bundleNativeLibrary)
+    kotlin.srcDir(generateKotlinBindings)
+    resources.srcDir(bundleRustLibrary)
     dependencies {
         api(versionCatalogs.named("libs").findLibrary("jna").get())
     }

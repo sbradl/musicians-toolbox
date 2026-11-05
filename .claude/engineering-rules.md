@@ -12,11 +12,11 @@ Task runner: mise
 
 | Stack | Category | Tool | Ruleset |
 | --- | --- | --- | --- |
-| rust | Linter | Clippy | pedantic (except `missing_errors_doc`, `missing_panics_doc`: docs not required, user decision) + nursery + cargo + restriction picks (`allow_attributes`, `allow_attributes_without_reason`, `undocumented_unsafe_blocks`, `todo`, `unimplemented`, `dbg_macro`, `print_stdout`, `print_stderr`, `unwrap_used`, `expect_used`, `panic`, `cognitive_complexity`) |
+| rust | Linter | Clippy | pedantic (except `missing_errors_doc`, `missing_panics_doc`: docs not required, user decision; `must_use_candidate`, `return_self_not_must_use`: rustc `unused_results` already flags every ignored return value, user decision) + nursery + cargo + restriction picks (`allow_attributes`, `allow_attributes_without_reason`, `undocumented_unsafe_blocks`, `todo`, `unimplemented`, `dbg_macro`, `print_stdout`, `print_stderr`, `unwrap_used`, `expect_used`, `panic`, `cognitive_complexity`) |
 | rust | Linter | Opengrep | own rules (`.opengrep/`), offline |
 | rust | Formatter | rustfmt | defaults |
 | rust | Type strictness | rustc lint levels | allowed-by-default extras except `missing_docs` (docs not required, user decision) + lint groups; `warn` in manifests, `-D warnings` in `lint:clippy` |
-| rust | Complexity | Clippy thresholds | cognitive 15, lines 60, arguments 5, nesting 4, type complexity 250 |
+| rust | Complexity | Clippy thresholds | cognitive 15, lines 25, arguments 5, nesting 4, type complexity 250 |
 
 Exceptions: `syn` 2 + 3 duplicate allowed (UniFFI; `deny.toml` skip, `clippy.toml` allowed-duplicate-crates); workspace path deps without version allowed (`allow-wildcard-paths`).
 | rust | Architecture rules | cargo-deny bans | deny list with layer `wrappers` + network and async-runtime crates denied, `multiple-versions = "deny"`, `wildcards = "deny"` (allowlist mode cannot combine with wrappers) |

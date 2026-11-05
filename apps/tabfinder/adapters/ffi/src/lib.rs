@@ -1,8 +1,6 @@
-use std::fmt;
-
 use mt_tabfinder_fs::{FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
-use presentation::{Action, AppViewModel, Effect, LibraryViewModel, SongRow};
+use presentation::{Action, AppViewModel, Effect, LibraryViewModel, SongItem};
 
 uniffi::setup_scaffolding!();
 
@@ -15,12 +13,11 @@ pub struct AppViewModel {
 pub struct LibraryViewModel {
     pub status: String,
     pub choose_folder: Action,
-    pub songs: Vec<SongRow>,
+    pub songs: Vec<SongItem>,
 }
 
 #[uniffi::remote(Record)]
-pub struct SongRow {
-    pub id: String,
+pub struct SongItem {
     pub title: String,
 }
 
@@ -41,9 +38,9 @@ pub trait ViewModelListener: Send + Sync {
     fn on_effect(&self, effect: Effect);
 }
 
-struct ForeignViewModelListener(Box<dyn ViewModelListener>);
+struct ListenerInKotlin(Box<dyn ViewModelListener>);
 
-impl presentation::ViewModelListener for ForeignViewModelListener {
+impl presentation::ViewModelListener for ListenerInKotlin {
     fn on_view_model(&self, view_model: AppViewModel) {
         self.0.on_view_model(view_model);
     }
@@ -54,28 +51,24 @@ impl presentation::ViewModelListener for ForeignViewModelListener {
 }
 
 #[uniffi::export]
-#[must_use]
 pub fn desktop_config_dir() -> Option<String> {
-    mt_tabfinder_fs::desktop_config_dir(|name| std::env::var(name).ok())
-        .and_then(|dir| dir.into_os_string().into_string().ok())
+    let config_dir = mt_tabfinder_fs::desktop_config_dir(environment_variable)?;
+    config_dir.into_os_string().into_string().ok()
 }
 
-#[derive(uniffi::Object)]
+fn environment_variable(name: &str) -> Option<String> {
+    std::env::var(name).ok()
+}
+
+#[derive(uniffi::Object, Debug)]
 pub struct App(presentation::App);
-
-impl fmt::Debug for App {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.debug_tuple("App").field(&self.0).finish()
-    }
-}
 
 #[uniffi::export]
 impl App {
     #[uniffi::constructor]
-    #[must_use]
     pub fn new(listener: Box<dyn ViewModelListener>, config_dir: &str) -> Self {
         Self(presentation::App::new(
-            Box::new(ForeignViewModelListener(listener)),
+            Box::new(ListenerInKotlin(listener)),
             Box::new(FsLibraryFolder),
             Box::new(FsRememberedLibraryLocation::in_config_dir(config_dir)),
         ))
@@ -91,9 +84,5 @@ impl App {
 
     pub fn folder_picked(&self, location: &str) {
         self.0.folder_picked(location);
-    }
-
-    pub const fn folder_pick_cancelled(&self) {
-        self.0.folder_pick_cancelled();
     }
 }

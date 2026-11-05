@@ -18,35 +18,38 @@ class TabFinderCore(
     configDir: String,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
-    private val latestViewModel = MutableStateFlow<AppViewModel?>(null)
-    val viewModel: StateFlow<AppViewModel?> = latestViewModel.asStateFlow()
+    private val shownViewModel = MutableStateFlow<AppViewModel?>(null)
+    val viewModel: StateFlow<AppViewModel?> = shownViewModel.asStateFlow()
 
-    private val app =
-        App(
-            object : ViewModelListener {
-                override fun onViewModel(viewModel: AppViewModel) {
-                    latestViewModel.value = viewModel
-                }
-
-                override fun onEffect(effect: Effect) {
-                    when (effect) {
-                        Effect.PICK_FOLDER -> pickFolder()
-                    }
-                }
-            },
-            configDir,
-        )
+    private val app = App(ListenerForRust(), configDir)
 
     fun start() = app.start()
 
     fun chooseFolder() = app.chooseFolder()
 
+    private fun show(viewModel: AppViewModel) {
+        shownViewModel.value = viewModel
+    }
+
+    private fun perform(effect: Effect) =
+        when (effect) {
+            Effect.PICK_FOLDER -> pickFolder()
+        }
+
     private fun pickFolder() {
         scope.launch {
-            val location = folderPicker.pickFolder()
-            withContext(Dispatchers.IO) {
-                if (location == null) app.folderPickCancelled() else app.folderPicked(location)
+            val pickedFolder = folderPicker.pickFolder()
+            if (pickedFolder != null) {
+                scanOffTheUiThread { app.folderPicked(pickedFolder) }
             }
         }
+    }
+
+    private suspend fun scanOffTheUiThread(scan: () -> Unit) = withContext(Dispatchers.IO) { scan() }
+
+    private inner class ListenerForRust : ViewModelListener {
+        override fun onViewModel(viewModel: AppViewModel) = show(viewModel)
+
+        override fun onEffect(effect: Effect) = perform(effect)
     }
 }

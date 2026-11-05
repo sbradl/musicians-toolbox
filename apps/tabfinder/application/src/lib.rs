@@ -1,43 +1,71 @@
+use std::fmt::Debug;
+
 use mt_library::Library;
+pub use mt_library::Song;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct FolderFile {
-    pub id: String,
-    pub file_name: String,
+pub struct LibraryLocation(String);
+
+impl LibraryLocation {
+    pub fn new(location: &str) -> Self {
+        Self(location.to_owned())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct LibraryFolderGone;
 
-pub trait LibraryFolder: Send + Sync {
-    fn files(&self, location: &str) -> Result<Vec<FolderFile>, LibraryFolderGone>;
+pub trait LibraryFolder: Send + Sync + Debug {
+    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderGone>;
 }
 
-pub fn scan(folder: &dyn LibraryFolder, location: &str) -> Result<Library, LibraryFolderGone> {
-    let files = folder.files(location)?;
-    Ok(Library::scanned(
-        files.into_iter().map(|file| (file.id, file.file_name)),
-    ))
-}
-
-pub trait RememberedLibraryLocation: Send + Sync {
-    fn remembered(&self) -> Option<String>;
-    fn remember(&self, location: &str);
+pub trait RememberedLibraryLocation: Send + Sync + Debug {
+    fn remembered(&self) -> Option<LibraryLocation>;
+    fn remember(&self, location: &LibraryLocation);
     fn forget(&self);
 }
 
-pub fn open_library(
-    folder: &dyn LibraryFolder,
-    remembered: &dyn RememberedLibraryLocation,
-    location: &str,
-) -> Result<Library, LibraryFolderGone> {
-    let scanned = scan(folder, location);
-    match scanned {
-        Ok(_) => remembered.remember(location),
-        Err(LibraryFolderGone) if remembered.remembered().as_deref() == Some(location) => {
-            remembered.forget();
-        }
-        Err(LibraryFolderGone) => {}
+#[derive(Debug)]
+pub struct Libraries {
+    folder: Box<dyn LibraryFolder>,
+    remembered: Box<dyn RememberedLibraryLocation>,
+}
+
+impl Libraries {
+    pub fn new(
+        folder: Box<dyn LibraryFolder>,
+        remembered: Box<dyn RememberedLibraryLocation>,
+    ) -> Self {
+        Self { folder, remembered }
     }
-    scanned
+
+    pub fn remembered_location(&self) -> Option<LibraryLocation> {
+        self.remembered.remembered()
+    }
+
+    pub fn open(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderGone> {
+        let library = self.scan(location);
+        if library.is_ok() {
+            self.remembered.remember(location);
+        } else if self.is_remembered(location) {
+            self.remembered.forget();
+        }
+        library
+    }
+
+    fn scan(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderGone> {
+        let songs = self.folder.songs(location)?;
+        Ok(Library::of(songs))
+    }
+
+    fn is_remembered(&self, location: &LibraryLocation) -> bool {
+        let Some(remembered) = self.remembered.remembered() else {
+            return false;
+        };
+        &remembered == location
+    }
 }

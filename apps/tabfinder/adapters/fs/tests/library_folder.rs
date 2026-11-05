@@ -1,8 +1,7 @@
 use std::fs;
 use std::io;
-use std::path::Path;
 
-use mt_tabfinder_application::{FolderFile, LibraryFolder, LibraryFolderGone};
+use mt_tabfinder_application::{LibraryFolder, LibraryFolderGone, LibraryLocation};
 use mt_tabfinder_fs::FsLibraryFolder;
 
 pub mod common;
@@ -27,45 +26,61 @@ impl TempFolder {
         Ok(self)
     }
 
-    fn location(&self) -> String {
-        self.0.path().to_string_lossy().into_owned()
+    fn delete(self) {
+        drop(self);
     }
 
-    fn file(&self, relative: &str) -> FolderFile {
-        FolderFile {
-            id: self.0.path().join(relative).to_string_lossy().into_owned(),
-            file_name: Path::new(relative)
-                .file_name()
-                .map(|name| name.to_string_lossy().into_owned())
-                .unwrap_or_default(),
+    fn location(&self) -> LibraryLocation {
+        let path = self.0.path().to_string_lossy();
+        LibraryLocation::new(&path)
+    }
+
+    fn song_titles(&self) -> Vec<String> {
+        let songs = FsLibraryFolder.songs(&self.location()).unwrap_or_default();
+        let mut titles = Vec::new();
+        for song in songs {
+            titles.push(song.title);
         }
+        titles.sort();
+        titles
     }
-}
-
-fn sorted(mut files: Vec<FolderFile>) -> Vec<FolderFile> {
-    files.sort_by(|a, b| a.id.cmp(&b.id));
-    files
 }
 
 #[test]
-fn lists_every_file_in_subfolders_but_not_in_hidden_folders() -> io::Result<()> {
+fn finds_songs_in_subfolders_but_not_in_hidden_folders() -> io::Result<()> {
     let folder = TempFolder::new("recursive")?
         .with_file("Angie.gp4")?
         .with_file("Beatles/1968/Blackbird.GP5")?
-        .with_file("notes.txt")?
         .with_file(".backup/Angie.gp4")?
         .with_file("Beatles/.cache/Blackbird.gp5")?;
 
-    let files = FsLibraryFolder.files(&folder.location());
+    assert_eq!(folder.song_titles(), ["Angie", "Blackbird"]);
+    Ok(())
+}
 
-    assert_eq!(
-        files.map(sorted),
-        Ok(sorted(vec![
-            folder.file("Angie.gp4"),
-            folder.file("Beatles/1968/Blackbird.GP5"),
-            folder.file("notes.txt"),
-        ]))
-    );
+#[test]
+fn every_tab_extension_in_any_case_is_a_song_and_other_files_are_not() -> io::Result<()> {
+    let folder = TempFolder::new("extensions")?
+        .with_file("a.GP3")?
+        .with_file("b.gp4")?
+        .with_file("c.Gp5")?
+        .with_file("d.gpx")?
+        .with_file("e.GP")?
+        .with_file("f.tg")?
+        .with_file("g.PTB")?
+        .with_file("notes.txt")?
+        .with_file("gp5")?
+        .with_file("h.gp5x")?;
+
+    assert_eq!(folder.song_titles(), ["a", "b", "c", "d", "e", "f", "g"]);
+    Ok(())
+}
+
+#[test]
+fn a_song_is_titled_by_its_file_name_without_the_extension() -> io::Result<()> {
+    let folder = TempFolder::new("titles")?.with_file("Live.Wire.gp5")?;
+
+    assert_eq!(folder.song_titles(), ["Live.Wire"]);
     Ok(())
 }
 
@@ -73,8 +88,8 @@ fn lists_every_file_in_subfolders_but_not_in_hidden_folders() -> io::Result<()> 
 fn a_folder_that_is_gone_is_reported() -> io::Result<()> {
     let folder = TempFolder::new("gone")?;
     let location = folder.location();
-    drop(folder);
+    folder.delete();
 
-    assert_eq!(FsLibraryFolder.files(&location), Err(LibraryFolderGone));
+    assert_eq!(FsLibraryFolder.songs(&location), Err(LibraryFolderGone));
     Ok(())
 }

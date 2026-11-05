@@ -1,5 +1,6 @@
 package io.github.sbradl.tabfinder.ui
 
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
@@ -24,38 +25,19 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class, kotlin.io.path.ExperimentalPathApi::class)
 class LibraryScreenTest {
-    private fun withLibraryFolder(
-        vararg files: String,
-        test: (Path) -> Unit,
-    ) {
-        val folder = createTempDirectory("tabfinder")
-        try {
-            files.forEach { file ->
-                folder.resolve(file).also { it.parent.createDirectories() }.createFile()
-            }
-            test(folder)
-        } finally {
-            folder.deleteRecursively()
-        }
-    }
-
+    private val libraryFolder = createTempDirectory("tabfinder")
     private val configDir = createTempDirectory("tabfinder-config")
 
     @AfterTest
-    fun deleteConfigDir() {
+    fun deleteTempDirs() {
+        libraryFolder.deleteRecursively()
         configDir.deleteRecursively()
-    }
-
-    private fun ComposeUiTest.showTabFinder(pickedFolder: Path?) {
-        val core = TabFinderCore(FolderPicker { pickedFolder?.toString() }, configDir.toString())
-        core.start()
-        setContent { TabFinder(core) }
     }
 
     @Test
     fun noFolderChosenOffersChooseFolder() =
         runComposeUiTest {
-            showTabFinder(pickedFolder = null)
+            startTabFinder(pickedFolder = null)
 
             onNodeWithText("No folder chosen").assertExists()
             onNodeWithText("Choose folder").assertExists()
@@ -63,28 +45,26 @@ class LibraryScreenTest {
 
     @Test
     fun choosingAFolderWithTabFilesShowsItsSongs() =
-        withLibraryFolder("Wonderwall.gp5", "Beatles/Blackbird.gp5", "notes.txt") { folder ->
-            runComposeUiTest {
-                showTabFinder(pickedFolder = folder)
+        runComposeUiTest {
+            libraryFolderContains("Wonderwall.gp5", "Beatles/Blackbird.gp5", "notes.txt")
+            startTabFinder(pickedFolder = libraryFolder)
 
-                onNodeWithText("Choose folder").performClick()
+            clickChooseFolder()
 
-                waitUntilExactlyOneExists(hasText("2 Songs"))
-                onNodeWithText("Blackbird").assertExists()
-                onNodeWithText("Wonderwall").assertExists()
-            }
+            waitUntilShown("2 Songs")
+            onNodeWithText("Blackbird").assertExists()
+            onNodeWithText("Wonderwall").assertExists()
         }
 
     @Test
     fun choosingAFolderWithoutTabFilesShowsNoTabFilesFound() =
-        withLibraryFolder("notes.txt") { folder ->
-            runComposeUiTest {
-                showTabFinder(pickedFolder = folder)
+        runComposeUiTest {
+            libraryFolderContains("notes.txt")
+            startTabFinder(pickedFolder = libraryFolder)
 
-                onNodeWithText("Choose folder").performClick()
+            clickChooseFolder()
 
-                waitUntilExactlyOneExists(hasText("No Tab files found"))
-            }
+            waitUntilShown("No Tab files found")
         }
 
     @Test
@@ -107,23 +87,48 @@ class LibraryScreenTest {
 
     @Test
     fun everyInteractiveElementHasALabel() =
-        withLibraryFolder("Wonderwall.gp5") { folder ->
-            runComposeUiTest {
-                showTabFinder(pickedFolder = folder)
-                onNodeWithText("Choose folder").performClick()
-                waitUntilExactlyOneExists(hasText("1 Song"))
+        runComposeUiTest {
+            libraryFolderContains("Wonderwall.gp5")
+            startTabFinder(pickedFolder = libraryFolder)
+            clickChooseFolder()
+            waitUntilShown("1 Song")
 
-                val interactiveElements = onAllNodes(hasClickAction()).fetchSemanticsNodes()
-                assertTrue(interactiveElements.isNotEmpty())
-                interactiveElements.forEach { element ->
-                    val labels =
-                        element.config
-                            .getOrNull(SemanticsProperties.Text)
-                            .orEmpty()
-                            .map { it.text } +
-                            element.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
-                    assertTrue(labels.any { it.isNotBlank() }, "unlabelled element: $element")
-                }
-            }
+            assertEveryInteractiveElementIsLabelled()
         }
+
+    private fun libraryFolderContains(vararg files: String) {
+        files.forEach { file ->
+            val path = libraryFolder.resolve(file)
+            path.parent.createDirectories()
+            path.createFile()
+        }
+    }
+
+    private fun ComposeUiTest.startTabFinder(pickedFolder: Path?) {
+        val core = TabFinderCore(FolderPicker { pickedFolder?.toString() }, configDir.toString())
+        core.start()
+        setContent { TabFinder(core) }
+    }
+
+    private fun ComposeUiTest.clickChooseFolder() {
+        onNodeWithText("Choose folder").performClick()
+    }
+
+    private fun ComposeUiTest.waitUntilShown(text: String) {
+        waitUntilExactlyOneExists(hasText(text))
+    }
+
+    private fun ComposeUiTest.assertEveryInteractiveElementIsLabelled() {
+        val interactiveElements = onAllNodes(hasClickAction()).fetchSemanticsNodes()
+        assertTrue(interactiveElements.isNotEmpty())
+        interactiveElements.forEach { element ->
+            assertTrue(element.labels().any { it.isNotBlank() }, "unlabelled element: $element")
+        }
+    }
+
+    private fun SemanticsNode.labels(): List<String> {
+        val texts = config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text }
+        val descriptions = config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+        return texts + descriptions
+    }
 }

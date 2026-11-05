@@ -54,6 +54,9 @@ cargo = { level = "warn", priority = -1 }
 # Docs not required (user decision): names, types and tests carry the meaning (ADR 0005).
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+# Both covered by rustc's unused_results, which flags every ignored return value (user decision).
+must_use_candidate = "allow"
+return_self_not_must_use = "allow"
 allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 undocumented_unsafe_blocks = "warn"

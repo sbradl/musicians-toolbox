@@ -9,9 +9,18 @@ import io.github.sbradl.tabfinder.ui.TabFinder
 import io.github.sbradl.tabfinder.ui.TabFinderCore
 
 fun main() {
+    val core = startCore()
+    showWindow(core)
+}
+
+private fun startCore(): TabFinderCore {
     val configDir = requireNotNull(desktopConfigDir()) { "Neither XDG_CONFIG_HOME nor HOME is set" }
     val core = TabFinderCore(PortalFolderPicker(), configDir)
     core.start()
+    return core
+}
+
+private fun showWindow(core: TabFinderCore) =
     application {
         Window(onCloseRequest = ::exitApplication, title = "TabFinder") {
             MaterialTheme {
@@ -19,4 +28,3 @@ fun main() {
             }
         }
     }
-}

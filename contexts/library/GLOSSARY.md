@@ -1,6 +1,6 @@
 # Library
 
-A musician's collection of tab files: finding songs in it and reorganizing it on disk.
+A musician's Library of Songs: finding Songs in it and reorganizing it on disk.
 
 ## Language
 
@@ -15,22 +15,22 @@ Where a Library's folder is: a path on desktop, a folder grant (tree URI) on And
 _Avoid_: Path, root
 
 **Song**:
-One Tab file in a Library, known by its Song summary.
-_Avoid_: Score (Score's word), tab, entry
+One piece of music in a Library, known by its Song summary.
+_Avoid_: Score (Score's word), tab, tab file, file, entry
 
 **Song summary**:
 What the Library knows about a Song: title, artist, album, Tunings, Written tempos and Tags per Part.
 _Avoid_: Metadata, row
 
 **Source**:
-Where a summary field came from: the file itself, or its folder path and file name as a fallback.
+Where a summary field came from: the Song itself, or its folder and name in the Library as a fallback.
 
 **Unreadable**:
-A Song whose Tab file could not be read as any File format.
+A Song that could not be read in any supported format.
 _Avoid_: Broken, invalid
 
 **Scan**:
-Reading a Library's files to bring its Song summaries up to date.
+Reading a Library to bring its Song summaries up to date.
 _Avoid_: Index, refresh
 
 ### Finding
@@ -46,13 +46,13 @@ The Moves that would bring a Library into the `Artist/Album/Song` layout, shown 
 _Avoid_: Dry run
 
 **Move**:
-One Tab file's change of folder and, optionally, of name.
+One Song's change of folder and, optionally, of name.
 
 **Clash**:
 Two Songs that would get the same name in one folder; both keep their names.
 
 **Collision**:
-A new name already taken in its folder by an unrelated file; the Move gets a numbered name.
+A new name already taken in its folder by something unrelated; the Move gets a numbered name.
 
 **Duplicate**:
-Two Tab files with identical content.
+Two Songs with identical content.

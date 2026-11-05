@@ -22,39 +22,71 @@ import java.util.UUID
 class PortalFolderPicker : FolderPicker {
     override suspend fun pickFolder(): String? =
         withContext(Dispatchers.IO) {
-            try {
-                DBusConnectionBuilder.forSessionBus().build().use { connection -> pickFolder(connection) }
-            } catch (_: DBusException) {
-                null
-            }
+            withSessionBus { connection -> pickFolder(connection) }
         }
 
     private suspend fun pickFolder(connection: DBusConnection): String? {
-        val token = "tabfinder_" + UUID.randomUUID().toString().replace('-', '_')
-        val sender = connection.uniqueName.removePrefix(":").replace('.', '_')
-        val requestPath = "/org/freedesktop/portal/desktop/request/$sender/$token"
-        val response = CompletableDeferred<Request.Response>()
-        val handler = DBusSigHandler<Request.Response> { if (it.path == requestPath) response.complete(it) }
-        connection.addSigHandler(Request.Response::class.java, handler).use {
-            connection
-                .getRemoteObject(PORTAL_BUS_NAME, PORTAL_OBJECT_PATH, FileChooser::class.java)
-                .openFile(
-                    "",
-                    "",
-                    mapOf(
-                        "handle_token" to Variant(token),
-                        "directory" to Variant(true),
-                        "modal" to Variant(true),
-                    ),
-                )
-            return response.await().pickedFolder()
+        val token = uniqueRequestToken()
+        val answer =
+            connection.awaitAnswerOn(pathThePortalAnswersOn(connection, token)) {
+                fileChooserOf(connection).openFile(parentWindow = "", title = "", options = folderPickerOptions(token))
+            }
+        return answer.pickedFolder()
+    }
+
+    private inline fun withSessionBus(use: (DBusConnection) -> String?): String? =
+        try {
+            DBusConnectionBuilder.forSessionBus().build().use(use)
+        } catch (_: DBusException) {
+            null
+        }
+
+    private suspend fun DBusConnection.awaitAnswerOn(
+        answerPath: String,
+        ask: () -> Unit,
+    ): Request.Response {
+        val answer = CompletableDeferred<Request.Response>()
+        val listenForTheAnswer = DBusSigHandler<Request.Response> { if (it.path == answerPath) answer.complete(it) }
+        addSigHandler(Request.Response::class.java, listenForTheAnswer).use {
+            ask()
+            return answer.await()
         }
     }
 
+    private fun uniqueRequestToken() = "tabfinder_" + UUID.randomUUID().toString().replace('-', '_')
+
+    private fun pathThePortalAnswersOn(
+        connection: DBusConnection,
+        token: String,
+    ): String {
+        val sender = connection.uniqueName.removePrefix(":").replace('.', '_')
+        return "/org/freedesktop/portal/desktop/request/$sender/$token"
+    }
+
+    private fun fileChooserOf(connection: DBusConnection) =
+        connection.getRemoteObject(PORTAL_BUS_NAME, PORTAL_OBJECT_PATH, FileChooser::class.java)
+
+    private fun folderPickerOptions(token: String) =
+        mapOf(
+            "handle_token" to Variant(token),
+            "directory" to Variant(true),
+            "modal" to Variant(true),
+        )
+
     private fun Request.Response.pickedFolder(): String? {
-        val uris = results["uris"]?.value
-        val uri = (uris as? List<*>)?.firstOrNull() ?: (uris as? Array<*>)?.firstOrNull()
-        return if (response.toInt() == RESPONSE_SUCCESS && uri is String) localPath(uri) else null
+        if (response.toInt() != RESPONSE_SUCCESS) return null
+        val uri = firstUri() ?: return null
+        return localPath(uri)
+    }
+
+    private fun Request.Response.firstUri(): String? {
+        val firstUri =
+            when (val uris = results["uris"]?.value) {
+                is List<*> -> uris.firstOrNull()
+                is Array<*> -> uris.firstOrNull()
+                else -> null
+            }
+        return firstUri as? String
     }
 
     private fun localPath(uri: String): String? = runCatching { Path.of(URI(uri)).toString() }.getOrNull()

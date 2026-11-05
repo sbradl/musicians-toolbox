@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 pub struct TempDir(PathBuf);
 
 impl TempDir {
-    #[must_use]
     pub fn new(name: &str) -> Self {
         let path =
             std::env::temp_dir().join(format!("mt-tabfinder-fs-{}-{name}", std::process::id()));
@@ -13,7 +12,6 @@ impl TempDir {
         Self(path)
     }
 
-    #[must_use]
     pub fn path(&self) -> &Path {
         &self.0
     }

@@ -29,6 +29,20 @@ Gradle builds the FFI crate with Cargo and generates UniFFI bindings into `build
 - Ask the user before adding any dependency.
 - Don't write comments where code can say it; a needed comment is a cue to refactor.
 
+## Readable code
+
+Code and tests read like **prose**: a human coming from C# understands every line without docs, while the code stays idiomatic Rust and Kotlin.
+
+- Name things in the context glossary's words (`docs/agents/domain.md`). The domain speaks only Library and Song; files, paths and formats stay inside the adapter that touches them.
+- Domain types over strings and tuples (`LibraryLocation`, `Song`).
+- One level of abstraction per function: high-level functions read as a sequence of named steps; the details live in small helpers below them.
+- Functions stay under 20 lines (clippy stops Rust at 25).
+- Plain control flow: `match`, `if`/`else`, `let … else` and early returns in place of `map_or_else`-style closure chains.
+- Return values in place of output parameters.
+- Tests tell the musician's story in the arrange / act / assert shape: test names state the behaviour, and a harness speaks the user's verbs (`tabfinder.musician_picks_folder("/music")`, `tabfinder.assert_status("1 Song")`). Fakes and plumbing live in `tests/support/`.
+- When a lint makes code noisy, extract a method first: test assertions go into `#[track_caller]` assert helpers in place of `expect`. Loosening stays the user's call (working rules above).
+- `redundant_pub_crate` and `unreachable_pub` conflict in private modules: declare a type shared across private modules in the crate root (like `Texts` in `presentation/src/lib.rs`), and expose test helpers through `pub mod support;` with `#[must_use]`.
+
 ## Agent skills
 
 ### Issue tracker

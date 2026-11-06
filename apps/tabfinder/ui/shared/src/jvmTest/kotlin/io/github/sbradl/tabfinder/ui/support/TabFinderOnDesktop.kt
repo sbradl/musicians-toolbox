@@ -52,6 +52,7 @@ class TabFinderOnDesktop(
     fun musicianOpensTabFinder() {
         val core = TabFinderCore.onDesktop(FolderPicker { folderThePickerAnswers?.toString() }, configDir.toString())
         core.start()
+        ui.waitUntil { core.viewModel.value != null }
         ui.setContent { TabFinder(core) }
     }
 

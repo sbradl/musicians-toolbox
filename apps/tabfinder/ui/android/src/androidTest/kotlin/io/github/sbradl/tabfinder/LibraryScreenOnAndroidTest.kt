@@ -85,4 +85,20 @@ class LibraryScreenOnAndroidTest {
 
             tabfinder.assertStatus("No folder chosen")
         }
+
+    @Test
+    fun reopeningTabFinderShowsScanningWhileTheRememberedLibraryIsScanned() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("1 Song")
+            tabfinder.libraryFolderIsSlowToRead()
+
+            tabfinder.musicianReopensTabFinder()
+
+            tabfinder.assertStatus("Scanning…")
+            tabfinder.libraryFolderFinishesReading()
+            tabfinder.assertStatus("1 Song")
+        }
 }

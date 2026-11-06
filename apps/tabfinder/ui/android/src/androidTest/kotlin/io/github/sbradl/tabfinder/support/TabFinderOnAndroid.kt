@@ -38,6 +38,7 @@ class TabFinderOnAndroid(
     private val configDir = File(app.cacheDir, "config")
     private val libraryFolder = File(app.cacheDir, "library")
     private var folderThePickerAnswers: String? = null
+    private val libraryFolderReader = LibraryFolderThatCanBeHeld(SafLibraryFolder(app.contentResolver))
     private var runningTabFinder by mutableStateOf<TabFinderCore?>(null)
 
     fun libraryFolderContains(vararg files: String) {
@@ -46,6 +47,14 @@ class TabFinderOnAndroid(
             path.parentFile?.mkdirs()
             path.createNewFile()
         }
+    }
+
+    fun libraryFolderIsSlowToRead() {
+        libraryFolderReader.holdReading()
+    }
+
+    fun libraryFolderFinishesReading() {
+        libraryFolderReader.releaseReading()
     }
 
     fun libraryFolderIsDeleted() {
@@ -92,9 +101,10 @@ class TabFinderOnAndroid(
 
     private fun startTabFinder() {
         val folderPicker = FolderPicker { folderThePickerAnswers }
-        val core = TabFinderCore.onAndroid(folderPicker, configDir.path, SafLibraryFolder(app.contentResolver))
+        val core = TabFinderCore.onAndroid(folderPicker, configDir.path, libraryFolderReader)
         core.start()
         runningTabFinder = core
+        ui.waitUntil { core.viewModel.value != null }
     }
 
     private fun closeTabFinder() {

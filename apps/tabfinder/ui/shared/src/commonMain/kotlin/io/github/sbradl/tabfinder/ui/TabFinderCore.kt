@@ -24,7 +24,9 @@ class TabFinderCore private constructor(
 
     private val app = connectApp(ListenerForRust())
 
-    fun start() = app.start()
+    fun start() {
+        scope.launch { scanOffTheUiThread { app.start() } }
+    }
 
     fun chooseFolder() = app.chooseFolder()
 

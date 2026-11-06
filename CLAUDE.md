@@ -39,6 +39,7 @@ Code and tests read like **prose**: a human coming from C# understands every lin
 - Functions stay under 20 lines (clippy stops Rust at 25).
 - Plain control flow: `match`, `if`/`else`, `let … else` and early returns in place of `map_or_else`-style closure chains.
 - Return values in place of output parameters.
+- A blank line before every `return`, implicit return (Rust tail expression, Kotlin value-returning lambda's last expression) and `if` statement, unless it opens its block.
 - Tests tell the musician's story in the arrange / act / assert shape: test names state the behaviour, and a harness speaks the user's verbs (`tabfinder.musician_picks_folder("/music")`, `tabfinder.assert_status("1 Song")`). Fakes and plumbing live in `tests/support/`.
 - When a lint makes code noisy, extract a method first: test assertions go into `#[track_caller]` assert helpers in place of `expect`. Loosening stays the user's call (working rules above).
 - `redundant_pub_crate` and `unreachable_pub` conflict in private modules: declare a type shared across private modules in the crate root (like `Texts` in `presentation/src/lib.rs`), and expose test helpers through `pub mod support;` with `#[must_use]`.

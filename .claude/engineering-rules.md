@@ -29,11 +29,11 @@ Exceptions: `syn` 2 + 3 duplicate allowed (UniFFI; `deny.toml` skip, `clippy.tom
 Not picked: Kotlin linter, complexity, architecture and dead-code tools; GitHub Actions linter and formatter.
 
 Layers (clean architecture dependency rule: dependencies point inward only):
-- `mt-library` (context) ← application, presentation, ffi
+- `mt-library` (context) ← application, presentation (ffi reaches the domain through presentation)
 - `mt-tabfinder-application` ← presentation, fs, ffi
 - `mt-tabfinder-presentation` ← ffi
 - `mt-tabfinder-fs` (desktop driven adapters) ← ffi
-- `mt-tabfinder-ffi` ← nothing (cdylib, consumed by Kotlin `ui/`)
+- `mt-tabfinder-ffi` ← nothing (cdylib only, so no Rust crate can link it; consumed by Kotlin `ui/`)
 - `uniffi` ← ffi, uniffi-bindgen only (ADR 0002)
 - Kotlin: `ui:desktop`, `ui:android` → `ui:shared` (Gradle rejects the reverse as a cycle)
 

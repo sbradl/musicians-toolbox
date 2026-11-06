@@ -91,12 +91,15 @@ run = [
 
 [tasks."package:tabfinder"]
 run = """
+desktop_app_images=apps/tabfinder/ui/desktop/build/compose/binaries/main/app
+android_debug_apk=apps/tabfinder/ui/android/build/outputs/apk/debug/android-debug.apk
+packages=build/package
 ./gradlew :apps:tabfinder:adapters:ffi:checkGlibcFloor :apps:tabfinder:ui:desktop:createDistributable :apps:tabfinder:ui:android:assembleDebug
-rm -rf build/package && mkdir -p build/package
-tar -czf build/package/tabfinder-linux-x86_64.tar.gz -C apps/tabfinder/ui/desktop/build/compose/binaries/main/app TabFinder
-cp apps/tabfinder/ui/android/build/outputs/apk/debug/android-debug.apk build/package/tabfinder-android-debug.apk
-trivy fs --exit-code 0 --format cyclonedx --output build/package/tabfinder-sbom.cdx.json .
-cd build/package && for artifact in *; do sha256sum "$artifact" > "$artifact.sha256"; done
+rm -rf $packages && mkdir -p $packages
+tar -czf $packages/tabfinder-linux-x86_64.tar.gz -C $desktop_app_images TabFinder
+cp $android_debug_apk $packages/tabfinder-android-debug.apk
+trivy fs --exit-code 0 --format cyclonedx --output $packages/tabfinder-sbom.cdx.json .
+cd $packages && for artifact in *; do sha256sum "$artifact" > "$artifact.sha256"; done
 """
 
 [tasks."test:android"]

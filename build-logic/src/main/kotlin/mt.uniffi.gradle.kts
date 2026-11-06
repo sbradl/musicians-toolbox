@@ -12,8 +12,8 @@ interface UniffiExtension {
 val uniffi = extensions.create<UniffiExtension>("uniffi")
 val workspace: Directory = rootProject.layout.projectDirectory
 val linuxTarget = "x86_64-unknown-linux-gnu"
-val glibcOfOldestSupportedLinux = KotlinVersion(2, 31)
-val linuxTargetWithGlibc = "$linuxTarget.${glibcOfOldestSupportedLinux.major}.${glibcOfOldestSupportedLinux.minor}"
+val glibcOfOldestSupportedLinux = GlibcVersion(2, 31)
+val linuxTargetWithGlibc = "$linuxTarget.$glibcOfOldestSupportedLinux"
 val rustLibrary = uniffi.crate.map { crate -> workspace.file("target/$linuxTarget/debug/${linuxLibraryFileName(crate)}") }
 val jnaFolderForLinuxX8664 = "linux-x86-64"
 val minSdk = androidSdkLevel("android-minSdk").toString()
@@ -34,11 +34,11 @@ abstract class CheckGlibcFloor : DefaultTask() {
     abstract val library: RegularFileProperty
 
     @get:Input
-    abstract val oldestSupportedGlibc: Property<KotlinVersion>
+    abstract val oldestSupportedGlibc: Property<GlibcVersion>
 
     @TaskAction
     fun check() {
-        val newestGlibc = newestGlibcVersionIn(library.get().asFile.readText(Charsets.ISO_8859_1))
+        val newestGlibc = newestGlibcNeededBy(library.get().asFile)
         val oldestGlibc = oldestSupportedGlibc.get()
 
         if (newestGlibc > oldestGlibc) {
@@ -46,12 +46,16 @@ abstract class CheckGlibcFloor : DefaultTask() {
         }
     }
 
-    private fun newestGlibcVersionIn(binary: String) =
-        Regex("""GLIBC_(\d+)\.(\d+)""")
-            .findAll(binary)
-            .map { version -> KotlinVersion(version.groupValues[1].toInt(), version.groupValues[2].toInt()) }
-            .maxOrNull()
-            ?: throw GradleException("${library.get()} names no glibc version: is it still a Linux library?")
+    private fun newestGlibcNeededBy(library: File): GlibcVersion {
+        val everyByteAsOneCharacter = library.readText(Charsets.ISO_8859_1)
+        val newestGlibc =
+            Regex("""GLIBC_(\d+)\.(\d+)""")
+                .findAll(everyByteAsOneCharacter)
+                .map { version -> GlibcVersion(version.groupValues[1].toInt(), version.groupValues[2].toInt()) }
+                .maxOrNull()
+
+        return newestGlibc ?: throw GradleException("$library names no glibc version: is it still a Linux library?")
+    }
 }
 
 val checkGlibcFloor =

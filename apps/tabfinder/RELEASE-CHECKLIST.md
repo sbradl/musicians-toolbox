@@ -16,7 +16,7 @@ What automation can't check. Work through it with the artifacts of one CI run (`
 
 ## Android APK
 
-- [ ] `adb install tabfinder-android-debug.apk` (uninstall an older CI build first: each CI run signs with a new debug key) installs on a device or emulator (arm64 or x86_64) and TabFinder starts
+- [ ] After uninstalling any older CI build (each CI run signs with a new debug key), `adb install tabfinder-android-debug.apk` installs on a device or emulator (arm64 or x86_64) and TabFinder starts
 - [ ] The folder picker opens, a picked Library folder shows its Songs
 - [ ] Restart: TabFinder shows the remembered Library
 - [ ] TalkBack: every control is announced with a meaningful label and can be activated

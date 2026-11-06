@@ -3,6 +3,7 @@ package io.github.sbradl.tabfinder.ui
 import io.github.sbradl.tabfinder.core.App
 import io.github.sbradl.tabfinder.core.AppViewModel
 import io.github.sbradl.tabfinder.core.Effect
+import io.github.sbradl.tabfinder.core.LibraryFolder
 import io.github.sbradl.tabfinder.core.ViewModelListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,12 +17,18 @@ import kotlinx.coroutines.withContext
 class TabFinderCore(
     private val folderPicker: FolderPicker,
     configDir: String,
+    libraryFolder: LibraryFolder? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private val shownViewModel = MutableStateFlow<AppViewModel?>(null)
     val viewModel: StateFlow<AppViewModel?> = shownViewModel.asStateFlow()
 
-    private val app = App(ListenerForRust(), configDir)
+    private val app =
+        if (libraryFolder == null) {
+            App(ListenerForRust(), configDir)
+        } else {
+            App.withLibraryFolder(ListenerForRust(), configDir, libraryFolder)
+        }
 
     fun start() = app.start()
 

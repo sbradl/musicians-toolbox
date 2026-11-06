@@ -1,3 +1,6 @@
+use std::fmt;
+
+use mt_tabfinder_application::{self as application, LibraryFolderGone, LibraryLocation, Song};
 use mt_tabfinder_fs::{FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
 use presentation::{Action, AppViewModel, Effect, LibraryViewModel, SongItem};
@@ -27,6 +30,11 @@ pub struct Action {
     pub is_enabled: bool,
 }
 
+#[uniffi::remote(Record)]
+pub struct Song {
+    pub title: String,
+}
+
 #[uniffi::remote(Enum)]
 pub enum Effect {
     PickFolder,
@@ -50,6 +58,46 @@ impl presentation::ViewModelListener for ListenerInKotlin {
     }
 }
 
+#[derive(uniffi::Error, Debug)]
+pub enum LibraryFolderError {
+    Gone,
+}
+
+#[expect(
+    clippy::panic,
+    clippy::fallible_impl_from,
+    reason = "an unexpected Kotlin exception is a bug, and bugs fail fast (ADR 0002); user decision"
+)]
+impl From<uniffi::UnexpectedUniFFICallbackError> for LibraryFolderError {
+    fn from(error: uniffi::UnexpectedUniFFICallbackError) -> Self {
+        panic!("The Library folder in Kotlin failed unexpectedly: {error}")
+    }
+}
+
+#[uniffi::export(callback_interface)]
+pub trait LibraryFolder: Send + Sync {
+    fn songs(&self, location: String) -> Result<Vec<Song>, LibraryFolderError>;
+}
+
+struct LibraryFolderInKotlin(Box<dyn LibraryFolder>);
+
+impl fmt::Debug for LibraryFolderInKotlin {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("LibraryFolderInKotlin")
+            .finish_non_exhaustive()
+    }
+}
+
+impl application::LibraryFolder for LibraryFolderInKotlin {
+    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderGone> {
+        match self.0.songs(location.as_str().to_owned()) {
+            Ok(songs) => Ok(songs),
+            Err(LibraryFolderError::Gone) => Err(LibraryFolderGone),
+        }
+    }
+}
+
 #[uniffi::export]
 pub fn desktop_config_dir() -> Option<String> {
     let config_dir = mt_tabfinder_fs::desktop_config_dir(environment_variable)?;
@@ -68,11 +116,20 @@ pub struct App(presentation::App);
 impl App {
     #[uniffi::constructor]
     pub fn new(listener: Box<dyn ViewModelListener>, config_dir: &str) -> Self {
-        Self(presentation::App::new(
-            Box::new(ListenerInKotlin(listener)),
-            Box::new(FsLibraryFolder),
-            Box::new(FsRememberedLibraryLocation::in_config_dir(config_dir)),
-        ))
+        Self::wired(listener, Box::new(FsLibraryFolder), config_dir)
+    }
+
+    #[uniffi::constructor]
+    pub fn with_library_folder(
+        listener: Box<dyn ViewModelListener>,
+        config_dir: &str,
+        library_folder: Box<dyn LibraryFolder>,
+    ) -> Self {
+        Self::wired(
+            listener,
+            Box::new(LibraryFolderInKotlin(library_folder)),
+            config_dir,
+        )
     }
 
     pub fn start(&self) {
@@ -85,5 +142,19 @@ impl App {
 
     pub fn folder_picked(&self, location: &str) {
         self.0.folder_picked(location);
+    }
+}
+
+impl App {
+    fn wired(
+        listener: Box<dyn ViewModelListener>,
+        library_folder: Box<dyn application::LibraryFolder>,
+        config_dir: &str,
+    ) -> Self {
+        Self(presentation::App::new(
+            Box::new(ListenerInKotlin(listener)),
+            library_folder,
+            Box::new(FsRememberedLibraryLocation::in_config_dir(config_dir)),
+        ))
     }
 }

@@ -19,6 +19,12 @@
           "en": "TabFinder runs on Android 10 and newer.",
           "de": "TabFinder läuft auf Android 10 und neuer.",
           "fr": "TabFinder fonctionne sur Android 10 et versions ultérieures."
+        },
+        {
+          "id": "android-choose-library-folder",
+          "en": "On Android, choose a folder in the system folder picker and see the Songs of every Tab file in it and its subfolders, without granting access to all files.",
+          "de": "Auf Android einen Ordner in der Ordnerauswahl des Systems wählen und die Songs aller Tab-Dateien darin und in seinen Unterordnern sehen, ohne Zugriff auf alle Dateien zu erlauben.",
+          "fr": "Sur Android, choisissez un dossier dans le sélecteur de dossiers du système et voyez les morceaux de tous les fichiers de tablature qu'il contient, sous-dossiers compris, sans accorder l'accès à tous les fichiers."
         }
       ]
     }

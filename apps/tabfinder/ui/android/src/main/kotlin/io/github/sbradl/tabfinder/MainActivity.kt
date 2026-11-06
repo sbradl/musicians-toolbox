@@ -5,11 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import io.github.sbradl.tabfinder.ui.FolderPicker
 import io.github.sbradl.tabfinder.ui.TabFinder
 import io.github.sbradl.tabfinder.ui.TabFinderCore
 
 class MainActivity : ComponentActivity() {
+    private val folderPicker = SafFolderPicker(this)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val core = startCore()
@@ -21,11 +22,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startCore(): TabFinderCore {
-        val core = TabFinderCore(noFolderPickerYet, filesDir.path)
+        val core = TabFinderCore(folderPicker, filesDir.path, SafLibraryFolder(contentResolver))
         core.start()
 
         return core
     }
-
-    private val noFolderPickerYet = FolderPicker { null }
 }

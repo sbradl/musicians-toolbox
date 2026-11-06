@@ -371,6 +371,7 @@ dependencies = [
 name = "mt-tabfinder-ffi"
 version = "0.0.0"
 dependencies = [
+ "mt-tabfinder-application",
  "mt-tabfinder-fs",
  "mt-tabfinder-presentation",
  "uniffi",

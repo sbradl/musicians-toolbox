@@ -10,11 +10,19 @@ dbus-java = "5.2.2"
 agp = "9.5.1"
 android-compileSdk = "36"
 android-minSdk = "29"
+bouncycastle = "1.86"
+commons-lang3 = "3.21.0"
+httpclient = "4.5.14"
 activity-compose = "1.13.0"
 androidx-test-runner = "1.7.0"
 androidx-compose-ui-test-manifest = "1.9.4"
 
 [libraries]
+bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
+bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+bouncycastle-bcutil = { module = "org.bouncycastle:bcutil-jdk18on", version.ref = "bouncycastle" }
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "httpclient" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }

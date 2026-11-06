@@ -4,6 +4,7 @@ import com.android.build.api.variant.BuiltArtifactsLoader
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("mt.android-lint-tool")
 }
 
 android {

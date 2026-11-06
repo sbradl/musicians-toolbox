@@ -38,7 +38,7 @@ class TabFinderOnAndroid(
     private val configDir = File(app.cacheDir, "config")
     private val libraryFolder = File(app.cacheDir, "library")
     private var folderThePickerAnswers: String? = null
-    private var shownTabFinder by mutableStateOf<TabFinderCore?>(null)
+    private var runningTabFinder by mutableStateOf<TabFinderCore?>(null)
 
     fun libraryFolderContains(vararg files: String) {
         files.forEach { file ->
@@ -54,12 +54,17 @@ class TabFinderOnAndroid(
 
     fun musicianOpensTabFinder() {
         startTabFinder()
-        ui.setContent { shownTabFinder?.let { TabFinder(it) } }
+        ui.setContent {
+            val core = runningTabFinder
+
+            if (core != null) {
+                TabFinder(core)
+            }
+        }
     }
 
     fun musicianReopensTabFinder() {
-        shownTabFinder = null
-        ui.waitForIdle()
+        closeTabFinder()
         startTabFinder()
     }
 
@@ -89,7 +94,12 @@ class TabFinderOnAndroid(
         val folderPicker = FolderPicker { folderThePickerAnswers }
         val core = TabFinderCore.onAndroid(folderPicker, configDir.path, SafLibraryFolder(app.contentResolver))
         core.start()
-        shownTabFinder = core
+        runningTabFinder = core
+    }
+
+    private fun closeTabFinder() {
+        runningTabFinder = null
+        ui.waitForIdle()
     }
 
     private fun libraryFolderTree() = DocumentsContract.buildTreeDocumentUri(LibraryFolderForTests.AUTHORITY, libraryFolder.name).toString()

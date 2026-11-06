@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Walking skeleton of TabFinder on Linux desktop and Android. Architecture in `docs/adr/`: bridge (0002), UI/core line (0003), repo layout and build (0004), engineering bar (0005). Follow ADR 0004's layout when adding code.
 
+Android follows the desktop: reuse the desktop's Rust adapters and wiring; Kotlin only for what the platform forces (SAF picker, grants, DocumentsContract).
+
 ## Commands
 
 Toolchain via mise: `mise run setup` once (installs tools, enables `.githooks/`). Tasks live in `mise.toml`; the checks and their rulesets are recorded in `.claude/engineering-rules.md`.
@@ -43,7 +45,7 @@ Code and tests read like **prose**: a human coming from C# understands every lin
 - Plain control flow: `match`, `if`/`else`, `let … else` and early returns in place of `map_or_else`-style closure chains.
 - Return values in place of output parameters.
 - A blank line before every `return`, implicit return (Rust tail expression, Kotlin value-returning lambda's last expression) and `if` statement, unless it opens its block.
-- Tests tell the musician's story in the arrange / act / assert shape: test names state the behaviour, and a harness speaks the user's verbs (`tabfinder.musician_picks_folder("/music")`, `tabfinder.assert_status("1 Song")`). Fakes and plumbing live in `tests/support/`.
+- Tests tell the musician's story in the arrange / act / assert shape: test names state the behaviour, and a harness speaks the user's verbs (`tabfinder.musician_picks_folder("/music")`, `tabfinder.assert_status("1 Song")`). Fakes and plumbing live in `tests/support/`. Test data uses invented Song titles, never real songs or artists.
 - When a lint makes code noisy, extract a method first: test assertions go into `#[track_caller]` assert helpers in place of `expect`. Loosening stays the user's call (working rules above).
 - `redundant_pub_crate` and `unreachable_pub` conflict in private modules: declare a type shared across private modules in the crate root (like `Texts` in `presentation/src/lib.rs`), and expose test helpers through `pub mod support;` with `#[must_use]`.
 

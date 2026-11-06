@@ -15,25 +15,25 @@ class LibraryScreenOnAndroidTest {
     @Test
     fun tabFilesInSubfoldersAreFoundIgnoringTheCaseOfTheirExtension() =
         runTabFinderTest { tabfinder ->
-            tabfinder.libraryFolderContains("Wonderwall.GP5", "Beatles/Blackbird.tg", "notes.txt")
+            tabfinder.libraryFolderContains("Wexmoor.GP5", "Some Artist/Brasswing.tg", "notes.txt")
             tabfinder.musicianOpensTabFinder()
 
             tabfinder.musicianPicksTheLibraryFolder()
 
             tabfinder.assertStatus("2 Songs")
-            tabfinder.assertShown("Blackbird", "Wonderwall")
+            tabfinder.assertShown("Brasswing", "Wexmoor")
         }
 
     @Test
     fun tabFilesInHiddenFoldersAreSkipped() =
         runTabFinderTest { tabfinder ->
-            tabfinder.libraryFolderContains("Wonderwall.gp5", ".backup/Old Wonderwall.gp5")
+            tabfinder.libraryFolderContains("Wexmoor.gp5", ".backup/Old Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
 
             tabfinder.musicianPicksTheLibraryFolder()
 
             tabfinder.assertStatus("1 Song")
-            tabfinder.assertNotShown("Old Wonderwall")
+            tabfinder.assertNotShown("Old Wexmoor")
         }
 
     @Test
@@ -56,5 +56,33 @@ class LibraryScreenOnAndroidTest {
             tabfinder.musicianPicksTheLibraryFolder()
 
             tabfinder.assertStatus("No Tab files found")
+        }
+
+    @Test
+    fun reopeningTabFinderShowsTheRememberedLibrary() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("1 Song")
+
+            tabfinder.musicianReopensTabFinder()
+
+            tabfinder.assertStatus("1 Song")
+            tabfinder.assertShown("Wexmoor")
+        }
+
+    @Test
+    fun reopeningTabFinderAfterTheLibraryFolderIsGoneShowsNoFolderChosen() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("1 Song")
+            tabfinder.libraryFolderIsDeleted()
+
+            tabfinder.musicianReopensTabFinder()
+
+            tabfinder.assertStatus("No folder chosen")
         }
 }

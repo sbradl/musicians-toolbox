@@ -20,17 +20,17 @@ fn titles_in(library: &Library) -> Vec<String> {
 
 #[test]
 fn songs_are_sorted_by_title_ignoring_case() {
-    let library = library_of(&["Zombie", "angie", "Live.Wire", "Blackbird"]);
+    let library = library_of(&["Zephyrine", "amberline", "Lone.Pine", "Brasswing"]);
 
     assert_eq!(
         titles_in(&library),
-        ["angie", "Blackbird", "Live.Wire", "Zombie"]
+        ["amberline", "Brasswing", "Lone.Pine", "Zephyrine"]
     );
 }
 
 #[test]
 fn songs_with_the_same_title_are_both_kept() {
-    let library = library_of(&["Angie", "Angie"]);
+    let library = library_of(&["Amberline", "Amberline"]);
 
-    assert_eq!(titles_in(&library), ["Angie", "Angie"]);
+    assert_eq!(titles_in(&library), ["Amberline", "Amberline"]);
 }

@@ -1,6 +1,9 @@
 package io.github.sbradl.tabfinder.support
 
 import android.provider.DocumentsContract
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasText
@@ -35,6 +38,7 @@ class TabFinderOnAndroid(
     private val configDir = File(app.cacheDir, "config")
     private val libraryFolder = File(app.cacheDir, "library")
     private var folderThePickerAnswers: String? = null
+    private var shownTabFinder by mutableStateOf<TabFinderCore?>(null)
 
     fun libraryFolderContains(vararg files: String) {
         files.forEach { file ->
@@ -44,11 +48,19 @@ class TabFinderOnAndroid(
         }
     }
 
+    fun libraryFolderIsDeleted() {
+        libraryFolder.deleteRecursively()
+    }
+
     fun musicianOpensTabFinder() {
-        val folderPicker = FolderPicker { folderThePickerAnswers }
-        val core = TabFinderCore.onAndroid(folderPicker, configDir.path, SafLibraryFolder(app.contentResolver))
-        core.start()
-        ui.setContent { TabFinder(core) }
+        startTabFinder()
+        ui.setContent { shownTabFinder?.let { TabFinder(it) } }
+    }
+
+    fun musicianReopensTabFinder() {
+        shownTabFinder = null
+        ui.waitForIdle()
+        startTabFinder()
     }
 
     fun musicianPicksTheLibraryFolder() {
@@ -71,6 +83,13 @@ class TabFinderOnAndroid(
     internal fun deleteFolders() {
         configDir.deleteRecursively()
         libraryFolder.deleteRecursively()
+    }
+
+    private fun startTabFinder() {
+        val folderPicker = FolderPicker { folderThePickerAnswers }
+        val core = TabFinderCore.onAndroid(folderPicker, configDir.path, SafLibraryFolder(app.contentResolver))
+        core.start()
+        shownTabFinder = core
     }
 
     private fun libraryFolderTree() = DocumentsContract.buildTreeDocumentUri(LibraryFolderForTests.AUTHORITY, libraryFolder.name).toString()

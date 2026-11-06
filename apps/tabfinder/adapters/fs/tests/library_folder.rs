@@ -54,12 +54,12 @@ impl TempFolder {
 #[test]
 fn finds_songs_in_subfolders_but_not_in_hidden_folders() -> io::Result<()> {
     let folder = TempFolder::new("recursive")?
-        .with_file("Angie.gp4")?
-        .with_file("Beatles/1968/Blackbird.GP5")?
-        .with_file(".backup/Angie.gp4")?
-        .with_file("Beatles/.cache/Blackbird.gp5")?;
+        .with_file("Amberline.gp4")?
+        .with_file("Some Artist/1968/Brasswing.GP5")?
+        .with_file(".backup/Amberline.gp4")?
+        .with_file("Some Artist/.cache/Brasswing.gp5")?;
 
-    assert_eq!(folder.song_titles(), ["Angie", "Blackbird"]);
+    assert_eq!(folder.song_titles(), ["Amberline", "Brasswing"]);
 
     Ok(())
 }
@@ -85,9 +85,9 @@ fn every_tab_extension_in_any_case_is_a_song_and_other_files_are_not() -> io::Re
 
 #[test]
 fn a_song_is_titled_by_its_file_name_without_the_extension() -> io::Result<()> {
-    let folder = TempFolder::new("titles")?.with_file("Live.Wire.gp5")?;
+    let folder = TempFolder::new("titles")?.with_file("Lone.Pine.gp5")?;
 
-    assert_eq!(folder.song_titles(), ["Live.Wire"]);
+    assert_eq!(folder.song_titles(), ["Lone.Pine"]);
 
     Ok(())
 }

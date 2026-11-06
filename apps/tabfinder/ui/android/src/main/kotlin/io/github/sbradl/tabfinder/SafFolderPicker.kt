@@ -1,5 +1,6 @@
 package io.github.sbradl.tabfinder
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree
@@ -9,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class SafFolderPicker(
-    activity: ComponentActivity,
+    private val activity: ComponentActivity,
 ) : FolderPicker {
     private val systemPicker = activity.registerForActivityResult(OpenDocumentTree(), ::answerWith)
     private var answer = CompletableDeferred<String?>()
@@ -27,6 +28,13 @@ class SafFolderPicker(
     }
 
     private fun answerWith(pickedTree: Uri?) {
+        if (pickedTree != null) {
+            keepAccessAcrossRestarts(pickedTree)
+        }
         answer.complete(pickedTree?.toString())
+    }
+
+    private fun keepAccessAcrossRestarts(tree: Uri) {
+        activity.contentResolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 }

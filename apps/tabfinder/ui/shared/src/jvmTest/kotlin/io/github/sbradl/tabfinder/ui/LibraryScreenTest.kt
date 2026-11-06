@@ -21,13 +21,13 @@ class LibraryScreenTest {
     @Test
     fun choosingAFolderWithTabFilesShowsItsSongs() =
         runTabFinderTest { tabfinder ->
-            tabfinder.libraryFolderContains("Wonderwall.gp5", "Beatles/Blackbird.gp5", "notes.txt")
+            tabfinder.libraryFolderContains("Wexmoor.gp5", "Some Artist/Brasswing.gp5", "notes.txt")
             tabfinder.musicianOpensTabFinder()
 
             tabfinder.musicianPicksTheLibraryFolder()
 
             tabfinder.assertStatus("2 Songs")
-            tabfinder.assertShown("Blackbird", "Wonderwall")
+            tabfinder.assertShown("Brasswing", "Wexmoor")
         }
 
     @Test
@@ -63,7 +63,7 @@ class LibraryScreenTest {
     @Test
     fun everyInteractiveElementHasALabel() =
         runTabFinderTest { tabfinder ->
-            tabfinder.libraryFolderContains("Wonderwall.gp5")
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
             tabfinder.assertStatus("1 Song")

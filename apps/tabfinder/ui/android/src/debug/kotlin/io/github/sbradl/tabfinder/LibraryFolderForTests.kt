@@ -7,6 +7,7 @@ import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract.Document
 import android.provider.DocumentsProvider
 import java.io.File
+import java.io.FileNotFoundException
 
 class LibraryFolderForTests : DocumentsProvider() {
     private val folders: File by lazy { requireNotNull(context).cacheDir }
@@ -24,7 +25,11 @@ class LibraryFolderForTests : DocumentsProvider() {
         parentDocumentId: String,
         projection: Array<out String>?,
         sortOrder: String?,
-    ): Cursor = documentsCursor(fileOf(parentDocumentId).listFiles().orEmpty().toList())
+    ): Cursor {
+        val files = fileOf(parentDocumentId).listFiles() ?: throw FileNotFoundException(parentDocumentId)
+
+        return documentsCursor(files.toList())
+    }
 
     override fun isChildDocument(
         parentDocumentId: String,

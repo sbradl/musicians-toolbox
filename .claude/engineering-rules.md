@@ -41,7 +41,7 @@ Run: `mise run lint`
 
 | Stack | Category | Tool | Ruleset |
 | --- | --- | --- | --- |
-| rust, kotlin, github-actions | SAST | Opengrep | broadest: `p/default`, `p/owasp-top-ten`, `p/security-audit`, `p/rust`, `p/kotlin`, `p/github-actions` (Semgrep registry rules: internal use only, fetched at run time, never committed) |
+| rust, kotlin, github-actions | SAST | Opengrep | broadest: `p/default`, `p/owasp-top-ten`, `p/security-audit`, `p/rust`, `p/kotlin`, `p/github-actions` (Semgrep registry rules: internal use only, fetched at run time, never committed); except `exported_activity`: the launcher activity must be exported, user decision |
 | rust, kotlin | Dependency vulnerabilities | Trivy fs | all severities incl. UNKNOWN; exceptions in `.trivyignore.yaml` with statement + `expired_at` |
 | rust | License compliance | cargo-deny licenses | strict: `include-dev`, `unused-allowed-license = "deny"`, confidence 0.93 |
 | kotlin | License compliance | Gradle-License-Report | allowlist, `jvmRuntimeClasspath`, `androidRuntimeClasspath` (KMP modules with an Android target; the Android app module itself is not checked: the plugin cannot resolve its variants) |

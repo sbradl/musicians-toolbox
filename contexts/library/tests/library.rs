@@ -5,6 +5,7 @@ fn library_of(titles: &[&str]) -> Library {
     for title in titles {
         songs.push(Song::titled(title));
     }
+
     Library::of(songs)
 }
 
@@ -13,6 +14,7 @@ fn titles_in(library: &Library) -> Vec<String> {
     for song in library.songs() {
         titles.push(song.title.clone());
     }
+
     titles
 }
 

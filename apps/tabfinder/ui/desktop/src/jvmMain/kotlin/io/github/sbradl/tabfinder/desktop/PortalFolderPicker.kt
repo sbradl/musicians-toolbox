@@ -31,6 +31,7 @@ class PortalFolderPicker : FolderPicker {
             connection.awaitAnswerOn(pathThePortalAnswersOn(connection, token)) {
                 fileChooserOf(connection).openFile(parentWindow = "", title = "", options = folderPickerOptions(token))
             }
+
         return answer.pickedFolder()
     }
 
@@ -49,6 +50,7 @@ class PortalFolderPicker : FolderPicker {
         val listenForTheAnswer = DBusSigHandler<Request.Response> { if (it.path == answerPath) answer.complete(it) }
         addSigHandler(Request.Response::class.java, listenForTheAnswer).use {
             ask()
+
             return answer.await()
         }
     }
@@ -60,6 +62,7 @@ class PortalFolderPicker : FolderPicker {
         token: String,
     ): String {
         val sender = connection.uniqueName.removePrefix(":").replace('.', '_')
+
         return "/org/freedesktop/portal/desktop/request/$sender/$token"
     }
 
@@ -76,6 +79,7 @@ class PortalFolderPicker : FolderPicker {
     private fun Request.Response.pickedFolder(): String? {
         if (response.toInt() != RESPONSE_SUCCESS) return null
         val uri = firstUri() ?: return null
+
         return localPath(uri)
     }
 
@@ -86,6 +90,7 @@ class PortalFolderPicker : FolderPicker {
                 is Array<*> -> uris.firstOrNull()
                 else -> null
             }
+
         return firstUri as? String
     }
 

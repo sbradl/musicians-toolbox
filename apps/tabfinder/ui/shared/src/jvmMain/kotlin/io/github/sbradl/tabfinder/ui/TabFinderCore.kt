@@ -39,6 +39,7 @@ class TabFinderCore(
     private fun pickFolder() {
         scope.launch {
             val pickedFolder = folderPicker.pickFolder()
+
             if (pickedFolder != null) {
                 scanOffTheUiThread { app.folderPicked(pickedFolder) }
             }

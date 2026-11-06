@@ -19,6 +19,7 @@ pub struct Library {
 impl Library {
     pub fn of(mut songs: Vec<Song>) -> Self {
         songs.sort_by_cached_key(|song| song.title.to_lowercase());
+
         Self { songs }
     }
 

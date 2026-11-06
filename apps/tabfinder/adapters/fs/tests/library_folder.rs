@@ -14,15 +14,18 @@ impl TempFolder {
     fn new(name: &str) -> io::Result<Self> {
         let dir = TempDir::new(name);
         fs::create_dir_all(dir.path())?;
+
         Ok(Self(dir))
     }
 
     fn with_file(self, relative: &str) -> io::Result<Self> {
         let file = self.0.path().join(relative);
+
         if let Some(parent) = file.parent() {
             fs::create_dir_all(parent)?;
         }
         fs::write(&file, b"")?;
+
         Ok(self)
     }
 
@@ -32,6 +35,7 @@ impl TempFolder {
 
     fn location(&self) -> LibraryLocation {
         let path = self.0.path().to_string_lossy();
+
         LibraryLocation::new(&path)
     }
 
@@ -42,6 +46,7 @@ impl TempFolder {
             titles.push(song.title);
         }
         titles.sort();
+
         titles
     }
 }
@@ -55,6 +60,7 @@ fn finds_songs_in_subfolders_but_not_in_hidden_folders() -> io::Result<()> {
         .with_file("Beatles/.cache/Blackbird.gp5")?;
 
     assert_eq!(folder.song_titles(), ["Angie", "Blackbird"]);
+
     Ok(())
 }
 
@@ -73,6 +79,7 @@ fn every_tab_extension_in_any_case_is_a_song_and_other_files_are_not() -> io::Re
         .with_file("h.gp5x")?;
 
     assert_eq!(folder.song_titles(), ["a", "b", "c", "d", "e", "f", "g"]);
+
     Ok(())
 }
 
@@ -81,6 +88,7 @@ fn a_song_is_titled_by_its_file_name_without_the_extension() -> io::Result<()> {
     let folder = TempFolder::new("titles")?.with_file("Live.Wire.gp5")?;
 
     assert_eq!(folder.song_titles(), ["Live.Wire"]);
+
     Ok(())
 }
 
@@ -91,5 +99,6 @@ fn a_folder_that_is_gone_is_reported() -> io::Result<()> {
     folder.delete();
 
     assert_eq!(FsLibraryFolder.songs(&location), Err(LibraryFolderGone));
+
     Ok(())
 }

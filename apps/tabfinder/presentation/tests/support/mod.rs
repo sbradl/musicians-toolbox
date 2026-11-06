@@ -21,11 +21,13 @@ pub struct TabFinderSetup {
 impl TabFinderSetup {
     pub fn with_folder(self, location: &str, song_titles: &[&str]) -> Self {
         self.folders.add(location, song_titles);
+
         self
     }
 
     pub fn remembering(self, location: &str) -> Self {
         self.remembered.remember(&LibraryLocation::new(location));
+
         self
     }
 
@@ -89,6 +91,7 @@ impl TabFinder {
         for screen in self.library_screens_shown() {
             statuses.push(screen.status);
         }
+
         statuses
     }
 
@@ -115,6 +118,7 @@ impl TabFinder {
         for song in last_screen.songs {
             titles.push(song.title);
         }
+
         titles
     }
 
@@ -144,6 +148,7 @@ pub fn no_folder_chosen() -> LibraryViewModel {
 pub fn scanning() -> LibraryViewModel {
     let mut screen = listing("Scanning…", &[]);
     screen.choose_folder.is_enabled = false;
+
     screen
 }
 
@@ -165,6 +170,7 @@ fn song_items(titles: &[&str]) -> Vec<SongItem> {
             title: (*title).to_owned(),
         });
     }
+
     items
 }
 

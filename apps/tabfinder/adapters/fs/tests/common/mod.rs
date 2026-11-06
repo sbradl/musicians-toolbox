@@ -9,6 +9,7 @@ impl TempDir {
         let path =
             std::env::temp_dir().join(format!("mt-tabfinder-fs-{}-{name}", std::process::id()));
         drop(fs::remove_dir_all(&path));
+
         Self(path)
     }
 

@@ -129,6 +129,7 @@ class LibraryScreenTest {
     private fun SemanticsNode.labels(): List<String> {
         val texts = config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text }
         val descriptions = config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+
         return texts + descriptions
     }
 }

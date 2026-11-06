@@ -49,16 +49,19 @@ impl Libraries {
 
     pub fn open(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderGone> {
         let library = self.scan(location);
+
         if library.is_ok() {
             self.remembered.remember(location);
         } else if self.is_remembered(location) {
             self.remembered.forget();
         }
+
         library
     }
 
     fn scan(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderGone> {
         let songs = self.folder.songs(location)?;
+
         Ok(Library::of(songs))
     }
 
@@ -66,6 +69,7 @@ impl Libraries {
         let Some(remembered) = self.remembered.remembered() else {
             return false;
         };
+
         &remembered == location
     }
 }

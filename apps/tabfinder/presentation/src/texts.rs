@@ -11,6 +11,7 @@ impl Texts {
         let mut bundle = FluentBundle::new_concurrent(vec![english]);
         bundle.set_use_isolating(false);
         bundle.add_resource_overriding(resource);
+
         Self(bundle)
     }
 
@@ -29,6 +30,7 @@ impl Texts {
     pub(super) fn songs_count(&self, count: usize) -> String {
         let mut args = FluentArgs::new();
         args.set("count", count);
+
         self.format("songs-count", Some(&args))
     }
 
@@ -41,6 +43,7 @@ impl Texts {
             return id.to_owned();
         };
         let mut errors = vec![];
+
         self.0
             .format_pattern(pattern, args, &mut errors)
             .into_owned()

@@ -53,6 +53,7 @@ impl presentation::ViewModelListener for ListenerInKotlin {
 #[uniffi::export]
 pub fn desktop_config_dir() -> Option<String> {
     let config_dir = mt_tabfinder_fs::desktop_config_dir(environment_variable)?;
+
     config_dir.into_os_string().into_string().ok()
 }
 

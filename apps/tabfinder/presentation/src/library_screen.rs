@@ -13,9 +13,11 @@ impl LibraryViewModel {
 
     pub(super) fn listing(library: &Library, texts: &Texts) -> Self {
         let songs = library.songs();
+
         if songs.is_empty() {
             return Self::with_status(texts.no_tab_files_found(), texts);
         }
+
         Self::with_status(texts.songs_count(songs.len()), texts).with_songs(songs)
     }
 
@@ -32,11 +34,13 @@ impl LibraryViewModel {
 
     const fn with_choose_folder_disabled(mut self) -> Self {
         self.choose_folder.is_enabled = false;
+
         self
     }
 
     fn with_songs(mut self, songs: &[Song]) -> Self {
         self.songs = songs.iter().map(SongItem::from).collect();
+
         self
     }
 }

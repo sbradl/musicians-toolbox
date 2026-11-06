@@ -21,6 +21,7 @@ fn config_with_hand_edited_location(name: &str, contents: &str) -> io::Result<Te
     let tabfinder_dir = config.path().join("tabfinder");
     fs::create_dir_all(&tabfinder_dir)?;
     fs::write(tabfinder_dir.join("library-location"), contents)?;
+
     Ok(config)
 }
 
@@ -61,6 +62,7 @@ fn a_hand_edited_location_ignores_its_trailing_line_break() -> io::Result<()> {
         remembered_library_location(&config).remembered(),
         Some(tabs())
     );
+
     Ok(())
 }
 
@@ -69,5 +71,6 @@ fn a_hand_edited_empty_location_is_nothing_remembered() -> io::Result<()> {
     let config = config_with_hand_edited_location("empty", "\n")?;
 
     assert_eq!(remembered_library_location(&config).remembered(), None);
+
     Ok(())
 }

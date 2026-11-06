@@ -12,6 +12,7 @@ pub struct FsLibraryFolder;
 impl LibraryFolder for FsLibraryFolder {
     fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderGone> {
         let folder = open_folder(Path::new(location.as_str())).ok_or(LibraryFolderGone)?;
+
         Ok(songs_in(folder))
     }
 }
@@ -22,12 +23,14 @@ fn songs_in(folder: ReadDir) -> Vec<Song> {
         let Ok(entry) = entry else {
             continue;
         };
+
         if is_visible_subfolder(&entry) {
             songs.extend(songs_in_subfolder(&entry));
         } else if let Some(song) = song_from(&entry) {
             songs.push(song);
         }
     }
+
     songs
 }
 
@@ -35,11 +38,13 @@ fn songs_in_subfolder(subfolder: &DirEntry) -> Vec<Song> {
     let Some(folder) = open_folder(&subfolder.path()) else {
         return Vec::new();
     };
+
     songs_in(folder)
 }
 
 fn song_from(entry: &DirEntry) -> Option<Song> {
     let path = entry.path();
+
     if !is_file(entry) || !is_tab_file(&path) {
         return None;
     }
@@ -60,6 +65,7 @@ fn is_folder(entry: &DirEntry) -> bool {
     let Ok(kind) = entry.file_type() else {
         return false;
     };
+
     kind.is_dir()
 }
 
@@ -67,6 +73,7 @@ fn is_file(entry: &DirEntry) -> bool {
     let Ok(kind) = entry.file_type() else {
         return false;
     };
+
     kind.is_file()
 }
 
@@ -106,6 +113,7 @@ impl RememberedLibraryLocation for FsRememberedLibraryLocation {
     fn remembered(&self) -> Option<LibraryLocation> {
         let contents = fs::read_to_string(&self.file).ok()?;
         let location = contents.trim_end_matches(['\n', '\r']);
+
         if location.is_empty() {
             None
         } else {
@@ -127,6 +135,7 @@ impl FsRememberedLibraryLocation {
         if let Some(config_dir) = self.file.parent() {
             fs::create_dir_all(config_dir)?;
         }
+
         fs::write(&self.file, location.as_str())
     }
 }
@@ -141,5 +150,6 @@ pub fn desktop_config_dir(variable: impl Fn(&str) -> Option<String>) -> Option<P
         Some(xdg_config_home) if xdg_config_home.is_absolute() => xdg_config_home,
         _ => PathBuf::from(variable("HOME")?).join(".config"),
     };
+
     Some(config_home.join("tabfinder"))
 }

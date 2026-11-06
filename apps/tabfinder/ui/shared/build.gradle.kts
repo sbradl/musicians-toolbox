@@ -1,10 +1,14 @@
 plugins {
     id("mt.compose-multiplatform")
+    id("mt.kotlin-multiplatform-android")
 }
 
 kotlin {
+    android {
+        namespace = "io.github.sbradl.tabfinder.ui"
+    }
     sourceSets {
-        jvmMain.dependencies {
+        commonMain.dependencies {
             api(project(":apps:tabfinder:adapters:ffi"))
             implementation(libs.compose.material3)
         }

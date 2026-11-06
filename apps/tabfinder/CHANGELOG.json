@@ -13,6 +13,12 @@
           "en": "On desktop, TabFinder remembers your folder and shows its Songs on the next start.",
           "de": "Auf dem Desktop merkt sich TabFinder deinen Ordner und zeigt seine Songs beim nächsten Start.",
           "fr": "Sur ordinateur, TabFinder retient votre dossier et affiche ses morceaux au prochain démarrage."
+        },
+        {
+          "id": "android-app",
+          "en": "TabFinder runs on Android 10 and newer.",
+          "de": "TabFinder läuft auf Android 10 und neuer.",
+          "fr": "TabFinder fonctionne sur Android 10 et versions ultérieures."
         }
       ]
     }

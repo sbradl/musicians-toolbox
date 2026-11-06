@@ -5,7 +5,7 @@ Task runner: mise
 ## Stacks
 
 - **rust** — Rust 1.99.1, edition 2024 · no framework · `cargo test` · cargo · `/` (Cargo workspace)
-- **kotlin** — Kotlin 2.4.21 (KMP, jvm) · Compose Multiplatform 1.9.3 desktop · JUnit 4 + Compose ui-test · Gradle 9.8.2 · `apps/*/ui/`, `build-logic/`
+- **kotlin** — Kotlin 2.4.21 (KMP, jvm + android) · Compose Multiplatform 1.9.3 desktop + Android (AGP 9.5.1, minSdk 29, targetSdk 36) · JUnit 4 + Compose ui-test (instrumented on Android) · Gradle 9.8.2 · `apps/*/ui/`, `build-logic/`
 - **github-actions** — GitHub Actions workflows · `.github/workflows/`
 
 ## Static analysis and linting
@@ -33,7 +33,7 @@ Layers (clean architecture dependency rule: dependencies point inward only):
 - `mt-tabfinder-fs` (desktop driven adapters) ← ffi
 - `mt-tabfinder-ffi` ← nothing (cdylib, consumed by Kotlin `ui/`)
 - `uniffi` ← ffi, uniffi-bindgen only (ADR 0002)
-- Kotlin: `ui:desktop` → `ui:shared` (Gradle rejects the reverse as a cycle)
+- Kotlin: `ui:desktop`, `ui:android` → `ui:shared` (Gradle rejects the reverse as a cycle)
 
 Run: `mise run lint`
 
@@ -44,7 +44,7 @@ Run: `mise run lint`
 | rust, kotlin, github-actions | SAST | Opengrep | broadest: `p/default`, `p/owasp-top-ten`, `p/security-audit`, `p/rust`, `p/kotlin`, `p/github-actions` (Semgrep registry rules: internal use only, fetched at run time, never committed) |
 | rust, kotlin | Dependency vulnerabilities | Trivy fs | all severities incl. UNKNOWN; exceptions in `.trivyignore.yaml` with statement + `expired_at` |
 | rust | License compliance | cargo-deny licenses | strict: `include-dev`, `unused-allowed-license = "deny"`, confidence 0.93 |
-| kotlin | License compliance | Gradle-License-Report | allowlist, `jvmRuntimeClasspath` |
+| kotlin | License compliance | Gradle-License-Report | allowlist, `jvmRuntimeClasspath`, `androidRuntimeClasspath` (KMP modules with an Android target; the Android app module itself is not checked: the plugin cannot resolve its variants) |
 | rust, kotlin | SBOM | Trivy | CycloneDX, generated with packaging (#21) |
 | all | Secret scanning | Trivy secret | built-in rules (working tree only, not git history) |
 

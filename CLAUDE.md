@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Walking skeleton of TabFinder on Linux desktop. Architecture in `docs/adr/`: bridge (0002), UI/core line (0003), repo layout and build (0004), engineering bar (0005). Follow ADR 0004's layout when adding code.
+Walking skeleton of TabFinder on Linux desktop and Android. Architecture in `docs/adr/`: bridge (0002), UI/core line (0003), repo layout and build (0004), engineering bar (0005). Follow ADR 0004's layout when adding code.
 
 ## Commands
 
@@ -16,6 +16,9 @@ Toolchain via mise: `mise run setup` once (installs tools, enables `.githooks/`)
 - `mise run security`: Opengrep packs, Trivy vulns + secrets, licence checks (pre-push hook)
 - `mise run fmt`: format Rust and Kotlin
 - `mise run run:tabfinder`: start the desktop app
+- `mise run android:tabfinder`: install and start the app on the running emulator or device
+- `mise run test:android`: instrumented Compose tests on the running emulator (not part of `check`)
+- Android SDK: `ANDROID_HOME` (default `~/Android/Sdk`) needs NDK 28.2.13676358, platform 36 and build-tools; `check` verifies the APK has no `INTERNET` permission and 16 KB aligned native libraries
 - Single Rust test file: `cargo test -p mt-tabfinder-presentation --test library_screen`
 - Single Kotlin test: `./gradlew :apps:tabfinder:ui:shared:jvmTest --tests '*LibraryScreenTest*'`
 - After changing Kotlin dependencies: `./gradlew dependencies --write-locks` per project (Trivy reads `gradle.lockfile`)

@@ -1,10 +1,15 @@
 [tools]
-rust = { version = "1.99.1", components = "rustfmt,clippy" }
+rust = { version = "1.99.1", components = "rustfmt,clippy", targets = "aarch64-linux-android,x86_64-linux-android" }
 java = "temurin-21.0.13+9.0.LTS"
 ktlint = "1.8.0"
 cargo-deny = "0.20.2"
 trivy = "0.76.1"
 opengrep = "1.33.1"
+"github:bbqsrc/cargo-ndk" = "4.1.2"
+
+[env]
+ANDROID_HOME = "{{ env.ANDROID_HOME | default(value=env.HOME ~ '/Android/Sdk') }}"
+ANDROID_NDK_HOME = "{{ env.ANDROID_HOME }}/ndk/28.2.13676358"
 
 [vars]
 opengrep_packs = "--config p/default --config p/owasp-top-ten --config p/security-audit --config p/rust --config p/kotlin --config p/github-actions"
@@ -75,3 +80,12 @@ depends = ["lint", "test", "security"]
 
 [tasks."run:tabfinder"]
 run = "./gradlew :apps:tabfinder:ui:desktop:run"
+
+[tasks."android:tabfinder"]
+run = [
+  "./gradlew :apps:tabfinder:ui:android:installDebug",
+  "$ANDROID_HOME/platform-tools/adb shell am start -n io.github.sbradl.tabfinder/.MainActivity",
+]
+
+[tasks."test:android"]
+run = "./gradlew connectedCheck"

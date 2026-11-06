@@ -19,6 +19,7 @@ Toolchain via mise: `mise run setup` once (installs tools, enables `.githooks/`)
 - `mise run fmt`: format Rust and Kotlin
 - `mise run run:tabfinder`: start the desktop app
 - `mise run android:tabfinder`: install and start the app on the running emulator or device
+- `mise run package:tabfinder`: Linux app image (`.tar.gz`, bundled JRE) + debug APK + CycloneDX SBOM, each with `.sha256`, into `build/package/`; CI workflow `package-tabfinder` uploads them. Manual checks: `apps/tabfinder/RELEASE-CHECKLIST.md`
 - `mise run test:android`: instrumented Compose tests on the running emulator (not part of `check`)
 - Android SDK: `ANDROID_HOME` (default `~/Android/Sdk`) needs NDK 28.2.13676358, platform 36 and build-tools; `check` verifies the APK has no `INTERNET` permission and 16 KB aligned native libraries
 - Single Rust test file: `cargo test -p mt-tabfinder-presentation --test library_screen`

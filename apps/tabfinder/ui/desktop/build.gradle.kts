@@ -17,5 +17,10 @@ kotlin {
 compose.desktop {
     application {
         mainClass = "io.github.sbradl.tabfinder.desktop.MainKt"
+        nativeDistributions {
+            packageName = "TabFinder"
+            packageVersion = "0.0.0-dev"
+            modules("java.instrument", "jdk.security.auth", "jdk.unsupported")
+        }
     }
 }

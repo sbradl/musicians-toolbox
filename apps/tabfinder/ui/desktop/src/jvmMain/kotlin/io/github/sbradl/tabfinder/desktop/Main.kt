@@ -15,7 +15,7 @@ fun main() {
 
 private fun startCore(): TabFinderCore {
     val configDir = requireNotNull(desktopConfigDir()) { "Neither XDG_CONFIG_HOME nor HOME is set" }
-    val core = TabFinderCore(PortalFolderPicker(), configDir)
+    val core = TabFinderCore.onDesktop(PortalFolderPicker(), configDir)
     core.start()
 
     return core

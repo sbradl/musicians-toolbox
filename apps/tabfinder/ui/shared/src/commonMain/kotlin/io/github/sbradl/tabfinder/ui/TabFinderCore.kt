@@ -14,21 +14,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class TabFinderCore(
+class TabFinderCore private constructor(
     private val folderPicker: FolderPicker,
-    configDir: String,
-    libraryFolder: LibraryFolder? = null,
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    connectApp: (ViewModelListener) -> App,
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val shownViewModel = MutableStateFlow<AppViewModel?>(null)
     val viewModel: StateFlow<AppViewModel?> = shownViewModel.asStateFlow()
 
-    private val app =
-        if (libraryFolder == null) {
-            App(ListenerForRust(), configDir)
-        } else {
-            App.withLibraryFolder(ListenerForRust(), configDir, libraryFolder)
-        }
+    private val app = connectApp(ListenerForRust())
 
     fun start() = app.start()
 
@@ -54,6 +48,19 @@ class TabFinderCore(
     }
 
     private suspend fun scanOffTheUiThread(scan: () -> Unit) = withContext(Dispatchers.IO) { scan() }
+
+    companion object {
+        fun onDesktop(
+            folderPicker: FolderPicker,
+            configDir: String,
+        ) = TabFinderCore(folderPicker) { listener -> App(listener, configDir) }
+
+        fun onAndroid(
+            folderPicker: FolderPicker,
+            configDir: String,
+            libraryFolder: LibraryFolder,
+        ) = TabFinderCore(folderPicker) { listener -> App.withLibraryFolder(listener, configDir, libraryFolder) }
+    }
 
     private inner class ListenerForRust : ViewModelListener {
         override fun onViewModel(viewModel: AppViewModel) = show(viewModel)

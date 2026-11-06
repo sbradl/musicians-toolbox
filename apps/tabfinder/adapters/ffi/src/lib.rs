@@ -116,7 +116,7 @@ pub struct App(presentation::App);
 impl App {
     #[uniffi::constructor]
     pub fn new(listener: Box<dyn ViewModelListener>, config_dir: &str) -> Self {
-        Self::wired(listener, Box::new(FsLibraryFolder), config_dir)
+        Self::wired(listener, config_dir, Box::new(FsLibraryFolder))
     }
 
     #[uniffi::constructor]
@@ -127,8 +127,8 @@ impl App {
     ) -> Self {
         Self::wired(
             listener,
-            Box::new(LibraryFolderInKotlin(library_folder)),
             config_dir,
+            Box::new(LibraryFolderInKotlin(library_folder)),
         )
     }
 
@@ -148,8 +148,8 @@ impl App {
 impl App {
     fn wired(
         listener: Box<dyn ViewModelListener>,
-        library_folder: Box<dyn application::LibraryFolder>,
         config_dir: &str,
+        library_folder: Box<dyn application::LibraryFolder>,
     ) -> Self {
         Self(presentation::App::new(
             Box::new(ListenerInKotlin(listener)),

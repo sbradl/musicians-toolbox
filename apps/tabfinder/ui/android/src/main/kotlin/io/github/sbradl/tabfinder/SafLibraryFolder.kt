@@ -15,8 +15,8 @@ class SafLibraryFolder(
 ) : LibraryFolder {
     override fun songs(location: String): List<Song> {
         val tree = location.toUri()
-        val libraryFolder = rootFolderOf(tree) ?: throw LibraryFolderException.Gone()
-        val entries = entriesIn(tree, libraryFolder) ?: throw LibraryFolderException.Gone()
+        val libraryFolderId = libraryFolderIdOf(tree) ?: throw LibraryFolderException.Gone()
+        val entries = entriesIn(tree, libraryFolderId) ?: throw LibraryFolderException.Gone()
 
         return songsIn(tree, entries)
     }
@@ -42,7 +42,7 @@ class SafLibraryFolder(
         return songsIn(tree, entries)
     }
 
-    private fun rootFolderOf(tree: Uri): String? =
+    private fun libraryFolderIdOf(tree: Uri): String? =
         try {
             DocumentsContract.getTreeDocumentId(tree)
         } catch (_: IllegalArgumentException) {
@@ -53,10 +53,10 @@ class SafLibraryFolder(
         tree: Uri,
         folderId: String,
     ): List<FolderEntry>? {
-        val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, folderId)
+        val folderContents = DocumentsContract.buildChildDocumentsUriUsingTree(tree, folderId)
 
         return try {
-            contentResolver.query(children, FolderEntry.COLUMNS, null, null, null)?.use(::entriesOf)
+            queryEntries(folderContents)
         } catch (_: SecurityException) {
             null
         } catch (_: IllegalArgumentException) {
@@ -64,10 +64,23 @@ class SafLibraryFolder(
         }
     }
 
+    private fun queryEntries(folderContents: Uri): List<FolderEntry>? {
+        val noFilter = null
+        val noFilterArguments = null
+        val anyOrder = null
+        val cursor = contentResolver.query(folderContents, FolderEntry.COLUMNS, noFilter, noFilterArguments, anyOrder) ?: return null
+
+        return cursor.use { entriesOf(cursor) }
+    }
+
     private fun entriesOf(cursor: Cursor): List<FolderEntry> {
         val entries = mutableListOf<FolderEntry>()
         while (cursor.moveToNext()) {
-            entries += FolderEntry.at(cursor) ?: continue
+            val entry = FolderEntry.fromCurrentRow(cursor)
+
+            if (entry != null) {
+                entries += entry
+            }
         }
 
         return entries
@@ -79,11 +92,15 @@ private class FolderEntry(
     val name: String,
     val mimeType: String,
 ) {
-    fun isVisibleSubfolder() = mimeType == Document.MIME_TYPE_DIR && !name.startsWith(".")
+    fun isVisibleSubfolder() = isFolder() && !name.startsWith(".")
 
-    fun isTabFile() = mimeType != Document.MIME_TYPE_DIR && nameWithoutExtension().isNotEmpty() && extension() in TAB_FILE_EXTENSIONS
+    fun isTabFile() = !isFolder() && hasTitle() && extension() in TAB_FILE_EXTENSIONS
 
     fun nameWithoutExtension() = name.substringBeforeLast('.')
+
+    private fun isFolder() = mimeType == Document.MIME_TYPE_DIR
+
+    private fun hasTitle() = nameWithoutExtension().isNotEmpty()
 
     private fun extension() = name.substringAfterLast('.', "").lowercase()
 
@@ -91,14 +108,14 @@ private class FolderEntry(
         val COLUMNS = arrayOf(Document.COLUMN_DOCUMENT_ID, Document.COLUMN_DISPLAY_NAME, Document.COLUMN_MIME_TYPE)
         private val TAB_FILE_EXTENSIONS = setOf("gp3", "gp4", "gp5", "gpx", "gp", "tg", "ptb")
 
-        fun at(cursor: Cursor): FolderEntry? {
-            val id = cursor.stringIn(Document.COLUMN_DOCUMENT_ID) ?: return null
-            val name = cursor.stringIn(Document.COLUMN_DISPLAY_NAME) ?: return null
-            val mimeType = cursor.stringIn(Document.COLUMN_MIME_TYPE) ?: return null
+        fun fromCurrentRow(cursor: Cursor): FolderEntry? {
+            val id = cursor.stringInColumn(Document.COLUMN_DOCUMENT_ID) ?: return null
+            val name = cursor.stringInColumn(Document.COLUMN_DISPLAY_NAME) ?: return null
+            val mimeType = cursor.stringInColumn(Document.COLUMN_MIME_TYPE) ?: return null
 
             return FolderEntry(id, name, mimeType)
         }
 
-        private fun Cursor.stringIn(column: String): String? = getString(getColumnIndexOrThrow(column))
+        private fun Cursor.stringInColumn(column: String): String? = getString(getColumnIndexOrThrow(column))
     }
 }

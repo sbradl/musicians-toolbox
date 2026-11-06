@@ -11,7 +11,10 @@ interface UniffiExtension {
 
 val uniffi = extensions.create<UniffiExtension>("uniffi")
 val workspace: Directory = rootProject.layout.projectDirectory
-val rustLibrary = uniffi.crate.map { crate -> workspace.file("target/debug/${linuxLibraryFileName(crate)}") }
+val linuxTarget = "x86_64-unknown-linux-gnu"
+val glibcOfOldestSupportedLinux = KotlinVersion(2, 31)
+val linuxTargetWithGlibc = "$linuxTarget.${glibcOfOldestSupportedLinux.major}.${glibcOfOldestSupportedLinux.minor}"
+val rustLibrary = uniffi.crate.map { crate -> workspace.file("target/$linuxTarget/debug/${linuxLibraryFileName(crate)}") }
 val jnaFolderForLinuxX8664 = "linux-x86-64"
 val minSdk = androidSdkLevel("android-minSdk").toString()
 
@@ -20,11 +23,45 @@ fun linuxLibraryFileName(crate: String) = "lib${crate.replace('-', '_')}.so"
 val buildRustLibrary =
     tasks.register<Exec>("cargoBuild") {
         workingDir = workspace.asFile
-        commandLine("cargo", "build", "--locked", "--target-dir", "target", "--package")
+        commandLine("cargo", "zigbuild", "--locked", "--target", linuxTargetWithGlibc, "--target-dir", "target", "--package")
         argumentProviders.add { listOf(uniffi.crate.get()) }
         outputs.file(rustLibrary)
         outputs.upToDateWhen { false } // Cargo decides itself what to rebuild
     }
+
+abstract class CheckGlibcFloor : DefaultTask() {
+    @get:InputFile
+    abstract val library: RegularFileProperty
+
+    @get:Input
+    abstract val oldestSupportedGlibc: Property<KotlinVersion>
+
+    @TaskAction
+    fun check() {
+        val newestGlibc = newestGlibcVersionIn(library.get().asFile.readText(Charsets.ISO_8859_1))
+        val oldestGlibc = oldestSupportedGlibc.get()
+
+        if (newestGlibc > oldestGlibc) {
+            throw GradleException("The desktop apps must start on glibc $oldestGlibc: ${library.get()} needs glibc $newestGlibc")
+        }
+    }
+
+    private fun newestGlibcVersionIn(binary: String) =
+        Regex("""GLIBC_(\d+)\.(\d+)""")
+            .findAll(binary)
+            .map { version -> KotlinVersion(version.groupValues[1].toInt(), version.groupValues[2].toInt()) }
+            .maxOrNull()
+            ?: throw GradleException("${library.get()} names no glibc version: is it still a Linux library?")
+}
+
+val checkGlibcFloor =
+    tasks.register<CheckGlibcFloor>("checkGlibcFloor") {
+        library.set(rustLibrary)
+        oldestSupportedGlibc.set(glibcOfOldestSupportedLinux)
+        dependsOn(buildRustLibrary)
+    }
+
+tasks.named("check") { dependsOn(checkGlibcFloor) }
 
 val generateKotlinBindings =
     tasks.register<Exec>("generateUniffiBindings") {

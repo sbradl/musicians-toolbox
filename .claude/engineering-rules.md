@@ -4,7 +4,7 @@ Task runner: mise
 
 ## Stacks
 
-- **rust** — Rust 1.99.1, edition 2024 · no framework · `cargo test` · cargo · `/` (Cargo workspace)
+- **rust** — Rust 1.99.1, edition 2024 · no framework · `cargo test` · cargo (desktop library: cargo-zigbuild) · `/` (Cargo workspace)
 - **kotlin** — Kotlin 2.4.21 (KMP, jvm + android) · Compose Multiplatform 1.9.3 desktop + Android (AGP 9.5.1, minSdk 29, targetSdk 36) · JUnit 4 + Compose ui-test (instrumented on Android) · Gradle 9.8.2 · `apps/*/ui/`, `build-logic/`
 - **github-actions** — GitHub Actions workflows · `.github/workflows/`
 
@@ -17,6 +17,8 @@ Task runner: mise
 | rust | Formatter | rustfmt | defaults |
 | rust | Type strictness | rustc lint levels | allowed-by-default extras except `missing_docs` (docs not required, user decision) + lint groups; `warn` in manifests, `-D warnings` in `lint:clippy` |
 | rust | Complexity | Clippy thresholds | cognitive 15, lines 25, arguments 5, nesting 4, type complexity 250 |
+
+| rust | Portability | `checkGlibcFloor` (Gradle, part of `check`) | the desktop Rust library (built with `cargo zigbuild` for `x86_64-unknown-linux-gnu.2.31`) needs glibc ≤ 2.31 |
 
 Exceptions: `syn` 2 + 3 duplicate allowed (UniFFI; `deny.toml` skip, `clippy.toml` allowed-duplicate-crates); workspace path deps without version allowed (`allow-wildcard-paths`).
 | rust | Architecture rules | cargo-deny bans | deny list with layer `wrappers` + network and async-runtime crates denied, `multiple-versions = "deny"`, `wildcards = "deny"` (allowlist mode cannot combine with wrappers) |

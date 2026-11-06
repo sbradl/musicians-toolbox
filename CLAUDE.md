@@ -25,7 +25,7 @@ Toolchain via mise: `mise run setup` once (installs tools, enables `.githooks/`)
 - Single Kotlin test: `./gradlew :apps:tabfinder:ui:shared:jvmTest --tests '*LibraryScreenTest*'`
 - After changing Kotlin dependencies: `./gradlew dependencies --write-locks` per project (Trivy reads `gradle.lockfile`)
 
-Gradle builds the FFI crate with Cargo and generates UniFFI bindings into `build/` (`build-logic/src/main/kotlin/mt.uniffi.gradle.kts`).
+Gradle builds the FFI crate with `cargo zigbuild` against glibc 2.31 (`checkGlibcFloor` guards it) and generates UniFFI bindings into `build/` (`build-logic/src/main/kotlin/mt.uniffi.gradle.kts`).
 
 ## Working rules (ADR 0005)
 

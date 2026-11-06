@@ -6,6 +6,8 @@ cargo-deny = "0.20.2"
 trivy = "0.76.1"
 opengrep = "1.33.1"
 "github:bbqsrc/cargo-ndk" = "4.1.2"
+zig = "0.17.1"
+"github:rust-cross/cargo-zigbuild" = "0.24.1"
 
 [env]
 ANDROID_HOME = "{{ env.ANDROID_HOME | default(value=env.HOME ~ '/Android/Sdk') }}"

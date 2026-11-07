@@ -14,6 +14,7 @@ bouncycastle = "1.86"
 commons-lang3 = "3.21.0"
 httpclient = "4.5.14"
 activity-compose = "1.13.0"
+lifecycle-viewmodel = "2.9.4"
 androidx-test-runner = "1.7.0"
 androidx-compose-ui-test-manifest = "1.9.4"
 
@@ -24,6 +25,7 @@ bouncycastle-bcutil = { module = "org.bouncycastle:bcutil-jdk18on", version.ref 
 commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
 httpclient = { module = "org.apache.httpcomponents:httpclient", version.ref = "httpclient" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle-viewmodel" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-compose-ui-test-manifest" }

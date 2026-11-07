@@ -12,6 +12,7 @@ android {
 dependencies {
     implementation(project(":apps:tabfinder:ui:shared"))
     implementation(libs.activity.compose)
+    implementation(libs.lifecycle.viewmodel)
     implementation(libs.compose.material3)
     androidTestImplementation(libs.compose.ui.test)
     androidTestImplementation(libs.androidx.test.runner)

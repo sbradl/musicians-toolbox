@@ -66,6 +66,7 @@ pub fn song_from_file_name(file_name: &str) -> Option<Song> {
     if file_name.starts_with('.') || !is_tab_file(file) {
         return None;
     }
+
     Some(Song {
         title: file_name_without_extension(file)?,
     })

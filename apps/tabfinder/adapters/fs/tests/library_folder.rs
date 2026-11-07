@@ -36,6 +36,12 @@ impl TempFolder {
         Ok(self)
     }
 
+    fn with_link_to_file(self, relative: &str, target: &Self, file: &str) -> io::Result<Self> {
+        std::os::unix::fs::symlink(target.0.path().join(file), self.0.path().join(relative))?;
+
+        Ok(self)
+    }
+
     fn lock_away(self) -> io::Result<Self> {
         fs::set_permissions(self.0.path(), Permissions::from_mode(0o000))?;
 
@@ -157,6 +163,18 @@ fn a_folder_tabfinder_may_not_read_is_reported() -> io::Result<()> {
 
     folder.unlock();
     assert_eq!(songs, Err(LibraryFolderError::NoAccess));
+
+    Ok(())
+}
+
+#[test]
+fn linked_files_are_no_songs() -> io::Result<()> {
+    let elsewhere = TempFolder::new("file-link-target")?.with_file("Brasswing.gp5")?;
+    let folder = TempFolder::new("file-links")?
+        .with_file("Amberline.gp4")?
+        .with_link_to_file("Brasswing.gp5", &elsewhere, "Brasswing.gp5")?;
+
+    assert_eq!(folder.song_titles(), ["Amberline"]);
 
     Ok(())
 }

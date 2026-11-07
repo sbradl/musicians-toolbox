@@ -33,7 +33,7 @@ class SafLibraryFolder(
             } catch (_: SecurityException) {
                 throw LibraryFolderException.NoAccess()
             } catch (_: IllegalArgumentException) {
-                null
+                throw LibraryFolderException.Gone()
             }
 
         return entries ?: throw LibraryFolderException.Gone()

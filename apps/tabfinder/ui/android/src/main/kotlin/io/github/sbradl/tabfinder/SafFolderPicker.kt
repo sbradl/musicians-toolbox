@@ -15,7 +15,10 @@ import kotlinx.coroutines.withContext
 class SafFolderPicker(
     private val contentResolver: ContentResolver,
 ) : FolderPicker {
+    @Volatile
     private var systemPicker: ActivityResultLauncher<Uri?>? = null
+
+    @Volatile
     private var answer = CompletableDeferred<FolderPick>()
 
     fun attachTo(screen: ActivityResultRegistry) {

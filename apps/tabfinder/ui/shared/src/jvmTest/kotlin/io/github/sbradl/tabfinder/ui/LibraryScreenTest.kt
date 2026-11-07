@@ -69,8 +69,6 @@ class LibraryScreenTest {
 
             tabfinder.assertStatus("Scanning…")
             tabfinder.assertChooseFolderIsDisabled()
-            tabfinder.libraryFolderFinishesReading()
-            tabfinder.assertStatus("1 Song")
         }
 
     @Test

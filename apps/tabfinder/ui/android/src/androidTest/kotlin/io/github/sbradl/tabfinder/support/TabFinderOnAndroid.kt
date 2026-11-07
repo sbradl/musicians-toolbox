@@ -38,7 +38,7 @@ class TabFinderOnAndroid(
     private val app = InstrumentationRegistry.getInstrumentation().targetContext
     private val configDir = File(app.cacheDir, "config")
     private val libraryFolder = File(app.cacheDir, "library")
-    private var folderThePickerAnswers = ""
+    private var pickerAnswer: FolderPick = FolderPick.Cancelled
     private val libraryFolderReader = LibraryFolderThatCanBeHeld(SafLibraryFolder(app.contentResolver))
     private var runningTabFinder by mutableStateOf<TabFinderCore?>(null)
 
@@ -79,13 +79,13 @@ class TabFinderOnAndroid(
     }
 
     fun musicianPicksTheLibraryFolder() {
-        folderThePickerAnswers = treeOf(libraryFolder.name)
-        ui.onNodeWithText("Choose folder").performClick()
+        pickerAnswer = FolderPick.Picked(treeOf(libraryFolder.name))
+        clickChooseFolder()
     }
 
     fun musicianPicksAFolderTabFinderMayNotRead() {
-        folderThePickerAnswers = treeOf(LibraryFolderForTests.FOLDER_IT_MAY_NOT_READ)
-        ui.onNodeWithText("Choose folder").performClick()
+        pickerAnswer = FolderPick.Picked(treeOf(LibraryFolderForTests.FOLDER_IT_MAY_NOT_READ))
+        clickChooseFolder()
     }
 
     fun assertStatus(status: String) {
@@ -105,8 +105,12 @@ class TabFinderOnAndroid(
         libraryFolder.deleteRecursively()
     }
 
+    private fun clickChooseFolder() {
+        ui.onNodeWithText("Choose folder").performClick()
+    }
+
     private fun startTabFinder() {
-        val folderPicker = FolderPicker { _ -> FolderPick.Picked(folderThePickerAnswers) }
+        val folderPicker = FolderPicker { _ -> pickerAnswer }
         val core = TabFinderCore.withLibraryFolder(folderPicker, configDir.path, libraryFolderReader)
         core.start()
         runningTabFinder = core

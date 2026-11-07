@@ -7,9 +7,8 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.core.app.ActivityOptionsCompat
 import kotlinx.coroutines.CompletableDeferred
 
-class SystemFolderPickerOnAScreen private constructor(
-    private var openedRequest: Int?,
-) {
+class SystemFolderPickerOnAScreen {
+    private var openedRequest: Int? = null
     private val opened = CompletableDeferred<Unit>()
 
     val registry =
@@ -25,14 +24,13 @@ class SystemFolderPickerOnAScreen private constructor(
             }
         }
 
-    constructor() : this(openedRequest = null)
-
     suspend fun awaitPickerOpened() = opened.await()
 
     fun turned(): SystemFolderPickerOnAScreen {
         val savedScreen = Bundle()
         registry.onSaveInstanceState(savedScreen)
-        val screenAfter = SystemFolderPickerOnAScreen(openedRequest)
+        val screenAfter = SystemFolderPickerOnAScreen()
+        screenAfter.openedRequest = openedRequest
         screenAfter.registry.onRestoreInstanceState(savedScreen)
 
         return screenAfter

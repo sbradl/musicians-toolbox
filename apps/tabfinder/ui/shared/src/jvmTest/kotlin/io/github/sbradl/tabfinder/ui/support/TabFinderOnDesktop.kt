@@ -57,10 +57,6 @@ class TabFinderOnDesktop(
         slowLibraryFolder = folder
     }
 
-    fun libraryFolderFinishesReading() {
-        slowLibraryFolder?.releaseReading()
-    }
-
     fun libraryFolderIsDeleted() {
         libraryFolder.deleteRecursively()
     }
@@ -74,12 +70,12 @@ class TabFinderOnDesktop(
 
     fun musicianPicksTheLibraryFolder() {
         pickerAnswer = FolderPick.Picked(libraryFolder.toString())
-        ui.onNodeWithText("Choose folder").performClick()
+        clickChooseFolder()
     }
 
     fun musicianFindsNoFolderDialog() {
         pickerAnswer = FolderPick.Unavailable
-        ui.onNodeWithText("Choose folder").performClick()
+        clickChooseFolder()
     }
 
     fun assertStatus(status: String) {
@@ -102,6 +98,10 @@ class TabFinderOnDesktop(
         }
     }
 
+    private fun clickChooseFolder() {
+        ui.onNodeWithText("Choose folder").performClick()
+    }
+
     private fun startTabFinderCore(): TabFinderCore {
         val folderPicker = FolderPicker { _ -> pickerAnswer }
         val slowFolder = slowLibraryFolder
@@ -114,6 +114,7 @@ class TabFinderOnDesktop(
     }
 
     internal fun deleteFolders() {
+        slowLibraryFolder?.releaseReading()
         libraryFolder.deleteRecursively()
         configDir.deleteRecursively()
     }

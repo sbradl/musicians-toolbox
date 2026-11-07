@@ -23,8 +23,8 @@ impl Texts {
         self.format("scanning", None)
     }
 
-    pub(super) fn no_tab_files_found(&self) -> String {
-        self.format("no-tab-files-found", None)
+    pub(super) fn no_songs_found(&self) -> String {
+        self.format("no-songs-found", None)
     }
 
     pub(super) fn songs_count(&self, count: usize) -> String {

@@ -19,7 +19,7 @@ class LibraryScreenTest {
         }
 
     @Test
-    fun choosingAFolderWithTabFilesShowsItsSongs() =
+    fun choosingAFolderShowsItsSongs() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.gp5", "Some Artist/Brasswing.gp5", "notes.txt")
             tabfinder.musicianOpensTabFinder()
@@ -31,14 +31,14 @@ class LibraryScreenTest {
         }
 
     @Test
-    fun choosingAFolderWithoutTabFilesShowsNoTabFilesFound() =
+    fun choosingAFolderWithoutSongsShowsNoSongsFound() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("notes.txt")
             tabfinder.musicianOpensTabFinder()
 
             tabfinder.musicianPicksTheLibraryFolder()
 
-            tabfinder.assertStatus("No Tab files found")
+            tabfinder.assertStatus("No Songs found")
         }
 
     @OptIn(ExperimentalTestApi::class)

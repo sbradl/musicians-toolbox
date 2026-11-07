@@ -13,7 +13,7 @@ class LibraryScreenOnAndroidTest {
         }
 
     @Test
-    fun tabFilesInSubfoldersAreFoundIgnoringTheCaseOfTheirExtension() =
+    fun songsInSubfoldersAreFoundIgnoringTheCaseOfTheirExtension() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.GP5", "Some Artist/Brasswing.tg", "notes.txt")
             tabfinder.musicianOpensTabFinder()
@@ -25,7 +25,7 @@ class LibraryScreenOnAndroidTest {
         }
 
     @Test
-    fun tabFilesInHiddenFoldersAreSkipped() =
+    fun songsInHiddenFoldersAreSkipped() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.gp5", ".backup/Old Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
@@ -56,18 +56,18 @@ class LibraryScreenOnAndroidTest {
 
             tabfinder.musicianPicksTheLibraryFolder()
 
-            tabfinder.assertStatus("No Tab files found")
+            tabfinder.assertStatus("No Songs found")
         }
 
     @Test
-    fun aFolderWithoutTabFilesShowsNoTabFilesFound() =
+    fun aFolderWithoutSongsShowsNoSongsFound() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("notes.txt")
             tabfinder.musicianOpensTabFinder()
 
             tabfinder.musicianPicksTheLibraryFolder()
 
-            tabfinder.assertStatus("No Tab files found")
+            tabfinder.assertStatus("No Songs found")
         }
 
     @Test

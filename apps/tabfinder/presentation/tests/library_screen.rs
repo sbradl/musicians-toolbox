@@ -39,12 +39,12 @@ fn songs_are_listed_by_title_ignoring_case_and_equal_titles_are_both_listed() {
 }
 
 #[test]
-fn picking_a_folder_without_songs_shows_no_tab_files_found() {
+fn picking_a_folder_without_songs_shows_no_songs_found() {
     let tabfinder = TabFinder::with_folder("/music", &[]).start();
 
     tabfinder.musician_picks_folder("/music");
 
-    tabfinder.assert_library_screen(&listing("No Tab files found", &[]));
+    tabfinder.assert_library_screen(&listing("No Songs found", &[]));
 }
 
 #[test]

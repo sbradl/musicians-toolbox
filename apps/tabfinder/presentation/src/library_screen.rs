@@ -15,7 +15,7 @@ impl LibraryViewModel {
         let songs = library.songs();
 
         if songs.is_empty() {
-            return Self::with_status(texts.no_tab_files_found(), texts);
+            return Self::with_status(texts.no_songs_found(), texts);
         }
 
         Self::with_status(texts.songs_count(songs.len()), texts).with_songs(songs)

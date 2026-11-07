@@ -5,5 +5,5 @@ songs-count =
         [one] { $count } Song
        *[other] { $count } Songs
     }
-no-tab-files-found = No Tab files found
+no-songs-found = No Songs found
 scanning = Scanning…

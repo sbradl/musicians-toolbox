@@ -15,7 +15,7 @@ class SafFolderPicker(
     private val systemPicker = activity.registerForActivityResult(OpenDocumentTree(), ::answerWith)
     private var answer = CompletableDeferred<String?>()
 
-    override suspend fun pickFolder(): String? {
+    override suspend fun pickFolder(title: String): String? {
         answer = CompletableDeferred()
         openSystemPicker()
 

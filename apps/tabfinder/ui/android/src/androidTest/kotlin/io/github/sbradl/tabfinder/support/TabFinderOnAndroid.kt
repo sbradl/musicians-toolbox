@@ -100,7 +100,7 @@ class TabFinderOnAndroid(
     }
 
     private fun startTabFinder() {
-        val folderPicker = FolderPicker { folderThePickerAnswers }
+        val folderPicker = FolderPicker { _ -> folderThePickerAnswers }
         val core = TabFinderCore.onAndroid(folderPicker, configDir.path, libraryFolderReader)
         core.start()
         runningTabFinder = core

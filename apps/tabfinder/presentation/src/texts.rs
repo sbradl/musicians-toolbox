@@ -38,6 +38,10 @@ impl Texts {
         self.format("choose-folder", None)
     }
 
+    pub(super) fn library_folder_dialog_title(&self) -> String {
+        self.format("library-folder-dialog-title", None)
+    }
+
     fn format(&self, id: &str, args: Option<&FluentArgs<'_>>) -> String {
         let Some(pattern) = self.0.get_message(id).and_then(|message| message.value()) else {
             return id.to_owned();

@@ -36,12 +36,12 @@ class TabFinderCore private constructor(
 
     private fun perform(effect: Effect) =
         when (effect) {
-            Effect.PICK_FOLDER -> pickFolder()
+            is Effect.PickFolder -> pickFolder(effect.title)
         }
 
-    private fun pickFolder() {
+    private fun pickFolder(title: String) {
         scope.launch {
-            val pickedFolder = folderPicker.pickFolder()
+            val pickedFolder = folderPicker.pickFolder(title)
 
             if (pickedFolder != null) {
                 scanOffTheUiThread { app.folderPicked(pickedFolder) }

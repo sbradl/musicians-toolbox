@@ -37,7 +37,7 @@ pub struct Song {
 
 #[uniffi::remote(Enum)]
 pub enum Effect {
-    PickFolder,
+    PickFolder { title: String },
 }
 
 #[uniffi::export(callback_interface)]

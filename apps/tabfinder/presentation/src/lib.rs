@@ -33,7 +33,7 @@ pub struct Action {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Effect {
-    PickFolder,
+    PickFolder { title: String },
 }
 
 pub trait ViewModelListener: Send + Sync {
@@ -74,7 +74,9 @@ impl App {
     }
 
     pub fn choose_folder(&self) {
-        self.listener.on_effect(Effect::PickFolder);
+        self.listener.on_effect(Effect::PickFolder {
+            title: self.texts.library_folder_dialog_title(),
+        });
     }
 
     pub fn folder_picked(&self, location: &str) {

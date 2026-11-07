@@ -20,16 +20,19 @@ import java.nio.file.Path
 import java.util.UUID
 
 class PortalFolderPicker : FolderPicker {
-    override suspend fun pickFolder(): String? =
+    override suspend fun pickFolder(title: String): String? =
         withContext(Dispatchers.IO) {
-            withSessionBus { connection -> pickFolder(connection) }
+            withSessionBus { connection -> pickFolder(connection, title) }
         }
 
-    private suspend fun pickFolder(connection: DBusConnection): String? {
+    private suspend fun pickFolder(
+        connection: DBusConnection,
+        title: String,
+    ): String? {
         val token = uniqueRequestToken()
         val answer =
             connection.awaitAnswerOn(pathThePortalAnswersOn(connection, token)) {
-                fileChooserOf(connection).openFile(parentWindow = "", title = "", options = folderPickerOptions(token))
+                fileChooserOf(connection).openFile(parentWindow = "", title = title, options = folderPickerOptions(token))
             }
 
         return answer.pickedFolder()

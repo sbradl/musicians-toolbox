@@ -123,8 +123,12 @@ impl TabFinder {
     }
 
     #[track_caller]
-    pub fn assert_platform_was_asked_to_pick_a_folder(&self) {
-        assert_eq!(*lock(&self.screens.effects), [Effect::PickFolder]);
+    pub fn assert_platform_was_asked_to_pick_a_folder_titled(&self, title: &str) {
+        let pick_folder = Effect::PickFolder {
+            title: title.to_owned(),
+        };
+
+        assert_eq!(*lock(&self.screens.effects), [pick_folder]);
     }
 
     #[track_caller]

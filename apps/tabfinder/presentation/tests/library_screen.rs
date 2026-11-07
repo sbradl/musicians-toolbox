@@ -10,12 +10,12 @@ fn starting_without_a_remembered_library_location_shows_no_folder_chosen() {
 }
 
 #[test]
-fn choose_folder_asks_the_platform_to_pick_a_folder() {
+fn choose_folder_asks_the_platform_to_pick_a_folder_with_a_titled_dialog() {
     let tabfinder = TabFinder::without_folders().start();
 
     tabfinder.musician_clicks_choose_folder();
 
-    tabfinder.assert_platform_was_asked_to_pick_a_folder();
+    tabfinder.assert_platform_was_asked_to_pick_a_folder_titled("Choose the Library folder");
 }
 
 #[test]

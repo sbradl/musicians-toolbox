@@ -12,7 +12,7 @@ apps/<app>/
   adapters/ffi/                 driving adapter for Compose (UniFFI mapping only, ADR 0002) + driven adapters forwarding ports to Kotlin
   adapters/cli/                 CLIs (e.g. tabscan, tabreorg) on application (+ texts from presentation)
   adapters/<name>/              driven adapters in Rust implementing application ports (e.g. fs: desktop Library folder), wired by ffi
-  ui/shared/                    KMP module: Compose rendering only
+  ui/shared/                    KMP module: Compose rendering + the Kotlin driven ports both platforms implement (e.g. FolderPicker) and the glue that runs them
   ui/desktop/, ui/android/      entry points + Kotlin driven adapters (SAF, FileProvider, launching a tab editor)
   CHANGELOG.json
 adapters/<name>/                driven adapters shared by several apps, once a second app needs one

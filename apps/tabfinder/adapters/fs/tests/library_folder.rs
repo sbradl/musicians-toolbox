@@ -1,7 +1,8 @@
-use std::fs;
+use std::fs::{self, Permissions};
 use std::io;
+use std::os::unix::fs::PermissionsExt;
 
-use mt_tabfinder_application::{LibraryFolder, LibraryFolderGone, LibraryLocation};
+use mt_tabfinder_application::{LibraryFolder, LibraryFolderError, LibraryLocation};
 use mt_tabfinder_fs::FsLibraryFolder;
 
 pub mod common;
@@ -33,6 +34,19 @@ impl TempFolder {
         std::os::unix::fs::symlink(target.0.path(), self.0.path().join(relative))?;
 
         Ok(self)
+    }
+
+    fn lock_away(self) -> io::Result<Self> {
+        fs::set_permissions(self.0.path(), Permissions::from_mode(0o000))?;
+
+        Ok(self)
+    }
+
+    fn unlock(&self) {
+        drop(fs::set_permissions(
+            self.0.path(),
+            Permissions::from_mode(0o755),
+        ));
     }
 
     fn delete(self) {
@@ -104,7 +118,10 @@ fn a_folder_that_is_gone_is_reported() -> io::Result<()> {
     let location = folder.location();
     folder.delete();
 
-    assert_eq!(FsLibraryFolder.songs(&location), Err(LibraryFolderGone));
+    assert_eq!(
+        FsLibraryFolder.songs(&location),
+        Err(LibraryFolderError::Gone)
+    );
 
     Ok(())
 }
@@ -128,6 +145,18 @@ fn linked_folders_are_not_followed() -> io::Result<()> {
         .with_link("Linked Artist", &elsewhere)?;
 
     assert_eq!(folder.song_titles(), ["Amberline"]);
+
+    Ok(())
+}
+
+#[test]
+fn a_folder_tabfinder_may_not_read_is_reported() -> io::Result<()> {
+    let folder = TempFolder::new("locked")?.lock_away()?;
+
+    let songs = FsLibraryFolder.songs(&folder.location());
+
+    folder.unlock();
+    assert_eq!(songs, Err(LibraryFolderError::NoAccess));
 
     Ok(())
 }

@@ -71,6 +71,17 @@ class LibraryScreenOnAndroidTest {
         }
 
     @Test
+    fun aFolderTabFinderMayNotReadSaysWhy() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.musicianOpensTabFinder()
+
+            tabfinder.musicianPicksAFolderTabFinderMayNotRead()
+
+            tabfinder.assertStatus("No folder chosen")
+            tabfinder.assertShown("TabFinder may not read the Library folder.")
+        }
+
+    @Test
     fun reopeningTabFinderShowsTheRememberedLibrary() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.gp5")

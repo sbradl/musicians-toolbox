@@ -17,9 +17,26 @@ class SafLibraryFolder(
     override fun songs(location: String): List<Song> {
         val tree = location.toUri()
         val libraryFolderId = libraryFolderIdOf(tree) ?: throw LibraryFolderException.Gone()
-        val entries = entriesIn(tree, libraryFolderId) ?: throw LibraryFolderException.Gone()
+        val entries = libraryFolderEntries(tree, libraryFolderId)
 
         return songsIn(tree, entries)
+    }
+
+    private fun libraryFolderEntries(
+        tree: Uri,
+        libraryFolderId: String,
+    ): List<FolderEntry> {
+        val folderContents = DocumentsContract.buildChildDocumentsUriUsingTree(tree, libraryFolderId)
+        val entries =
+            try {
+                queryEntries(folderContents)
+            } catch (_: SecurityException) {
+                throw LibraryFolderException.NoAccess()
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+
+        return entries ?: throw LibraryFolderException.Gone()
     }
 
     private fun songsIn(

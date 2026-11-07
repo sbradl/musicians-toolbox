@@ -5,7 +5,7 @@ use std::fmt;
 
 use fluent_bundle::{FluentResource, concurrent::FluentBundle};
 use mt_tabfinder_application::{
-    Libraries, LibraryFolder, LibraryFolderGone, LibraryLocation, RememberedLibraryLocation,
+    Libraries, LibraryFolder, LibraryLocation, RememberedLibraryLocation,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -16,6 +16,7 @@ pub struct AppViewModel {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LibraryViewModel {
     pub status: String,
+    pub problem: Option<String>,
     pub choose_folder: Action,
     pub songs: Vec<SongItem>,
 }
@@ -87,7 +88,8 @@ impl App {
         self.show(LibraryViewModel::scanning(&self.texts));
         let library = match self.libraries.open(location) {
             Ok(library) => LibraryViewModel::listing(&library, &self.texts),
-            Err(LibraryFolderGone) => LibraryViewModel::no_folder_chosen(&self.texts),
+            Err(error) => LibraryViewModel::no_folder_chosen(&self.texts)
+                .because(self.texts.library_folder_problem(&error)),
         };
         self.show(library);
     }

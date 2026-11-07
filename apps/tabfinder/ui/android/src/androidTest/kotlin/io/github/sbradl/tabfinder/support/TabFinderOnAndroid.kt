@@ -78,7 +78,12 @@ class TabFinderOnAndroid(
     }
 
     fun musicianPicksTheLibraryFolder() {
-        folderThePickerAnswers = libraryFolderTree()
+        folderThePickerAnswers = treeOf(libraryFolder.name)
+        ui.onNodeWithText("Choose folder").performClick()
+    }
+
+    fun musicianPicksAFolderTabFinderMayNotRead() {
+        folderThePickerAnswers = treeOf(LibraryFolderForTests.FOLDER_IT_MAY_NOT_READ)
         ui.onNodeWithText("Choose folder").performClick()
     }
 
@@ -112,5 +117,5 @@ class TabFinderOnAndroid(
         ui.waitForIdle()
     }
 
-    private fun libraryFolderTree() = DocumentsContract.buildTreeDocumentUri(LibraryFolderForTests.AUTHORITY, libraryFolder.name).toString()
+    private fun treeOf(folder: String) = DocumentsContract.buildTreeDocumentUri(LibraryFolderForTests.AUTHORITY, folder).toString()
 }

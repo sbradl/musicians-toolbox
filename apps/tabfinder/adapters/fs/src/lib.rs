@@ -3,17 +3,27 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use mt_tabfinder_application::{
-    LibraryFolder, LibraryFolderGone, LibraryLocation, RememberedLibraryLocation, Song,
+    LibraryFolder, LibraryFolderError, LibraryLocation, RememberedLibraryLocation, Song,
 };
 
 #[derive(Debug)]
 pub struct FsLibraryFolder;
 
 impl LibraryFolder for FsLibraryFolder {
-    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderGone> {
-        let folder = open_folder(Path::new(location.as_str())).ok_or(LibraryFolderGone)?;
+    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderError> {
+        let folder = open_library_folder(Path::new(location.as_str()))?;
 
         Ok(songs_in(folder))
+    }
+}
+
+fn open_library_folder(folder: &Path) -> Result<ReadDir, LibraryFolderError> {
+    match fs::read_dir(folder) {
+        Ok(entries) => Ok(entries),
+        Err(error) if error.kind() == io::ErrorKind::PermissionDenied => {
+            Err(LibraryFolderError::NoAccess)
+        }
+        Err(_) => Err(LibraryFolderError::Gone),
     }
 }
 

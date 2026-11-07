@@ -1,6 +1,6 @@
 use std::fmt;
 
-use mt_tabfinder_application::{self as application, LibraryFolderGone, LibraryLocation, Song};
+use mt_tabfinder_application::{self as application, LibraryLocation, Song};
 use mt_tabfinder_fs::{FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
 use presentation::{Action, AppViewModel, Effect, LibraryViewModel, SongItem};
@@ -15,6 +15,7 @@ pub struct AppViewModel {
 #[uniffi::remote(Record)]
 pub struct LibraryViewModel {
     pub status: String,
+    pub problem: Option<String>,
     pub choose_folder: Action,
     pub songs: Vec<SongItem>,
 }
@@ -61,6 +62,7 @@ impl presentation::ViewModelListener for ListenerInKotlin {
 #[derive(uniffi::Error, Debug)]
 pub enum LibraryFolderError {
     Gone,
+    NoAccess,
 }
 
 #[expect(
@@ -90,10 +92,14 @@ impl fmt::Debug for LibraryFolderInKotlin {
 }
 
 impl application::LibraryFolder for LibraryFolderInKotlin {
-    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderGone> {
+    fn songs(
+        &self,
+        location: &LibraryLocation,
+    ) -> Result<Vec<Song>, application::LibraryFolderError> {
         match self.0.songs(location.as_str().to_owned()) {
             Ok(songs) => Ok(songs),
-            Err(LibraryFolderError::Gone) => Err(LibraryFolderGone),
+            Err(LibraryFolderError::Gone) => Err(application::LibraryFolderError::Gone),
+            Err(LibraryFolderError::NoAccess) => Err(application::LibraryFolderError::NoAccess),
         }
     }
 }

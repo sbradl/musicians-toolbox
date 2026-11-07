@@ -1,6 +1,6 @@
 pub mod support;
 
-use support::{TabFinder, listing, no_folder_chosen, scanning};
+use support::{TabFinder, listing, no_folder_chosen, no_folder_chosen_because, scanning};
 
 #[test]
 fn starting_without_a_remembered_library_location_shows_no_folder_chosen() {
@@ -75,12 +75,25 @@ fn cancelling_the_folder_pick_keeps_the_library() {
 }
 
 #[test]
-fn picking_a_folder_that_is_gone_shows_no_folder_chosen() {
+fn picking_a_folder_that_is_gone_shows_no_folder_chosen_and_why() {
     let tabfinder = TabFinder::without_folders().start();
 
     tabfinder.musician_picks_folder("/gone");
 
-    tabfinder.assert_status("No folder chosen");
+    tabfinder.assert_library_screen(&no_folder_chosen_because(
+        "The Library folder is gone. It may have been moved or deleted.",
+    ));
+}
+
+#[test]
+fn picking_a_folder_tabfinder_may_not_read_shows_no_folder_chosen_and_why() {
+    let tabfinder = TabFinder::with_folder_it_may_not_read("/locked").start();
+
+    tabfinder.musician_picks_folder("/locked");
+
+    tabfinder.assert_library_screen(&no_folder_chosen_because(
+        "TabFinder may not read the Library folder.",
+    ));
 }
 
 #[test]

@@ -17,10 +17,13 @@ impl LibraryLocation {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct LibraryFolderGone;
+pub enum LibraryFolderError {
+    Gone,
+    NoAccess,
+}
 
 pub trait LibraryFolder: Send + Sync + Debug {
-    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderGone>;
+    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderError>;
 }
 
 pub trait RememberedLibraryLocation: Send + Sync + Debug {
@@ -47,7 +50,7 @@ impl Libraries {
         self.remembered.remembered()
     }
 
-    pub fn open(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderGone> {
+    pub fn open(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderError> {
         let library = self.scan(location);
 
         if library.is_ok() {
@@ -59,7 +62,7 @@ impl Libraries {
         library
     }
 
-    fn scan(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderGone> {
+    fn scan(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderError> {
         let songs = self.folder.songs(location)?;
 
         Ok(Library::of(songs))

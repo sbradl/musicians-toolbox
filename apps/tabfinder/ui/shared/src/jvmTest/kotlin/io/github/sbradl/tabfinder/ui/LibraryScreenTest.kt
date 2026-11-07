@@ -41,6 +41,18 @@ class LibraryScreenTest {
             tabfinder.assertStatus("No Songs found")
         }
 
+    @Test
+    fun choosingAFolderThatIsGoneSaysWhy() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.libraryFolderIsDeleted()
+
+            tabfinder.musicianPicksTheLibraryFolder()
+
+            tabfinder.assertStatus("No folder chosen")
+            tabfinder.assertShown("The Library folder is gone. It may have been moved or deleted.")
+        }
+
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun scanningShowsItsStatusAndDisablesChooseFolder() =
@@ -49,6 +61,7 @@ class LibraryScreenTest {
                 LibraryScreen(
                     LibraryViewModel(
                         status = "Scanning…",
+                        problem = null,
                         chooseFolder = Action(label = "Choose folder", isEnabled = false),
                         songs = emptyList(),
                     ),

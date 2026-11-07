@@ -49,6 +49,10 @@ class TabFinderOnDesktop(
         }
     }
 
+    fun libraryFolderIsDeleted() {
+        libraryFolder.deleteRecursively()
+    }
+
     fun musicianOpensTabFinder() {
         val core = TabFinderCore.onDesktop(FolderPicker { _ -> folderThePickerAnswers?.toString() }, configDir.toString())
         core.start()

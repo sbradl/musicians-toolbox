@@ -21,9 +21,16 @@ impl LibraryViewModel {
         Self::with_status(texts.songs_count(songs.len()), texts).with_songs(songs)
     }
 
+    pub(super) fn because(mut self, problem: String) -> Self {
+        self.problem = Some(problem);
+
+        self
+    }
+
     fn with_status(status: String, texts: &Texts) -> Self {
         Self {
             status,
+            problem: None,
             choose_folder: Action {
                 label: texts.choose_folder(),
                 is_enabled: true,

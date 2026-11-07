@@ -1,6 +1,7 @@
 use fluent_bundle::{FluentArgs, FluentResource, concurrent::FluentBundle};
 
 use crate::Texts;
+use mt_tabfinder_application::LibraryFolderError;
 use unic_langid::LanguageIdentifier;
 
 impl Texts {
@@ -25,6 +26,13 @@ impl Texts {
 
     pub(super) fn no_songs_found(&self) -> String {
         self.format("no-songs-found", None)
+    }
+
+    pub(super) fn library_folder_problem(&self, error: &LibraryFolderError) -> String {
+        match error {
+            LibraryFolderError::Gone => self.format("library-folder-gone", None),
+            LibraryFolderError::NoAccess => self.format("library-folder-no-access", None),
+        }
     }
 
     pub(super) fn songs_count(&self, count: usize) -> String {

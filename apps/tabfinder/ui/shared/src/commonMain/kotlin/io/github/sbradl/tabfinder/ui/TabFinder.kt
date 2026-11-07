@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -37,8 +38,16 @@ internal fun LibraryScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(viewModel.status)
+        Problem(viewModel.problem)
         ChooseFolderButton(viewModel.chooseFolder, onChooseFolder)
         SongList(viewModel.songs)
+    }
+}
+
+@Composable
+private fun Problem(problem: String?) {
+    if (problem != null) {
+        Text(problem, color = MaterialTheme.colorScheme.error)
     }
 }
 

@@ -6,7 +6,7 @@ use mt_library as _;
 use unic_langid as _;
 
 use mt_tabfinder_application::{
-    LibraryFolder, LibraryFolderGone, LibraryLocation, RememberedLibraryLocation, Song,
+    LibraryFolder, LibraryFolderError, LibraryLocation, RememberedLibraryLocation, Song,
 };
 use mt_tabfinder_presentation::{
     Action, App, AppViewModel, Effect, LibraryViewModel, SongItem, ViewModelListener,
@@ -21,6 +21,12 @@ pub struct TabFinderSetup {
 impl TabFinderSetup {
     pub fn with_folder(self, location: &str, song_titles: &[&str]) -> Self {
         self.folders.add(location, song_titles);
+
+        self
+    }
+
+    pub fn with_folder_it_may_not_read(self, location: &str) -> Self {
+        self.folders.lock_away(location);
 
         self
     }
@@ -63,6 +69,10 @@ impl TabFinder {
 
     pub fn with_folder(location: &str, song_titles: &[&str]) -> TabFinderSetup {
         TabFinderSetup::default().with_folder(location, song_titles)
+    }
+
+    pub fn with_folder_it_may_not_read(location: &str) -> TabFinderSetup {
+        TabFinderSetup::default().with_folder_it_may_not_read(location)
     }
 
     pub fn musician_clicks_choose_folder(&self) {
@@ -149,6 +159,13 @@ pub fn no_folder_chosen() -> LibraryViewModel {
     listing("No folder chosen", &[])
 }
 
+pub fn no_folder_chosen_because(problem: &str) -> LibraryViewModel {
+    let mut screen = no_folder_chosen();
+    screen.problem = Some(problem.to_owned());
+
+    screen
+}
+
 pub fn scanning() -> LibraryViewModel {
     let mut screen = listing("Scanning…", &[]);
     screen.choose_folder.is_enabled = false;
@@ -159,6 +176,7 @@ pub fn scanning() -> LibraryViewModel {
 pub fn listing(status: &str, song_titles: &[&str]) -> LibraryViewModel {
     LibraryViewModel {
         status: status.to_owned(),
+        problem: None,
         choose_folder: Action {
             label: "Choose folder".to_owned(),
             is_enabled: true,
@@ -199,6 +217,7 @@ impl ViewModelListener for ShownScreens {
 #[derive(Clone, Debug, Default)]
 struct FakeLibraryFolders {
     songs_by_location: Shared<HashMap<String, Vec<Song>>>,
+    locked_away: Shared<Vec<String>>,
 }
 
 impl FakeLibraryFolders {
@@ -210,18 +229,33 @@ impl FakeLibraryFolders {
         drop(lock(&self.songs_by_location).insert(location.to_owned(), songs));
     }
 
+    fn lock_away(&self, location: &str) {
+        lock(&self.locked_away).push(location.to_owned());
+    }
+
     fn delete(&self, location: &str) {
         drop(lock(&self.songs_by_location).remove(location));
     }
 }
 
 impl LibraryFolder for FakeLibraryFolders {
-    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderGone> {
-        self.songs_at(location.as_str()).ok_or(LibraryFolderGone)
+    fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderError> {
+        if self.is_locked_away(location.as_str()) {
+            return Err(LibraryFolderError::NoAccess);
+        }
+
+        self.songs_at(location.as_str())
+            .ok_or(LibraryFolderError::Gone)
     }
 }
 
 impl FakeLibraryFolders {
+    fn is_locked_away(&self, location: &str) -> bool {
+        lock(&self.locked_away)
+            .iter()
+            .any(|locked| locked == location)
+    }
+
     fn songs_at(&self, location: &str) -> Option<Vec<Song>> {
         lock(&self.songs_by_location).get(location).cloned()
     }

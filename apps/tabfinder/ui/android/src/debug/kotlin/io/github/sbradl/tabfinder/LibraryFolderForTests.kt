@@ -26,6 +26,7 @@ class LibraryFolderForTests : DocumentsProvider() {
         projection: Array<out String>?,
         sortOrder: String?,
     ): Cursor {
+        if (parentDocumentId == FOLDER_IT_MAY_NOT_READ) throw SecurityException("No grant for $parentDocumentId")
         val files = fileOf(parentDocumentId).listFiles() ?: throw FileNotFoundException(parentDocumentId)
 
         return documentsCursor(files.toList())
@@ -57,5 +58,6 @@ class LibraryFolderForTests : DocumentsProvider() {
 
     companion object {
         const val AUTHORITY = "io.github.sbradl.tabfinder.library-folder-for-tests"
+        const val FOLDER_IT_MAY_NOT_READ = "locked"
     }
 }

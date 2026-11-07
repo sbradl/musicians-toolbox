@@ -8,3 +8,5 @@ songs-count =
     }
 no-songs-found = No Songs found
 scanning = Scanning…
+library-folder-gone = The Library folder is gone. It may have been moved or deleted.
+library-folder-no-access = TabFinder may not read the Library folder.

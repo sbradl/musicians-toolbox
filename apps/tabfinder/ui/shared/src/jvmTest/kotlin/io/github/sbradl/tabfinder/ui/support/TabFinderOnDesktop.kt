@@ -5,6 +5,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
@@ -40,6 +41,7 @@ class TabFinderOnDesktop(
     private val libraryFolder = createTempDirectory("tabfinder")
     private val configDir = createTempDirectory("tabfinder-config")
     private var pickerAnswer: FolderPick = FolderPick.Cancelled
+    private var slowLibraryFolder: LibraryFolderThatCanBeHeld? = null
 
     fun libraryFolderContains(vararg files: String) {
         files.forEach { file ->
@@ -49,12 +51,22 @@ class TabFinderOnDesktop(
         }
     }
 
+    fun libraryFolderIsSlowToRead() {
+        val folder = LibraryFolderThatCanBeHeld(LibraryFolderOnDisk(libraryFolder))
+        folder.holdReading()
+        slowLibraryFolder = folder
+    }
+
+    fun libraryFolderFinishesReading() {
+        slowLibraryFolder?.releaseReading()
+    }
+
     fun libraryFolderIsDeleted() {
         libraryFolder.deleteRecursively()
     }
 
     fun musicianOpensTabFinder() {
-        val core = TabFinderCore.onDesktop(FolderPicker { _ -> pickerAnswer }, configDir.toString())
+        val core = startTabFinderCore()
         core.start()
         ui.waitUntil { core.viewModel.value != null }
         ui.setContent { TabFinder(core) }
@@ -74,6 +86,10 @@ class TabFinderOnDesktop(
         ui.waitUntilExactlyOneExists(hasText(status))
     }
 
+    fun assertChooseFolderIsDisabled() {
+        ui.onNodeWithText("Choose folder").assertIsNotEnabled()
+    }
+
     fun assertShown(vararg texts: String) {
         texts.forEach { text -> ui.onNodeWithText(text).assertExists() }
     }
@@ -84,6 +100,17 @@ class TabFinderOnDesktop(
         interactiveElements.forEach { element ->
             assertTrue(element.labels().any { it.isNotBlank() }, "unlabelled element: $element")
         }
+    }
+
+    private fun startTabFinderCore(): TabFinderCore {
+        val folderPicker = FolderPicker { _ -> pickerAnswer }
+        val slowFolder = slowLibraryFolder
+
+        if (slowFolder != null) {
+            return TabFinderCore.withLibraryFolder(folderPicker, configDir.toString(), slowFolder)
+        }
+
+        return TabFinderCore.onDesktop(folderPicker, configDir.toString())
     }
 
     internal fun deleteFolders() {

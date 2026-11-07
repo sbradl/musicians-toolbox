@@ -57,7 +57,7 @@ class TabFinderCore private constructor(
             configDir: String,
         ) = TabFinderCore(folderPicker) { listener -> App(listener, configDir) }
 
-        fun onAndroid(
+        fun withLibraryFolder(
             folderPicker: FolderPicker,
             configDir: String,
             libraryFolder: LibraryFolder,

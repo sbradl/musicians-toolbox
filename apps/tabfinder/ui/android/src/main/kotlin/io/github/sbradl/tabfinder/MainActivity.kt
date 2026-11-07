@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startCore(): TabFinderCore {
-        val core = TabFinderCore.onAndroid(folderPicker, filesDir.path, SafLibraryFolder(contentResolver))
+        val core = TabFinderCore.withLibraryFolder(folderPicker, filesDir.path, SafLibraryFolder(contentResolver))
         core.start()
 
         return core

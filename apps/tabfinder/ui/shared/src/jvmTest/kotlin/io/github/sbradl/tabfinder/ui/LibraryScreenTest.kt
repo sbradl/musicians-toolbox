@@ -1,11 +1,5 @@
 package io.github.sbradl.tabfinder.ui
 
-import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.runComposeUiTest
-import io.github.sbradl.tabfinder.core.Action
-import io.github.sbradl.tabfinder.core.LibraryViewModel
 import io.github.sbradl.tabfinder.ui.support.runTabFinderTest
 import kotlin.test.Test
 
@@ -64,24 +58,19 @@ class LibraryScreenTest {
             tabfinder.assertShown("The system folder dialog is not available.")
         }
 
-    @OptIn(ExperimentalTestApi::class)
     @Test
     fun scanningShowsItsStatusAndDisablesChooseFolder() =
-        runComposeUiTest {
-            setContent {
-                LibraryScreen(
-                    LibraryViewModel(
-                        status = "Scanning…",
-                        problem = null,
-                        chooseFolder = Action(label = "Choose folder", isEnabled = false),
-                        songs = emptyList(),
-                    ),
-                    onChooseFolder = {},
-                )
-            }
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.libraryFolderIsSlowToRead()
+            tabfinder.musicianOpensTabFinder()
 
-            onNodeWithText("Scanning…").assertExists()
-            onNodeWithText("Choose folder").assertIsNotEnabled()
+            tabfinder.musicianPicksTheLibraryFolder()
+
+            tabfinder.assertStatus("Scanning…")
+            tabfinder.assertChooseFolderIsDisabled()
+            tabfinder.libraryFolderFinishesReading()
+            tabfinder.assertStatus("1 Song")
         }
 
     @Test

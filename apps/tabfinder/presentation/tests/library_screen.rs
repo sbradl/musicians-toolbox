@@ -1,6 +1,6 @@
 pub mod support;
 
-use support::{TabFinder, listing, no_folder_chosen, no_folder_chosen_because, scanning};
+use support::{TabFinder, because, listing, no_folder_chosen, no_folder_chosen_because, scanning};
 
 #[test]
 fn starting_without_a_remembered_library_location_shows_no_folder_chosen() {
@@ -72,6 +72,19 @@ fn cancelling_the_folder_pick_keeps_the_library() {
     tabfinder.musician_cancels_the_folder_pick();
 
     assert_eq!(tabfinder.library_screens_shown(), shown_before);
+}
+
+#[test]
+fn without_a_folder_dialog_the_library_stays_and_the_screen_says_why() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_finds_no_folder_dialog();
+
+    tabfinder.assert_library_screen(&because(
+        listing("1 Song", &["Wexmoor"]),
+        "The system folder dialog is not available.",
+    ));
 }
 
 #[test]

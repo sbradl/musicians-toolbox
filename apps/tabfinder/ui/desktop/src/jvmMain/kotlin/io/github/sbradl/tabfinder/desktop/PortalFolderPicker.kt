@@ -1,5 +1,6 @@
 package io.github.sbradl.tabfinder.desktop
 
+import io.github.sbradl.tabfinder.ui.FolderPick
 import io.github.sbradl.tabfinder.ui.FolderPicker
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +11,7 @@ import org.freedesktop.dbus.annotations.DBusMemberName
 import org.freedesktop.dbus.connections.impl.DBusConnection
 import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder
 import org.freedesktop.dbus.exceptions.DBusException
+import org.freedesktop.dbus.exceptions.DBusExecutionException
 import org.freedesktop.dbus.interfaces.DBusInterface
 import org.freedesktop.dbus.interfaces.DBusSigHandler
 import org.freedesktop.dbus.messages.DBusSignal
@@ -20,7 +22,7 @@ import java.nio.file.Path
 import java.util.UUID
 
 class PortalFolderPicker : FolderPicker {
-    override suspend fun pickFolder(title: String): String? =
+    override suspend fun pickFolder(title: String): FolderPick =
         withContext(Dispatchers.IO) {
             withSessionBus { connection -> pickFolder(connection, title) }
         }
@@ -28,7 +30,7 @@ class PortalFolderPicker : FolderPicker {
     private suspend fun pickFolder(
         connection: DBusConnection,
         title: String,
-    ): String? {
+    ): FolderPick {
         val token = uniqueRequestToken()
         val answer =
             connection.awaitAnswerOn(pathThePortalAnswersOn(connection, token)) {
@@ -38,11 +40,13 @@ class PortalFolderPicker : FolderPicker {
         return answer.pickedFolder()
     }
 
-    private inline fun withSessionBus(use: (DBusConnection) -> String?): String? =
+    private inline fun withSessionBus(use: (DBusConnection) -> FolderPick): FolderPick =
         try {
             DBusConnectionBuilder.forSessionBus().build().use(use)
         } catch (_: DBusException) {
-            null
+            FolderPick.Unavailable
+        } catch (_: DBusExecutionException) {
+            FolderPick.Unavailable
         }
 
     private suspend fun DBusConnection.awaitAnswerOn(
@@ -79,11 +83,12 @@ class PortalFolderPicker : FolderPicker {
             "modal" to Variant(true),
         )
 
-    private fun Request.Response.pickedFolder(): String? {
-        if (response.toInt() != RESPONSE_SUCCESS) return null
-        val uri = firstUri() ?: return null
+    private fun Request.Response.pickedFolder(): FolderPick {
+        if (response.toInt() != RESPONSE_SUCCESS) return FolderPick.Cancelled
+        val uri = firstUri() ?: return FolderPick.Cancelled
+        val folder = localPath(uri) ?: return FolderPick.Cancelled
 
-        return localPath(uri)
+        return FolderPick.Picked(folder)
     }
 
     private fun Request.Response.firstUri(): String? {

@@ -14,6 +14,7 @@ import androidx.compose.ui.test.waitUntilExactlyOneExists
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.sbradl.tabfinder.LibraryFolderForTests
 import io.github.sbradl.tabfinder.SafLibraryFolder
+import io.github.sbradl.tabfinder.ui.FolderPick
 import io.github.sbradl.tabfinder.ui.FolderPicker
 import io.github.sbradl.tabfinder.ui.TabFinder
 import io.github.sbradl.tabfinder.ui.TabFinderCore
@@ -37,7 +38,7 @@ class TabFinderOnAndroid(
     private val app = InstrumentationRegistry.getInstrumentation().targetContext
     private val configDir = File(app.cacheDir, "config")
     private val libraryFolder = File(app.cacheDir, "library")
-    private var folderThePickerAnswers: String? = null
+    private var folderThePickerAnswers = ""
     private val libraryFolderReader = LibraryFolderThatCanBeHeld(SafLibraryFolder(app.contentResolver))
     private var runningTabFinder by mutableStateOf<TabFinderCore?>(null)
 
@@ -105,7 +106,7 @@ class TabFinderOnAndroid(
     }
 
     private fun startTabFinder() {
-        val folderPicker = FolderPicker { _ -> folderThePickerAnswers }
+        val folderPicker = FolderPicker { _ -> FolderPick.Picked(folderThePickerAnswers) }
         val core = TabFinderCore.onAndroid(folderPicker, configDir.path, libraryFolderReader)
         core.start()
         runningTabFinder = core

@@ -2,6 +2,7 @@ mod library_screen;
 mod texts;
 
 use std::fmt;
+use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use fluent_bundle::{FluentResource, concurrent::FluentBundle};
 use mt_tabfinder_application::{
@@ -46,6 +47,7 @@ pub struct App {
     listener: Box<dyn ViewModelListener>,
     libraries: Libraries,
     texts: Texts,
+    shown: Mutex<Option<LibraryViewModel>>,
 }
 
 impl fmt::Debug for App {
@@ -64,6 +66,7 @@ impl App {
             listener,
             libraries: Libraries::new(library_folder, remembered_library_location),
             texts: Texts::english(),
+            shown: Mutex::new(None),
         }
     }
 
@@ -84,6 +87,11 @@ impl App {
         self.open_library(&LibraryLocation::new(location));
     }
 
+    pub fn folder_picker_unavailable(&self) {
+        let shown = self.shown_library();
+        self.show(shown.because(self.texts.folder_picker_unavailable()));
+    }
+
     fn open_library(&self, location: &LibraryLocation) {
         self.show(LibraryViewModel::scanning(&self.texts));
         let library = match self.libraries.open(location) {
@@ -95,8 +103,19 @@ impl App {
     }
 
     fn show(&self, library: LibraryViewModel) {
+        *lock(&self.shown) = Some(library.clone());
         self.listener.on_view_model(AppViewModel { library });
     }
+
+    fn shown_library(&self) -> LibraryViewModel {
+        let shown = lock(&self.shown).clone();
+
+        shown.unwrap_or_else(|| LibraryViewModel::no_folder_chosen(&self.texts))
+    }
+}
+
+fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 struct Texts(FluentBundle<FluentResource>);

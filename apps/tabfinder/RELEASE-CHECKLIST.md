@@ -9,7 +9,8 @@ What automation can't check. Work through it with the artifacts of one CI run (`
 ## Linux app image
 
 - [ ] On a plain Linux system with glibc 2.31 (e.g. Debian 11, Ubuntu 20.04) and no Java installed: `tar -xzf tabfinder-linux-x86_64.tar.gz && ./TabFinder/bin/TabFinder` opens TabFinder
-- [ ] The folder picker opens, a picked Library folder shows its Songs
+- [ ] The folder picker opens titled "Choose the Library folder", a picked Library folder shows its Songs
+- [ ] Without a folder dialog (`DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent ./TabFinder/bin/TabFinder`), "Choose folder" says "The system folder dialog is not available."
 - [ ] Restart: TabFinder shows the remembered Library
 - [ ] Keyboard only: every control is reachable with Tab and works with Enter or Space
 - [ ] 200 % font (desktop text scaling): no text is cut off or overlaps

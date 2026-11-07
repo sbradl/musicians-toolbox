@@ -84,6 +84,11 @@ impl TabFinder {
         self.app.folder_picked(location);
     }
 
+    pub fn musician_finds_no_folder_dialog(&self) {
+        self.app.choose_folder();
+        self.app.folder_picker_unavailable();
+    }
+
     pub fn musician_cancels_the_folder_pick(&self) {
         self.app.choose_folder();
     }
@@ -160,7 +165,10 @@ pub fn no_folder_chosen() -> LibraryViewModel {
 }
 
 pub fn no_folder_chosen_because(problem: &str) -> LibraryViewModel {
-    let mut screen = no_folder_chosen();
+    because(no_folder_chosen(), problem)
+}
+
+pub fn because(mut screen: LibraryViewModel, problem: &str) -> LibraryViewModel {
     screen.problem = Some(problem.to_owned());
 
     screen

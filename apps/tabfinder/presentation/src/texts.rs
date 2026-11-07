@@ -35,6 +35,10 @@ impl Texts {
         }
     }
 
+    pub(super) fn folder_picker_unavailable(&self) -> String {
+        self.format("folder-picker-unavailable", None)
+    }
+
     pub(super) fn songs_count(&self, count: usize) -> String {
         let mut args = FluentArgs::new();
         args.set("count", count);

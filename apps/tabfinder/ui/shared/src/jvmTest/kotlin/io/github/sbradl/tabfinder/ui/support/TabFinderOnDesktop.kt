@@ -11,10 +11,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
+import io.github.sbradl.tabfinder.ui.FolderPick
 import io.github.sbradl.tabfinder.ui.FolderPicker
 import io.github.sbradl.tabfinder.ui.TabFinder
 import io.github.sbradl.tabfinder.ui.TabFinderCore
-import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
@@ -39,7 +39,7 @@ class TabFinderOnDesktop(
 ) {
     private val libraryFolder = createTempDirectory("tabfinder")
     private val configDir = createTempDirectory("tabfinder-config")
-    private var folderThePickerAnswers: Path? = null
+    private var pickerAnswer: FolderPick = FolderPick.Cancelled
 
     fun libraryFolderContains(vararg files: String) {
         files.forEach { file ->
@@ -54,14 +54,19 @@ class TabFinderOnDesktop(
     }
 
     fun musicianOpensTabFinder() {
-        val core = TabFinderCore.onDesktop(FolderPicker { _ -> folderThePickerAnswers?.toString() }, configDir.toString())
+        val core = TabFinderCore.onDesktop(FolderPicker { _ -> pickerAnswer }, configDir.toString())
         core.start()
         ui.waitUntil { core.viewModel.value != null }
         ui.setContent { TabFinder(core) }
     }
 
     fun musicianPicksTheLibraryFolder() {
-        folderThePickerAnswers = libraryFolder
+        pickerAnswer = FolderPick.Picked(libraryFolder.toString())
+        ui.onNodeWithText("Choose folder").performClick()
+    }
+
+    fun musicianFindsNoFolderDialog() {
+        pickerAnswer = FolderPick.Unavailable
         ui.onNodeWithText("Choose folder").performClick()
     }
 

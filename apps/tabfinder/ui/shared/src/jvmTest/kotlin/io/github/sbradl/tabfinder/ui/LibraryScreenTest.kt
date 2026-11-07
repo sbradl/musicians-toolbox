@@ -53,6 +53,17 @@ class LibraryScreenTest {
             tabfinder.assertShown("The Library folder is gone. It may have been moved or deleted.")
         }
 
+    @Test
+    fun withoutAFolderDialogChooseFolderSaysWhy() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.musicianOpensTabFinder()
+
+            tabfinder.musicianFindsNoFolderDialog()
+
+            tabfinder.assertStatus("No folder chosen")
+            tabfinder.assertShown("The system folder dialog is not available.")
+        }
+
     @OptIn(ExperimentalTestApi::class)
     @Test
     fun scanningShowsItsStatusAndDisablesChooseFolder() =

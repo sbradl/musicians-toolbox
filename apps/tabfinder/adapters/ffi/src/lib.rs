@@ -154,6 +154,10 @@ impl App {
     pub fn folder_picked(&self, location: &str) {
         self.0.folder_picked(location);
     }
+
+    pub fn folder_picker_unavailable(&self) {
+        self.0.folder_picker_unavailable();
+    }
 }
 
 impl App {

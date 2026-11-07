@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree
+import io.github.sbradl.tabfinder.ui.FolderPick
 import io.github.sbradl.tabfinder.ui.FolderPicker
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -13,9 +14,9 @@ class SafFolderPicker(
     private val activity: ComponentActivity,
 ) : FolderPicker {
     private val systemPicker = activity.registerForActivityResult(OpenDocumentTree(), ::answerWith)
-    private var answer = CompletableDeferred<String?>()
+    private var answer = CompletableDeferred<FolderPick>()
 
-    override suspend fun pickFolder(title: String): String? {
+    override suspend fun pickFolder(title: String): FolderPick {
         answer = CompletableDeferred()
         openSystemPicker()
 
@@ -28,10 +29,13 @@ class SafFolderPicker(
     }
 
     private fun answerWith(pickedTree: Uri?) {
-        if (pickedTree != null) {
-            keepAccessAcrossRestarts(pickedTree)
+        if (pickedTree == null) {
+            answer.complete(FolderPick.Cancelled)
+
+            return
         }
-        answer.complete(pickedTree?.toString())
+        keepAccessAcrossRestarts(pickedTree)
+        answer.complete(FolderPick.Picked(pickedTree.toString()))
     }
 
     private fun keepAccessAcrossRestarts(tree: Uri) {

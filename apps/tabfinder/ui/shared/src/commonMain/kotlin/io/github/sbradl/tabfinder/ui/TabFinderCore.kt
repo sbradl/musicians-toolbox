@@ -41,10 +41,10 @@ class TabFinderCore private constructor(
 
     private fun pickFolder(title: String) {
         scope.launch {
-            val pickedFolder = folderPicker.pickFolder(title)
-
-            if (pickedFolder != null) {
-                scanOffTheUiThread { app.folderPicked(pickedFolder) }
+            when (val pick = folderPicker.pickFolder(title)) {
+                is FolderPick.Picked -> scanOffTheUiThread { app.folderPicked(pick.location) }
+                FolderPick.Cancelled -> Unit
+                FolderPick.Unavailable -> app.folderPickerUnavailable()
             }
         }
     }

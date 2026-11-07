@@ -37,6 +37,18 @@ class LibraryScreenOnAndroidTest {
         }
 
     @Test
+    fun hiddenFilesAreNoSongs() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5", ".Old Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+
+            tabfinder.musicianPicksTheLibraryFolder()
+
+            tabfinder.assertStatus("1 Song")
+            tabfinder.assertNotShown(".Old Wexmoor")
+        }
+
+    @Test
     fun aFileNamedOnlyByAnExtensionIsNoSong() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains(".gp5")

@@ -9,6 +9,7 @@ import androidx.core.net.toUri
 import io.github.sbradl.tabfinder.core.LibraryFolder
 import io.github.sbradl.tabfinder.core.LibraryFolderException
 import io.github.sbradl.tabfinder.core.Song
+import io.github.sbradl.tabfinder.core.songFromFileName
 
 class SafLibraryFolder(
     private val contentResolver: ContentResolver,
@@ -28,8 +29,8 @@ class SafLibraryFolder(
         entries.flatMap { entry ->
             when {
                 entry.isVisibleSubfolder() -> songsInSubfolder(tree, entry)
-                entry.isTabFile() -> listOf(Song(title = entry.nameWithoutExtension()))
-                else -> emptyList()
+                entry.isFolder() -> emptyList()
+                else -> listOfNotNull(songFromFileName(entry.name))
             }
         }
 
@@ -94,19 +95,10 @@ private class FolderEntry(
 ) {
     fun isVisibleSubfolder() = isFolder() && !name.startsWith(".")
 
-    fun isTabFile() = !isFolder() && hasTitle() && extension() in TAB_FILE_EXTENSIONS
-
-    fun nameWithoutExtension() = name.substringBeforeLast('.')
-
-    private fun isFolder() = mimeType == Document.MIME_TYPE_DIR
-
-    private fun hasTitle() = nameWithoutExtension().isNotEmpty()
-
-    private fun extension() = name.substringAfterLast('.', "").lowercase()
+    fun isFolder() = mimeType == Document.MIME_TYPE_DIR
 
     companion object {
         val COLUMNS = arrayOf(Document.COLUMN_DOCUMENT_ID, Document.COLUMN_DISPLAY_NAME, Document.COLUMN_MIME_TYPE)
-        private val TAB_FILE_EXTENSIONS = setOf("gp3", "gp4", "gp5", "gpx", "gp", "tg", "ptb")
 
         fun fromCurrentRow(cursor: Cursor): FolderEntry? {
             val id = cursor.stringInColumn(Document.COLUMN_DOCUMENT_ID) ?: return null

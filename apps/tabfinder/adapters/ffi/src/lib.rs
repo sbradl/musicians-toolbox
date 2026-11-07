@@ -99,6 +99,11 @@ impl application::LibraryFolder for LibraryFolderInKotlin {
 }
 
 #[uniffi::export]
+pub fn song_from_file_name(file_name: &str) -> Option<Song> {
+    mt_tabfinder_fs::song_from_file_name(file_name)
+}
+
+#[uniffi::export]
 pub fn desktop_config_dir() -> Option<String> {
     let config_dir = mt_tabfinder_fs::desktop_config_dir(environment_variable)?;
 

@@ -29,6 +29,12 @@ impl TempFolder {
         Ok(self)
     }
 
+    fn with_link(self, relative: &str, target: &Self) -> io::Result<Self> {
+        std::os::unix::fs::symlink(target.0.path(), self.0.path().join(relative))?;
+
+        Ok(self)
+    }
+
     fn delete(self) {
         drop(self);
     }
@@ -99,6 +105,29 @@ fn a_folder_that_is_gone_is_reported() -> io::Result<()> {
     folder.delete();
 
     assert_eq!(FsLibraryFolder.songs(&location), Err(LibraryFolderGone));
+
+    Ok(())
+}
+
+#[test]
+fn hidden_files_are_no_songs() -> io::Result<()> {
+    let folder = TempFolder::new("hidden-files")?
+        .with_file("Amberline.gp4")?
+        .with_file(".Brasswing.gp5")?;
+
+    assert_eq!(folder.song_titles(), ["Amberline"]);
+
+    Ok(())
+}
+
+#[test]
+fn linked_folders_are_not_followed() -> io::Result<()> {
+    let elsewhere = TempFolder::new("link-target")?.with_file("Brasswing.gp5")?;
+    let folder = TempFolder::new("links")?
+        .with_file("Amberline.gp4")?
+        .with_link("Linked Artist", &elsewhere)?;
+
+    assert_eq!(folder.song_titles(), ["Amberline"]);
 
     Ok(())
 }

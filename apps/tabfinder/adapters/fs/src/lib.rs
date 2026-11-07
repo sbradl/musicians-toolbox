@@ -43,13 +43,21 @@ fn songs_in_subfolder(subfolder: &DirEntry) -> Vec<Song> {
 }
 
 fn song_from(entry: &DirEntry) -> Option<Song> {
-    let path = entry.path();
+    if !is_file(entry) {
+        return None;
+    }
 
-    if !is_file(entry) || !is_tab_file(&path) {
+    song_from_file_name(&entry.file_name().to_string_lossy())
+}
+
+pub fn song_from_file_name(file_name: &str) -> Option<Song> {
+    let file = Path::new(file_name);
+
+    if file_name.starts_with('.') || !is_tab_file(file) {
         return None;
     }
     Some(Song {
-        title: file_name_without_extension(&path)?,
+        title: file_name_without_extension(file)?,
     })
 }
 

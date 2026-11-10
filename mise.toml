@@ -8,6 +8,7 @@ opengrep = "1.33.1"
 "github:bbqsrc/cargo-ndk" = "4.1.2"
 zig = "0.17.1"
 "github:rust-cross/cargo-zigbuild" = "0.24.1"
+"github:EmbarkStudios/cargo-about" = "0.9.3"
 
 [env]
 ANDROID_HOME = "{{ env.ANDROID_HOME | default(value=env.HOME ~ '/Android/Sdk') }}"
@@ -94,11 +95,15 @@ run = """
 desktop_app_images=apps/tabfinder/ui/desktop/build/compose/binaries/main/app
 android_debug_apk=apps/tabfinder/ui/android/build/outputs/apk/debug/android-debug.apk
 packages=build/package
-./gradlew :apps:tabfinder:adapters:ffi:checkGlibcFloor :apps:tabfinder:ui:desktop:createDistributable :apps:tabfinder:ui:android:assembleDebug
+./gradlew :apps:tabfinder:adapters:ffi:checkGlibcFloor :apps:tabfinder:ui:desktop:createDistributable :apps:tabfinder:ui:desktop:thirdPartyNotices :apps:tabfinder:ui:android:assembleDebug
 rm -rf $packages && mkdir -p $packages
+cp apps/tabfinder/ui/desktop/build/third-party-notices/THIRD-PARTY-NOTICES.txt $desktop_app_images/TabFinder/
 tar -czf $packages/tabfinder-linux-x86_64.tar.gz -C $desktop_app_images TabFinder
 cp $android_debug_apk $packages/tabfinder-android-debug.apk
 trivy fs --exit-code 0 --format cyclonedx --output $packages/tabfinder-sbom.cdx.json .
+notices_name() { notices=$(cat); for library in "$@"; do echo "$notices" | grep -q -- "$library" || { echo "THIRD-PARTY-NOTICES.txt does not name $library" >&2; return 1; }; done; }
+tar -xOzf $packages/tabfinder-linux-x86_64.tar.gz TabFinder/THIRD-PARTY-NOTICES.txt | notices_name uniffi dbus-java-core
+unzip -p $packages/tabfinder-android-debug.apk assets/THIRD-PARTY-NOTICES.txt | notices_name uniffi activity-compose
 cd $packages && for artifact in *; do sha256sum "$artifact" > "$artifact.sha256"; done
 """
 

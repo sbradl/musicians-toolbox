@@ -1,0 +1,6 @@
+androidx.compose.ui:ui-test-manifest 1.9.4: Apache License, Version 2.0
+androidx.navigationevent:navigationevent 1.0.0: Apache License, Version 2.0
+androidx.navigationevent:navigationevent-android 1.0.0: Apache License, Version 2.0
+androidx.navigationevent:navigationevent-compose 1.0.0: Apache License, Version 2.0
+androidx.navigationevent:navigationevent-compose-android 1.0.0: Apache License, Version 2.0
+org.jetbrains.compose.ui:ui-backhandler-android-debug 1.9.1: Apache License, Version 2.0

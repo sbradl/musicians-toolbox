@@ -16,6 +16,7 @@ on:
       - Cargo.lock
       - mise.toml
       - trivy.yaml
+      - about.toml
       - .github/workflows/package-tabfinder.yml
 
 permissions:

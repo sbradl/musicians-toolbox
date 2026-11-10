@@ -1,3 +1,6 @@
+import com.github.jk1.license.render.ReportRenderer
+import com.github.jk1.license.render.TextReportRenderer
+
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
     id("com.github.jk1.dependency-license-report")
@@ -17,6 +20,7 @@ dependencyLocking {
 licenseReport {
     configurations = arrayOf("jvmRuntimeClasspath")
     allowedLicensesFile = rootProject.file("gradle/allowed-licenses.json")
+    renderers = arrayOf<ReportRenderer>(TextReportRenderer())
     filters =
         arrayOf(
             com.github.jk1.license.filter

@@ -24,3 +24,10 @@ compose.desktop {
         }
     }
 }
+
+tasks.register<ThirdPartyNotices>("thirdPartyNotices") {
+    forRustCrate(rootProject.layout.projectDirectory, "apps/tabfinder/adapters/ffi")
+    kotlinLicenseReport.set(layout.buildDirectory.dir("reports/dependency-license"))
+    dependsOn("generateLicenseReport")
+    outputDirectory.set(layout.buildDirectory.dir("third-party-notices"))
+}

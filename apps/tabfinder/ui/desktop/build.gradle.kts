@@ -11,6 +11,10 @@ kotlin {
             implementation(libs.dbus.java.core)
             implementation(libs.dbus.java.transport.native.unixsocket)
         }
+        jvmTest.dependencies {
+            implementation(libs.junit)
+            implementation(kotlin("test"))
+        }
     }
 }
 

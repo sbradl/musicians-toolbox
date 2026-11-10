@@ -21,7 +21,9 @@ import java.net.URI
 import java.nio.file.Path
 import java.util.UUID
 
-class PortalFolderPicker : FolderPicker {
+class PortalFolderPicker(
+    private val connectToSessionBus: () -> DBusConnection = { DBusConnectionBuilder.forSessionBus().build() },
+) : FolderPicker {
     override suspend fun pickFolder(title: String): FolderPick =
         withContext(Dispatchers.IO) {
             withSessionBus { connection -> pickFolder(connection, title) }
@@ -42,7 +44,7 @@ class PortalFolderPicker : FolderPicker {
 
     private inline fun withSessionBus(use: (DBusConnection) -> FolderPick): FolderPick =
         try {
-            DBusConnectionBuilder.forSessionBus().build().use(use)
+            connectToSessionBus().use(use)
         } catch (_: DBusException) {
             FolderPick.Unavailable
         } catch (_: DBusExecutionException) {

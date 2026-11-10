@@ -19,7 +19,8 @@ Toolchain via mise: `mise run setup` once (installs tools, enables `.githooks/`)
 - `mise run fmt`: format Rust and Kotlin
 - `mise run run:tabfinder`: start the desktop app
 - `mise run android:tabfinder`: install and start the app on the running emulator or device
-- `mise run package:tabfinder`: Linux app image (`.tar.gz`, bundled JRE) + debug APK + CycloneDX SBOM, each with `.sha256`, into `build/package/`; both ship `THIRD-PARTY-NOTICES.txt` (`thirdPartyNotices` task: cargo-about + licence report; Android-only libraries in `ui/android/android-only-libraries.txt`, guarded by `checkAndroidOnlyLibrariesHaveNotices`); CI workflow `package-tabfinder` uploads them. Manual checks: `apps/tabfinder/RELEASE-CHECKLIST.md`
+- `mise run package:tabfinder`: Linux app image (`.tar.gz`, bundled JRE) + debug APK + CycloneDX SBOM, each with `.sha256`, into `build/package/`; both ship `THIRD-PARTY-NOTICES.txt` (`thirdPartyNotices` task: cargo-about + licence report; Android-only libraries in `ui/android/android-only-libraries.txt`, guarded by `checkAndroidOnlyLibrariesHaveNotices`); CI workflow `package-tabfinder` uploads them, starts the app image (`smoke:tabfinder` under Xvfb) and runs `test:android` on an emulator
+- `mise run release-checks:tabfinder`: wizard for the few checks only a human can do (real system pickers, TalkBack); posts the results on the release ticket
 - `mise run test:android`: instrumented Compose tests on the running emulator (not part of `check`)
 - Android SDK: `ANDROID_HOME` (default `~/Android/Sdk`) needs NDK 28.2.13676358, platform 36 and build-tools; `check` verifies the APK has no `INTERNET` permission and 16 KB aligned native libraries
 - Single Rust test file: `cargo test -p mt-tabfinder-presentation --test library_screen`
@@ -34,6 +35,7 @@ Gradle builds the FFI crate with `cargo zigbuild` against glibc 2.31 (`checkGlib
 - Any lint or compiler warning: ask the user whether to fix the code or loosen the rule. Never silence or loosen it yourself.
 - Ask the user before adding any dependency.
 - Don't write comments where code can say it; a needed comment is a cue to refactor.
+- Never hand the user a checklist to read. Automate a check; what only a human can judge goes into the app's release-check wizard (`/wizard`), which does all the setup and asks pass/fail.
 
 ## Readable code
 

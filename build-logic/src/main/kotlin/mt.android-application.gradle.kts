@@ -13,7 +13,7 @@ android {
         minSdk = androidSdkLevel("android-minSdk")
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        ndk { abiFilters += androidAbis() }
     }
     lint {
         warningsAsErrors = true

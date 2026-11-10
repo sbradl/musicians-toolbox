@@ -17,6 +17,7 @@ val linuxTargetWithGlibc = "$linuxTarget.$glibcOfOldestSupportedLinux"
 val rustLibrary = uniffi.crate.map { crate -> workspace.file("target/$linuxTarget/debug/${linuxLibraryFileName(crate)}") }
 val jnaFolderForLinuxX8664 = "linux-x86-64"
 val minSdk = androidSdkLevel("android-minSdk").toString()
+val abisToBuild = androidAbis()
 
 fun linuxLibraryFileName(crate: String) = "lib${crate.replace('-', '_')}.so"
 
@@ -104,10 +105,12 @@ val buildRustLibraryForAndroid =
     tasks.register<CargoNdkBuild>("cargoNdkBuild") {
         workingDir = workspace.asFile
         outputs.upToDateWhen { false } // Cargo decides itself what to rebuild
-        commandLine("cargo", "ndk", "--target", "arm64-v8a", "--target", "x86_64", "--platform", minSdk, "--output-dir")
+        commandLine("cargo", "ndk")
+        argumentProviders.add { abisToBuild.flatMap { abi -> listOf("--target", abi) } }
         argumentProviders.add {
-            listOf(jniLibsDirectory.get().asFile.path, "build", "--locked", "--target-dir", "target", "--package", uniffi.crate.get())
+            listOf("--platform", minSdk, "--output-dir", jniLibsDirectory.get().asFile.path)
         }
+        argumentProviders.add { listOf("build", "--locked", "--target-dir", "target", "--package", uniffi.crate.get()) }
     }
 
 extensions.configure<KotlinMultiplatformAndroidComponentsExtension> {

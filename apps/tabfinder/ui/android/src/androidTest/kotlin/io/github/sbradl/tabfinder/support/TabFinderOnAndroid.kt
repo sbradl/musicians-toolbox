@@ -4,6 +4,7 @@ import android.provider.DocumentsContract
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasText
@@ -41,6 +42,7 @@ class TabFinderOnAndroid(
     private var pickerAnswer: FolderPick = FolderPick.Cancelled
     private val libraryFolderReader = LibraryFolderThatCanBeHeld(SafLibraryFolder(app.contentResolver))
     private var runningTabFinder by mutableStateOf<TabFinderCore?>(null)
+    private var textScale = 1f
 
     fun libraryFolderContains(vararg files: String) {
         files.forEach { file ->
@@ -62,13 +64,17 @@ class TabFinderOnAndroid(
         libraryFolder.deleteRecursively()
     }
 
+    fun musicianDoublesTheTextSize() {
+        textScale = 2f
+    }
+
     fun musicianOpensTabFinder() {
         startTabFinder()
         ui.setContent {
             val core = runningTabFinder
 
             if (core != null) {
-                TabFinder(core)
+                WithTextScale(textScale) { TabFinder(core) }
             }
         }
     }
@@ -83,6 +89,12 @@ class TabFinderOnAndroid(
         clickChooseFolder()
     }
 
+    fun musicianPicksTheLibraryFolderWithTheKeyboard() {
+        pickerAnswer = FolderPick.Picked(treeOf(libraryFolder.name))
+        ui.musicianTabsTo("Choose folder")
+        ui.musicianPresses(Key.Enter)
+    }
+
     fun musicianPicksAFolderTabFinderMayNotRead() {
         pickerAnswer = FolderPick.Picked(treeOf(LibraryFolderForTests.FOLDER_IT_MAY_NOT_READ))
         clickChooseFolder()
@@ -95,6 +107,12 @@ class TabFinderOnAndroid(
     fun assertShown(vararg texts: String) {
         texts.forEach { text -> ui.onNodeWithText(text).assertExists() }
     }
+
+    fun assertTabReachesEveryControl() = ui.assertTabReachesEveryControl()
+
+    fun assertNoTextIsCutOffOrOverlapping() = ui.assertNoTextIsCutOffOrOverlapping()
+
+    fun assertEveryControlIsLabelled() = ui.assertEveryControlIsLabelled()
 
     fun assertNotShown(text: String) {
         ui.onNodeWithText(text).assertDoesNotExist()

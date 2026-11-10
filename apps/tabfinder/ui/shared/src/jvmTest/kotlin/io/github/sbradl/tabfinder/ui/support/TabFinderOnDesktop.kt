@@ -1,8 +1,6 @@
 package io.github.sbradl.tabfinder.ui.support
 
-import androidx.compose.ui.semantics.SemanticsNode
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -42,6 +40,7 @@ class TabFinderOnDesktop(
     private val configDir = createTempDirectory("tabfinder-config")
     private var pickerAnswer: FolderPick = FolderPick.Cancelled
     private var slowLibraryFolder: LibraryFolderThatCanBeHeld? = null
+    private var textScale = 2f
 
     fun libraryFolderContains(vararg files: String) {
         files.forEach { file ->
@@ -61,16 +60,26 @@ class TabFinderOnDesktop(
         libraryFolder.deleteRecursively()
     }
 
+    fun musicianDoublesTheTextSize() {
+        textScale = 2f
+    }
+
     fun musicianOpensTabFinder() {
         val core = startTabFinderCore()
         core.start()
         ui.waitUntil { core.viewModel.value != null }
-        ui.setContent { TabFinder(core) }
+        ui.setContent { WithTextScale(textScale) { TabFinder(core) } }
     }
 
     fun musicianPicksTheLibraryFolder() {
         pickerAnswer = FolderPick.Picked(libraryFolder.toString())
         clickChooseFolder()
+    }
+
+    fun musicianPicksTheLibraryFolderWithTheKeyboard(confirmKey: Key) {
+        pickerAnswer = FolderPick.Picked(libraryFolder.toString())
+        ui.musicianTabsTo("Choose folder")
+        ui.musicianPresses(confirmKey)
     }
 
     fun musicianFindsNoFolderDialog() {
@@ -89,6 +98,10 @@ class TabFinderOnDesktop(
     fun assertShown(vararg texts: String) {
         texts.forEach { text -> ui.onNodeWithText(text).assertExists() }
     }
+
+    fun assertTabReachesEveryControl() = ui.assertTabReachesEveryControl()
+
+    fun assertNoTextIsCutOffOrOverlapping() = ui.assertNoTextIsCutOffOrOverlapping()
 
     fun assertEveryInteractiveElementIsLabelled() {
         val interactiveElements = ui.onAllNodes(hasClickAction()).fetchSemanticsNodes()
@@ -117,12 +130,5 @@ class TabFinderOnDesktop(
         slowLibraryFolder?.releaseReading()
         libraryFolder.deleteRecursively()
         configDir.deleteRecursively()
-    }
-
-    private fun SemanticsNode.labels(): List<String> {
-        val texts = config.getOrNull(SemanticsProperties.Text).orEmpty().map { it.text }
-        val descriptions = config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
-
-        return texts + descriptions
     }
 }

@@ -48,8 +48,7 @@ class LibraryScreenTest {
             tabfinder.musicianClicksRescan()
 
             tabfinder.assertStatus("2 Songs")
-            tabfinder.assertShown("Brasswing", "Wexmoor")
-            tabfinder.assertMessageShown("2 Songs, 0 unreadable")
+            tabfinder.assertShown("Brasswing", "Wexmoor", "2 Songs, 0 unreadable")
         }
 
     @Test

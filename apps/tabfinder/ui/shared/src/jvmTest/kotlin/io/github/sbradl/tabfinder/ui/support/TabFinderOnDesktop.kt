@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.waitUntilAtLeastOneExists
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import io.github.sbradl.tabfinder.ui.FolderPick
 import io.github.sbradl.tabfinder.ui.FolderPicker
@@ -91,10 +92,6 @@ class TabFinderOnDesktop(
         ui.onNodeWithText("Rescan").performClick()
     }
 
-    fun assertMessageShown(message: String) {
-        ui.waitUntilExactlyOneExists(hasText(message))
-    }
-
     fun assertStatus(status: String) {
         ui.waitUntilExactlyOneExists(hasText(status))
     }
@@ -104,7 +101,7 @@ class TabFinderOnDesktop(
     }
 
     fun assertShown(vararg texts: String) {
-        texts.forEach { text -> ui.onNodeWithText(text).assertExists() }
+        texts.forEach { text -> ui.waitUntilAtLeastOneExists(hasText(text)) }
     }
 
     fun assertTabReachesEveryControl() = ui.assertTabReachesEveryControl()

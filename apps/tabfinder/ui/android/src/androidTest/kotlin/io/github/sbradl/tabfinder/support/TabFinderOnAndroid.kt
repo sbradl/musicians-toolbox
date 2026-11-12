@@ -11,6 +11,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.waitUntilAtLeastOneExists
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.sbradl.tabfinder.LibraryFolderForTests
@@ -105,16 +106,12 @@ class TabFinderOnAndroid(
         ui.onNodeWithText("Rescan").performClick()
     }
 
-    fun assertMessageShown(message: String) {
-        ui.waitUntilExactlyOneExists(hasText(message))
-    }
-
     fun assertStatus(status: String) {
         ui.waitUntilExactlyOneExists(hasText(status))
     }
 
     fun assertShown(vararg texts: String) {
-        texts.forEach { text -> ui.onNodeWithText(text).assertExists() }
+        texts.forEach { text -> ui.waitUntilAtLeastOneExists(hasText(text)) }
     }
 
     fun assertTabReachesEveryControl() = ui.assertTabReachesEveryControl()

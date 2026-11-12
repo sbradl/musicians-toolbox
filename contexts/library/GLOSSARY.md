@@ -33,6 +33,10 @@ _Avoid_: Broken, invalid
 Reading a Library to bring its Song summaries up to date.
 _Avoid_: Index, refresh
 
+**Rescan**:
+A Scan of the open Library that the musician asks for.
+_Avoid_: Refresh, reload
+
 ### Finding
 
 **Filter**:

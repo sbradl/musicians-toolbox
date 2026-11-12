@@ -11,7 +11,7 @@ All Songs found under one chosen folder.
 _Avoid_: Collection, catalog
 
 **Library location**:
-Where a Library's folder is: a path on desktop, a folder grant (tree URI) on Android.
+Where a Library's folder is: a file URI on desktop, a folder grant (tree URI) on Android.
 _Avoid_: Path, root
 
 **Song**:

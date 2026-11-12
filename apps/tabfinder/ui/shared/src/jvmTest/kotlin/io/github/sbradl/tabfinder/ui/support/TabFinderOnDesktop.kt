@@ -72,12 +72,12 @@ class TabFinderOnDesktop(
     }
 
     fun musicianPicksTheLibraryFolder() {
-        pickerAnswer = FolderPick.Picked(libraryFolder.toString())
+        pickerAnswer = FolderPick.Picked(libraryFolder.toUri().toString())
         clickChooseFolder()
     }
 
     fun musicianPicksTheLibraryFolderWithTheKeyboard(confirmKey: Key) {
-        pickerAnswer = FolderPick.Picked(libraryFolder.toString())
+        pickerAnswer = FolderPick.Picked(libraryFolder.toUri().toString())
         ui.musicianTabsTo("Choose folder")
         ui.musicianPresses(confirmKey)
     }

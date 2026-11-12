@@ -1,5 +1,7 @@
+use std::ffi::OsStr;
 use std::fs::{self, DirEntry, ReadDir};
 use std::io;
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 use mt_tabfinder_application::{
@@ -11,10 +13,21 @@ pub struct FsLibraryFolder;
 
 impl LibraryFolder for FsLibraryFolder {
     fn songs(&self, location: &LibraryLocation) -> Result<Vec<Song>, LibraryFolderError> {
-        let folder = open_library_folder(Path::new(location.as_str()))?;
+        let Some(folder) = folder_at(location) else {
+            return Err(LibraryFolderError::Gone);
+        };
+        let entries = open_library_folder(&folder)?;
 
-        Ok(songs_in(folder))
+        Ok(songs_in(entries))
     }
+}
+
+// shortcut: Unix bytes only, Windows needs its own decoding once Windows builds exist.
+fn folder_at(location: &LibraryLocation) -> Option<PathBuf> {
+    let encoded = location.as_str().strip_prefix("file://")?;
+    let bytes: Vec<u8> = percent_encoding::percent_decode_str(encoded).collect();
+
+    Some(PathBuf::from(OsStr::from_bytes(&bytes)))
 }
 
 fn open_library_folder(folder: &Path) -> Result<ReadDir, LibraryFolderError> {

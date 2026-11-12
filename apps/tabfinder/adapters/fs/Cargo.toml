@@ -6,6 +6,7 @@ publish.workspace = true
 
 [dependencies]
 mt-tabfinder-application.workspace = true
+percent-encoding.workspace = true
 
 [lints]
 workspace = true

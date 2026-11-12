@@ -20,6 +20,7 @@ mt-tabfinder-application = { path = "apps/tabfinder/application" }
 mt-tabfinder-presentation = { path = "apps/tabfinder/presentation" }
 mt-tabfinder-fs = { path = "apps/tabfinder/adapters/fs" }
 uniffi = "0.32.2"
+percent-encoding = "2.3.2"
 fluent-bundle = "0.16.0"
 unic-langid = "0.9.6"
 

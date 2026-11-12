@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use mt_tabfinder_application as _;
 use mt_tabfinder_fs::desktop_config_dir;
+use percent_encoding as _;
 
 fn environment_with(vars: &[(&'static str, &'static str)]) -> impl Fn(&str) -> Option<String> {
     move |name| {

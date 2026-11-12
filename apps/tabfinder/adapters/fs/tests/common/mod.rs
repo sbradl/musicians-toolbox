@@ -1,3 +1,4 @@
+use percent_encoding as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 

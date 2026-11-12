@@ -17,8 +17,6 @@ import org.freedesktop.dbus.interfaces.DBusSigHandler
 import org.freedesktop.dbus.messages.DBusSignal
 import org.freedesktop.dbus.types.UInt32
 import org.freedesktop.dbus.types.Variant
-import java.net.URI
-import java.nio.file.Path
 import java.util.UUID
 
 class PortalFolderPicker(
@@ -88,9 +86,8 @@ class PortalFolderPicker(
     private fun Request.Response.pickedFolder(): FolderPick {
         if (response.toInt() != RESPONSE_SUCCESS) return FolderPick.Cancelled
         val uri = firstUri() ?: return FolderPick.Cancelled
-        val folder = localPath(uri) ?: return FolderPick.Cancelled
 
-        return FolderPick.Picked(folder)
+        return FolderPick.Picked(uri)
     }
 
     private fun Request.Response.firstUri(): String? {
@@ -103,8 +100,6 @@ class PortalFolderPicker(
 
         return firstUri as? String
     }
-
-    private fun localPath(uri: String): String? = runCatching { Path.of(URI(uri)).toString() }.getOrNull()
 
     private companion object {
         const val PORTAL_BUS_NAME = "org.freedesktop.portal.Desktop"

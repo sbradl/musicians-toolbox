@@ -1,5 +1,7 @@
+use std::ffi::OsStr;
 use std::fs::{self, Permissions};
 use std::io;
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::PermissionsExt;
 
 use mt_tabfinder_application::{LibraryFolder, LibraryFolderError, LibraryLocation};
@@ -26,6 +28,14 @@ impl TempFolder {
             fs::create_dir_all(parent)?;
         }
         fs::write(&file, b"")?;
+
+        Ok(self)
+    }
+
+    fn with_file_in_subfolder_named(self, raw_name: &[u8], file: &str) -> io::Result<Self> {
+        let subfolder = self.0.path().join(OsStr::from_bytes(raw_name));
+        fs::create_dir_all(&subfolder)?;
+        fs::write(subfolder.join(file), b"")?;
 
         Ok(self)
     }
@@ -60,21 +70,29 @@ impl TempFolder {
     }
 
     fn location(&self) -> LibraryLocation {
-        let path = self.0.path().to_string_lossy();
+        self.location_of_subfolder("")
+    }
 
-        LibraryLocation::new(&path)
+    fn location_of_subfolder(&self, encoded_name: &str) -> LibraryLocation {
+        let path = self.0.path().display();
+
+        LibraryLocation::new(&format!("file://{path}/{encoded_name}"))
     }
 
     fn song_titles(&self) -> Vec<String> {
-        let songs = FsLibraryFolder.songs(&self.location()).unwrap_or_default();
-        let mut titles = Vec::new();
-        for song in songs {
-            titles.push(song.title);
-        }
-        titles.sort();
-
-        titles
+        song_titles_at(&self.location())
     }
+}
+
+fn song_titles_at(location: &LibraryLocation) -> Vec<String> {
+    let songs = FsLibraryFolder.songs(location).unwrap_or_default();
+    let mut titles = Vec::new();
+    for song in songs {
+        titles.push(song.title);
+    }
+    titles.sort();
+
+    titles
 }
 
 #[test]
@@ -175,6 +193,18 @@ fn linked_files_are_no_songs() -> io::Result<()> {
         .with_link_to_file("Brasswing.gp5", &elsewhere, "Brasswing.gp5")?;
 
     assert_eq!(folder.song_titles(), ["Amberline"]);
+
+    Ok(())
+}
+
+#[test]
+fn finds_songs_in_a_folder_whose_name_is_not_utf8() -> io::Result<()> {
+    let folder =
+        TempFolder::new("not-utf8")?.with_file_in_subfolder_named(b"Caf\xe9", "Amberline.gp4")?;
+
+    let titles = song_titles_at(&folder.location_of_subfolder("Caf%E9"));
+
+    assert_eq!(titles, ["Amberline"]);
 
     Ok(())
 }

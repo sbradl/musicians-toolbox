@@ -7,6 +7,10 @@ plugins {
     id("mt.android-lint-tool")
 }
 
+val releaseKeystore = providers.environmentVariable("MT_ANDROID_KEYSTORE")
+val releaseKeystorePassword = providers.environmentVariable("MT_ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = providers.environmentVariable("MT_ANDROID_KEY_ALIAS")
+
 android {
     compileSdk = androidSdkLevel("android-compileSdk")
     defaultConfig {
@@ -14,6 +18,19 @@ android {
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += androidAbis() }
+    }
+    signingConfigs {
+        create("release") {
+            storeFile = releaseKeystore.map(::file).orNull
+            storePassword = releaseKeystorePassword.orNull
+            keyAlias = releaseKeyAlias.orNull
+            keyPassword = releaseKeystorePassword.orNull
+        }
+    }
+    buildTypes {
+        release {
+            if (releaseKeystore.isPresent) signingConfig = signingConfigs["release"]
+        }
     }
     lint {
         warningsAsErrors = true

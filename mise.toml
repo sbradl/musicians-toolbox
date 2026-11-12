@@ -93,17 +93,21 @@ run = [
 [tasks."package:tabfinder"]
 run = """
 desktop_app_images=apps/tabfinder/ui/desktop/build/compose/binaries/main/app
-android_debug_apk=apps/tabfinder/ui/android/build/outputs/apk/debug/android-debug.apk
+android_release_apk=apps/tabfinder/ui/android/build/outputs/apk/release/android-release.apk
 packages=build/package
-./gradlew :apps:tabfinder:adapters:ffi:checkGlibcFloor :apps:tabfinder:ui:desktop:createDistributable :apps:tabfinder:ui:desktop:thirdPartyNotices :apps:tabfinder:ui:android:assembleDebug
+[ -n "${MT_ANDROID_KEYSTORE:-}" ] || { echo "Set MT_ANDROID_KEYSTORE, MT_ANDROID_KEYSTORE_PASSWORD and MT_ANDROID_KEY_ALIAS to sign the release APK" >&2; exit 1; }
+./gradlew :apps:tabfinder:adapters:ffi:checkGlibcFloor :apps:tabfinder:ui:desktop:createDistributable :apps:tabfinder:ui:desktop:thirdPartyNotices :apps:tabfinder:ui:android:assembleRelease
 rm -rf $packages && mkdir -p $packages
 cp apps/tabfinder/ui/desktop/build/third-party-notices/THIRD-PARTY-NOTICES.txt $desktop_app_images/TabFinder/
 tar -czf $packages/tabfinder-linux-x86_64.tar.gz -C $desktop_app_images TabFinder
-cp $android_debug_apk $packages/tabfinder-android-debug.apk
+apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+signer=$("$apksigner" verify --print-certs $android_release_apk | grep "certificate DN")
+if echo "$signer" | grep -q "CN=Android Debug"; then echo "The release APK is signed with the debug key" >&2; exit 1; fi
+cp $android_release_apk $packages/tabfinder-android.apk
 trivy fs --exit-code 0 --format cyclonedx --output $packages/tabfinder-sbom.cdx.json .
 notices_name() { notices=$(cat); for library in "$@"; do echo "$notices" | grep -q -- "$library" || { echo "THIRD-PARTY-NOTICES.txt does not name $library" >&2; return 1; }; done; }
 tar -xOzf $packages/tabfinder-linux-x86_64.tar.gz TabFinder/THIRD-PARTY-NOTICES.txt | notices_name uniffi dbus-java-core
-unzip -p $packages/tabfinder-android-debug.apk assets/THIRD-PARTY-NOTICES.txt | notices_name uniffi activity-compose
+unzip -p $packages/tabfinder-android.apk assets/THIRD-PARTY-NOTICES.txt | notices_name uniffi activity-compose
 cd $packages && for artifact in *; do sha256sum "$artifact" > "$artifact.sha256"; done
 """
 

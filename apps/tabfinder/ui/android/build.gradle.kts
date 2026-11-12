@@ -27,7 +27,7 @@ val shared = project(":apps:tabfinder:ui:shared")
 val checkAndroidOnlyLibrariesHaveNotices =
     tasks.register<CheckAndroidOnlyLibrariesHaveNotices>("checkAndroidOnlyLibrariesHaveNotices") {
         appLockfile.set(layout.projectDirectory.file("gradle.lockfile"))
-        appRuntimeClasspath.set("debugRuntimeClasspath")
+        appRuntimeClasspath.set("releaseRuntimeClasspath")
         sharedLockfile.set(shared.layout.projectDirectory.file("gradle.lockfile"))
         sharedRuntimeClasspath.set("androidRuntimeClasspath")
         androidOnlyLibraries.set(librariesOnlyOnAndroid)

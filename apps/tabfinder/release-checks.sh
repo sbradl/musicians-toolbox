@@ -253,7 +253,7 @@ if ! "$ADB" get-state >/dev/null 2>&1; then
   "$ADB" wait-for-device
 fi
 "$ADB" uninstall io.github.sbradl.tabfinder >/dev/null 2>&1 || true
-"$ADB" install "$WORK/package/tabfinder-android-debug.apk" >/dev/null
+"$ADB" install "$WORK/package/tabfinder-android.apk" >/dev/null
 "$ADB" push "$WORK/Library/." "/sdcard/Music/TabFinder test Library" >/dev/null
 "$ADB" shell am start -n io.github.sbradl.tabfinder/.MainActivity >/dev/null
 step "On the phone, TabFinder is open: tap Choose folder."

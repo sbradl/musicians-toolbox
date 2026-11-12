@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Walking skeleton of TabFinder on Linux desktop and Android. Architecture in `docs/adr/`: bridge (0002), UI/core line (0003), repo layout and build (0004), engineering bar (0005). Follow ADR 0004's layout when adding code.
 
+Old TabFinder (guidance only, not ported): `../tab-sync`, screenshots in its `docs/screenshots/`; feature inventory on branch `research/app-inventory` (`research/app-inventory.md`).
+
 Android follows the desktop: reuse the desktop's Rust adapters and wiring; Kotlin only for what the platform forces (SAF picker, grants, DocumentsContract).
 
 ## Commands
@@ -31,7 +33,7 @@ Gradle builds the FFI crate with `cargo zigbuild` against glibc 2.31 (`checkGlib
 
 ## Working rules (ADR 0005)
 
-- No production code without a failing test: use the `/tdd` skill. The user confirms the requirement and the seams first; review via `/code-review`.
+- No production code without a failing test: use the `/tdd` skill. The user confirms the requirement; state the seams you will test in one plain line. Review via `/code-review`.
 - Any lint or compiler warning: ask the user whether to fix the code or loosen the rule. Never silence or loosen it yourself.
 - Ask the user before adding any dependency.
 - Don't write comments where code can say it; a needed comment is a cue to refactor.

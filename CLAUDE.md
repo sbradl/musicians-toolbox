@@ -24,6 +24,7 @@ Toolchain via mise: `mise run setup` once (installs tools, enables `.githooks/`)
 - `mise run package:tabfinder`: Linux app image (`.tar.gz`, bundled JRE) + release APK (signed from `MT_ANDROID_KEYSTORE*`, `MT_ANDROID_KEY_ALIAS`; refuses debug-signed) + CycloneDX SBOM, each with `.sha256`, into `build/package/`; both ship `THIRD-PARTY-NOTICES.txt` (`thirdPartyNotices` task: cargo-about + licence report; Android-only libraries in `ui/android/android-only-libraries.txt`, guarded by `checkAndroidOnlyLibrariesHaveNotices`); CI workflow `package-tabfinder` uploads them, starts the app image (`smoke:tabfinder` under Xvfb) and runs `test:android` on an emulator
 - `mise run release-checks:tabfinder`: wizard for the few checks only a human can do (real system pickers); posts the results on the release ticket
 - `mise run test:android`: instrumented Compose tests on the running emulator (not part of `check`)
+- Test devices: during development, uninstalling TabFinder from a connected device or emulator (e.g. a release-signed build blocking the test install) is fine.
 - Android SDK: `ANDROID_HOME` (default `~/Android/Sdk`) needs NDK 28.2.13676358, platform 36 and build-tools; `check` verifies the APK has no `INTERNET` permission and 16 KB aligned native libraries
 - Single Rust test file: `cargo test -p mt-tabfinder-presentation --test library_screen`
 - Single Kotlin test: `./gradlew :apps:tabfinder:ui:shared:jvmTest --tests '*LibraryScreenTest*'`

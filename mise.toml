@@ -48,10 +48,10 @@ run = "ktlint '**/*.kt' '**/*.kts' '!**/build/**'"
 depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint"]
 
 [tasks."test:cargo"]
-run = "cargo test --workspace --locked"
+run = "cargo test --workspace --locked --quiet"
 
 [tasks."test:gradle"]
-run = "./gradlew check"
+run = "./gradlew check --quiet"
 
 [tasks.test]
 depends = ["test:cargo", "test:gradle"]

@@ -1,5 +1,7 @@
 import com.github.jk1.license.render.ReportRenderer
 import com.github.jk1.license.render.TextReportRenderer
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
@@ -11,6 +13,14 @@ group = "io.github.sbradl"
 kotlin {
     jvmToolchain(21)
     jvm()
+}
+
+tasks.withType<Test>().configureEach {
+    testLogging.quiet {
+        events(TestLogEvent.FAILED)
+        exceptionFormat = TestExceptionFormat.FULL
+        showStackTraces = false
+    }
 }
 
 dependencyLocking {

@@ -1,5 +1,5 @@
 [tools]
-rust = { version = "1.99.1", components = "rustfmt,clippy", targets = "aarch64-linux-android,x86_64-linux-android" }
+rust = { version = "1.100.0", components = "rustfmt,clippy", targets = "aarch64-linux-android,x86_64-linux-android" }
 java = "temurin-21.0.13+9.0.LTS"
 ktlint = "1.8.0"
 cargo-deny = "0.20.2"

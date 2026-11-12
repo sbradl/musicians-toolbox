@@ -32,13 +32,27 @@ abstract class CheckAndroidOnlyLibrariesHaveNotices : DefaultTask() {
     fun check() {
         val appLibraries = librariesIn(appLockfile.get().asFile, appRuntimeClasspath.get())
         val sharedLibraries = librariesIn(sharedLockfile.get().asFile, sharedRuntimeClasspath.get())
-        val listed = androidOnlyLibraries.get().asFile.readText()
-        val unlisted = (appLibraries - sharedLibraries).filterNot { library -> "$library " in listed }
+        val androidOnly = appLibraries - sharedLibraries
+        val listed = listedLibraries()
+        val unlisted = androidOnly - listed
+        val stale = listed - androidOnly
 
         if (unlisted.isNotEmpty()) {
             throw GradleException("Add a notice to ${androidOnlyLibraries.get()} for: ${unlisted.joinToString()}")
         }
+        if (stale.isNotEmpty()) {
+            throw GradleException("Remove from ${androidOnlyLibraries.get()}, the app no longer ships: ${stale.joinToString()}")
+        }
     }
+
+    private fun listedLibraries(): Set<String> =
+        androidOnlyLibraries
+            .get()
+            .asFile
+            .readLines()
+            .filter(String::isNotBlank)
+            .map { line -> line.substringBefore(" ") }
+            .toSet()
 
     private fun librariesIn(
         lockfile: File,

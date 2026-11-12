@@ -129,4 +129,13 @@ if [ $threw -eq 1 ]; then echo "TabFinder threw an uncaught exception" >&2; exit
 run = "apps/tabfinder/release-checks.sh"
 
 [tasks."test:android"]
-run = "./gradlew connectedCheck"
+run = """
+results=apps/tabfinder/ui/android/build/outputs/androidTest-results/connected
+rm -rf $results
+./gradlew connectedCheck || exit 1
+devices=$(adb devices | grep -c "device$")
+[ -n "${ANDROID_SERIAL:-}" ] && devices=1
+reports=$(find $results -name 'TEST-*.xml' | wc -l)
+if [ "$reports" -ne "$devices" ]; then echo "Android tests ran on $reports of $devices devices; see the install errors above" >&2; exit 1; fi
+if find $results -name 'TEST-*.xml' -exec grep -l '<testsuite[^>]* tests="0"' {} + | grep -q .; then echo "A device ran no Android tests" >&2; exit 1; fi
+"""

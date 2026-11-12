@@ -26,6 +26,33 @@ class LibraryScreenTest {
         }
 
     @Test
+    fun theHeaderShowsTabFinderAboveTheSongCount() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+
+            tabfinder.musicianPicksTheLibraryFolder()
+
+            tabfinder.assertShown("TabFinder", "1 Song")
+        }
+
+    @Test
+    fun rescanListsNewSongsAndTellsWhatItFound() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("1 Song")
+            tabfinder.libraryFolderContains("Brasswing.gp5")
+
+            tabfinder.musicianClicksRescan()
+
+            tabfinder.assertStatus("2 Songs")
+            tabfinder.assertShown("Brasswing", "Wexmoor")
+            tabfinder.assertMessageShown("2 Songs, 0 unreadable")
+        }
+
+    @Test
     fun choosingAFolderWithoutSongsShowsNoSongsFound() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("notes.txt")

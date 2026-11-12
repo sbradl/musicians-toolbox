@@ -37,6 +37,7 @@ class TabFinderOnAndroid(
     private val ui: ComposeUiTest,
 ) {
     private val app = InstrumentationRegistry.getInstrumentation().targetContext
+    private val appName = app.applicationInfo.loadLabel(app.packageManager).toString()
     private val configDir = File(app.cacheDir, "config")
     private val libraryFolder = File(app.cacheDir, "library")
     private var pickerAnswer: FolderPick = FolderPick.Cancelled
@@ -74,7 +75,7 @@ class TabFinderOnAndroid(
             val core = runningTabFinder
 
             if (core != null) {
-                WithTextScale(textScale) { TabFinder(core) }
+                WithTextScale(textScale) { TabFinder(core, appName) }
             }
         }
     }
@@ -98,6 +99,14 @@ class TabFinderOnAndroid(
     fun musicianPicksAFolderTabFinderMayNotRead() {
         pickerAnswer = FolderPick.Picked(treeOf(LibraryFolderForTests.FOLDER_IT_MAY_NOT_READ))
         clickChooseFolder()
+    }
+
+    fun musicianClicksRescan() {
+        ui.onNodeWithText("Rescan").performClick()
+    }
+
+    fun assertMessageShown(message: String) {
+        ui.waitUntilExactlyOneExists(hasText(message))
     }
 
     fun assertStatus(status: String) {

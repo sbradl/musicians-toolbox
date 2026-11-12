@@ -19,6 +19,7 @@ pub struct LibraryViewModel {
     pub status: String,
     pub problem: Option<String>,
     pub choose_folder: Action,
+    pub rescan: Action,
     pub songs: Vec<SongItem>,
 }
 
@@ -36,6 +37,7 @@ pub struct Action {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Effect {
     PickFolder { title: String },
+    ShowMessage { text: String },
 }
 
 pub trait ViewModelListener: Send + Sync {
@@ -72,7 +74,7 @@ impl App {
 
     pub fn start(&self) {
         match self.libraries.remembered_location() {
-            Some(location) => self.open_library(&location),
+            Some(location) => _ = self.open_library(&location),
             None => self.show(LibraryViewModel::no_folder_chosen(&self.texts)),
         }
     }
@@ -84,7 +86,21 @@ impl App {
     }
 
     pub fn folder_picked(&self, location: &str) {
-        self.open_library(&LibraryLocation::new(location));
+        _ = self.open_library(&LibraryLocation::new(location));
+    }
+
+    pub fn rescan(&self) {
+        let Some(location) = self.libraries.remembered_location() else {
+            return;
+        };
+        let Some(song_count) = self.open_library(&location) else {
+            return;
+        };
+        let text = self
+            .texts
+            .rescan_finished(song_count, UNREADABLE_WITHOUT_TAB_FILE_READERS);
+
+        self.listener.on_effect(Effect::ShowMessage { text });
     }
 
     pub fn folder_picker_unavailable(&self) {
@@ -92,14 +108,23 @@ impl App {
         self.show(shown.because(self.texts.folder_picker_unavailable()));
     }
 
-    fn open_library(&self, location: &LibraryLocation) {
+    fn open_library(&self, location: &LibraryLocation) -> Option<usize> {
         self.show(LibraryViewModel::scanning(&self.texts));
-        let library = match self.libraries.open(location) {
-            Ok(library) => LibraryViewModel::listing(&library, &self.texts),
-            Err(error) => LibraryViewModel::no_folder_chosen(&self.texts)
-                .because(self.texts.library_folder_problem(&error)),
-        };
-        self.show(library);
+        match self.libraries.open(location) {
+            Ok(library) => {
+                self.show(LibraryViewModel::listing(&library, &self.texts));
+
+                Some(library.songs().len())
+            }
+            Err(error) => {
+                self.show(
+                    LibraryViewModel::no_folder_chosen(&self.texts)
+                        .because(self.texts.library_folder_problem(&error)),
+                );
+
+                None
+            }
+        }
     }
 
     fn show(&self, library: LibraryViewModel) {
@@ -113,6 +138,8 @@ impl App {
         shown.unwrap_or_else(|| LibraryViewModel::no_folder_chosen(&self.texts))
     }
 }
+
+const UNREADABLE_WITHOUT_TAB_FILE_READERS: usize = 0;
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(PoisonError::into_inner)

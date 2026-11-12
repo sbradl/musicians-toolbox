@@ -15,8 +15,10 @@ class MainActivity : ComponentActivity() {
         tabfinder.folderPicker.attachTo(activityResultRegistry)
         setContent {
             MaterialTheme {
-                Surface { TabFinder(tabfinder.core) }
+                Surface { TabFinder(tabfinder.core, appName()) }
             }
         }
     }
+
+    private fun appName() = applicationInfo.loadLabel(packageManager).toString()
 }

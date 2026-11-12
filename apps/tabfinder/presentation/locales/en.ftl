@@ -1,11 +1,17 @@
 no-folder-chosen = No folder chosen
 choose-folder = Choose folder
+rescan = Rescan
 library-folder-dialog-title = Choose the Library folder
 songs-count =
     { $count ->
         [one] { $count } Song
        *[other] { $count } Songs
     }
+rescan-finished =
+    { $songs ->
+        [one] { $songs } Song
+       *[other] { $songs } Songs
+    }, { $unreadable } unreadable
 no-songs-found = No Songs found
 scanning = Scanning…
 library-folder-gone = The Library folder is gone. It may have been moved or deleted.

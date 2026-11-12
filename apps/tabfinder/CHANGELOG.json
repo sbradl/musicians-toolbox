@@ -25,6 +25,12 @@
           "en": "On Android, choose a folder in the system folder picker and see the Songs of every Tab file in it and its subfolders, without granting access to all files.",
           "de": "Auf Android einen Ordner in der Ordnerauswahl des Systems wählen und die Songs aller Tab-Dateien darin und in seinen Unterordnern sehen, ohne Zugriff auf alle Dateien zu erlauben.",
           "fr": "Sur Android, choisissez un dossier dans le sélecteur de dossiers du système et voyez les morceaux de tous les fichiers de tablature qu'il contient, sous-dossiers compris, sans accorder l'accès à tous les fichiers."
+        },
+        {
+          "id": "rescan-library",
+          "en": "A Rescan button at the top looks for new or deleted Tab files in your folder and then briefly shows how many Songs it found.",
+          "de": "Ein Knopf „Rescan“ oben sucht in deinem Ordner nach neuen oder gelöschten Tab-Dateien und zeigt danach kurz, wie viele Songs er gefunden hat.",
+          "fr": "Un bouton « Rescan » en haut recherche les fichiers de tablature nouveaux ou supprimés dans votre dossier, puis indique brièvement combien de morceaux il a trouvés."
         }
       ]
     }

@@ -17,6 +17,7 @@ pub struct LibraryViewModel {
     pub status: String,
     pub problem: Option<String>,
     pub choose_folder: Action,
+    pub rescan: Action,
     pub songs: Vec<SongItem>,
 }
 
@@ -39,6 +40,7 @@ pub struct Song {
 #[uniffi::remote(Enum)]
 pub enum Effect {
     PickFolder { title: String },
+    ShowMessage { text: String },
 }
 
 #[uniffi::export(callback_interface)]
@@ -157,6 +159,10 @@ impl App {
 
     pub fn folder_picker_unavailable(&self) {
         self.0.folder_picker_unavailable();
+    }
+
+    pub fn rescan(&self) {
+        self.0.rescan();
     }
 }
 

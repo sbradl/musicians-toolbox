@@ -8,9 +8,12 @@ import io.github.sbradl.tabfinder.core.ViewModelListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -21,6 +24,8 @@ class TabFinderCore private constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val shownViewModel = MutableStateFlow<AppViewModel?>(null)
     val viewModel: StateFlow<AppViewModel?> = shownViewModel.asStateFlow()
+    private val shownMessages = Channel<String>(Channel.BUFFERED)
+    val messages: Flow<String> = shownMessages.receiveAsFlow()
 
     private val app = connectApp(ListenerForRust())
 
@@ -30,6 +35,10 @@ class TabFinderCore private constructor(
 
     fun chooseFolder() = app.chooseFolder()
 
+    fun rescan() {
+        scope.launch { scanOffTheUiThread { app.rescan() } }
+    }
+
     private fun show(viewModel: AppViewModel) {
         shownViewModel.value = viewModel
     }
@@ -37,7 +46,12 @@ class TabFinderCore private constructor(
     private fun perform(effect: Effect) =
         when (effect) {
             is Effect.PickFolder -> pickFolder(effect.title)
+            is Effect.ShowMessage -> showMessage(effect.text)
         }
+
+    private fun showMessage(text: String) {
+        shownMessages.trySend(text)
+    }
 
     private fun pickFolder(title: String) {
         scope.launch {

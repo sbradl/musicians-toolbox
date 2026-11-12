@@ -46,8 +46,20 @@ impl Texts {
         self.format("songs-count", Some(&args))
     }
 
+    pub(super) fn rescan_finished(&self, songs: usize, unreadable: usize) -> String {
+        let mut args = FluentArgs::new();
+        args.set("songs", songs);
+        args.set("unreadable", unreadable);
+
+        self.format("rescan-finished", Some(&args))
+    }
+
     pub(super) fn choose_folder(&self) -> String {
         self.format("choose-folder", None)
+    }
+
+    pub(super) fn rescan(&self) -> String {
+        self.format("rescan", None)
     }
 
     pub(super) fn library_folder_dialog_title(&self) -> String {

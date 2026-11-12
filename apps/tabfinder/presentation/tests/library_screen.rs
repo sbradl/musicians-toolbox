@@ -183,3 +183,58 @@ fn picking_the_remembered_library_location_after_its_folder_is_deleted_forgets_i
     tabfinder.assert_status("No folder chosen");
     tabfinder.assert_remembers_nothing();
 }
+
+#[test]
+fn rescan_lists_the_songs_now_in_the_library_folder() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.folder_now_holds("/music", &["Wexmoor", "Brasswing"]);
+
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.assert_library_screen(&listing("2 Songs", &["Brasswing", "Wexmoor"]));
+}
+
+#[test]
+fn rescan_is_offered_once_a_library_is_open_even_one_without_songs() {
+    let tabfinder = TabFinder::with_folder("/music", &[]).start();
+    tabfinder.assert_rescan_not_offered();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_rescan_offered();
+}
+
+#[test]
+fn after_a_rescan_a_message_tells_how_many_songs_and_unreadable_files_it_found() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor", "Brasswing"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.assert_message_shown("2 Songs, 0 unreadable");
+}
+
+#[test]
+fn after_a_rescan_of_one_song_the_message_says_song() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.assert_message_shown("1 Song, 0 unreadable");
+}
+
+#[test]
+fn a_rescan_of_a_folder_that_is_gone_shows_why_and_no_message() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.folder_is_deleted("/music");
+
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.assert_library_screen(&no_folder_chosen_because(
+        "The Library folder is gone. It may have been moved or deleted.",
+    ));
+    tabfinder.assert_no_message_shown();
+}

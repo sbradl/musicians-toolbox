@@ -8,6 +8,8 @@ import io.github.sbradl.tabfinder.core.desktopConfigDir
 import io.github.sbradl.tabfinder.ui.TabFinder
 import io.github.sbradl.tabfinder.ui.TabFinderCore
 
+private const val APP_NAME = "TabFinder"
+
 fun main() {
     val core = startCore()
     showWindow(core)
@@ -23,9 +25,9 @@ private fun startCore(): TabFinderCore {
 
 private fun showWindow(core: TabFinderCore) =
     application {
-        Window(onCloseRequest = ::exitApplication, title = "TabFinder") {
+        Window(onCloseRequest = ::exitApplication, title = APP_NAME) {
             MaterialTheme {
-                Surface { TabFinder(core) }
+                Surface { TabFinder(core, APP_NAME) }
             }
         }
     }

@@ -93,6 +93,14 @@ impl TabFinder {
         self.app.choose_folder();
     }
 
+    pub fn musician_clicks_rescan(&self) {
+        self.app.rescan();
+    }
+
+    pub fn folder_now_holds(&self, location: &str, song_titles: &[&str]) {
+        self.folders.add(location, song_titles);
+    }
+
     pub fn folder_is_deleted(&self, location: &str) {
         self.folders.delete(location);
     }
@@ -118,6 +126,22 @@ impl TabFinder {
     #[track_caller]
     pub fn assert_status(&self, expected: &str) {
         assert_eq!(self.statuses_shown().pop(), Some(expected.to_owned()));
+    }
+
+    #[track_caller]
+    pub fn assert_rescan_offered(&self) {
+        assert_eq!(self.rescan_offered(), Some(true));
+    }
+
+    #[track_caller]
+    pub fn assert_rescan_not_offered(&self) {
+        assert_eq!(self.rescan_offered(), Some(false));
+    }
+
+    fn rescan_offered(&self) -> Option<bool> {
+        let last_screen = self.library_screens_shown().pop()?;
+
+        Some(last_screen.rescan.is_enabled)
     }
 
     #[track_caller]
@@ -147,6 +171,25 @@ impl TabFinder {
     }
 
     #[track_caller]
+    pub fn assert_message_shown(&self, text: &str) {
+        let message = Effect::ShowMessage {
+            text: text.to_owned(),
+        };
+
+        assert!(lock(&self.screens.effects).contains(&message));
+    }
+
+    #[track_caller]
+    pub fn assert_no_message_shown(&self) {
+        for effect in lock(&self.screens.effects).iter() {
+            assert!(
+                !matches!(effect, Effect::ShowMessage { .. }),
+                "unexpected {effect:?}"
+            );
+        }
+    }
+
+    #[track_caller]
     pub fn assert_remembers(&self, expected: &str) {
         assert_eq!(
             self.remembered.remembered(),
@@ -161,7 +204,7 @@ impl TabFinder {
 }
 
 pub fn no_folder_chosen() -> LibraryViewModel {
-    listing("No folder chosen", &[])
+    without_rescan(listing("No folder chosen", &[]))
 }
 
 pub fn no_folder_chosen_because(problem: &str) -> LibraryViewModel {
@@ -175,8 +218,14 @@ pub fn because(mut screen: LibraryViewModel, problem: &str) -> LibraryViewModel 
 }
 
 pub fn scanning() -> LibraryViewModel {
-    let mut screen = listing("Scanning…", &[]);
+    let mut screen = without_rescan(listing("Scanning…", &[]));
     screen.choose_folder.is_enabled = false;
+
+    screen
+}
+
+const fn without_rescan(mut screen: LibraryViewModel) -> LibraryViewModel {
+    screen.rescan.is_enabled = false;
 
     screen
 }
@@ -187,6 +236,10 @@ pub fn listing(status: &str, song_titles: &[&str]) -> LibraryViewModel {
         problem: None,
         choose_folder: Action {
             label: "Choose folder".to_owned(),
+            is_enabled: true,
+        },
+        rescan: Action {
+            label: "Rescan".to_owned(),
             is_enabled: true,
         },
         songs: song_items(song_titles),

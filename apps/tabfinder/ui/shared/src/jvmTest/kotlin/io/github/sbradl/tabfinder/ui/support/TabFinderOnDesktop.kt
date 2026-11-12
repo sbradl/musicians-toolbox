@@ -68,7 +68,7 @@ class TabFinderOnDesktop(
         val core = startTabFinderCore()
         core.start()
         ui.waitUntil { core.viewModel.value != null }
-        ui.setContent { WithTextScale(textScale) { TabFinder(core) } }
+        ui.setContent { WithTextScale(textScale) { TabFinder(core, appName = "TabFinder") } }
     }
 
     fun musicianPicksTheLibraryFolder() {
@@ -85,6 +85,14 @@ class TabFinderOnDesktop(
     fun musicianFindsNoFolderDialog() {
         pickerAnswer = FolderPick.Unavailable
         clickChooseFolder()
+    }
+
+    fun musicianClicksRescan() {
+        ui.onNodeWithText("Rescan").performClick()
+    }
+
+    fun assertMessageShown(message: String) {
+        ui.waitUntilExactlyOneExists(hasText(message))
     }
 
     fun assertStatus(status: String) {

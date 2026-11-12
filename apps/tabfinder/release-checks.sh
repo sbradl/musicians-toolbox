@@ -41,9 +41,8 @@ banner() {
   _clear
   printf '\n%s%s  %s%s\n' "$BOLD" "$BLUE" "$1" "$RESET"
   printf '%s  %s stages%s\n\n' "$DIM" "$TOTAL_STAGES" "$RESET"
-  printf '%s  You drive the browser; this wizard tells you exactly what to do and\n' "$DIM"
-  printf '  captures the values you copy back. Stop any time with Ctrl-C and re-run\n'
-  printf '  later, since it remembers values already saved.%s\n' "$RESET"
+  printf '%s  This wizard sets everything up, tells you what to try and asks\n' "$DIM"
+  printf '  whether it worked. Stop any time with Ctrl-C.%s\n' "$RESET"
   pause "Ready to start?"
 }
 
@@ -181,7 +180,7 @@ set_var() {
 # finish clears, then shows a closing summary of everything configured.
 finish() {
   _clear
-  printf '\n%s%s  ✓ Setup complete%s\n' "$BOLD" "$GREEN" "$RESET"
+  printf '\n%s%s  ✓ Done%s\n' "$BOLD" "$GREEN" "$RESET"
   (( ${#WRITTEN_ENV[@]} ))    && note "wrote ${#WRITTEN_ENV[@]} value(s) to $ENV_FILE: ${WRITTEN_ENV[*]}"
   (( ${#WRITTEN_SECRET[@]} )) && note "set ${#WRITTEN_SECRET[@]} GitHub secret(s): ${WRITTEN_SECRET[*]}"
   if (( ${#SKIPPED[@]} )); then
@@ -200,10 +199,14 @@ finish() {
 
 run_wizard() {
 
-TOTAL_STAGES=3
+if [ ! -t 0 ]; then
+  echo "Run this in a terminal of your own: it asks you questions." >&2
+  exit 1
+fi
+
+TOTAL_STAGES=2
 
 ADB="${ANDROID_HOME:-$HOME/Android/Sdk}/platform-tools/adb"
-TALKBACK=com.google.android.marvin.talkback/com.google.android.marvin.talkback.TalkBackService
 WORK=$(mktemp -d)
 ENV_FILE="$WORK/.env"
 RESULTS=()
@@ -258,24 +261,6 @@ step "Go to Music → TabFinder test Library and tap Use this folder, then Allow
 step "TabFinder should show 3 Songs: Brasswing, Lantern Tide, Wexmoor."
 record "Android folder picker picks a Library"
 
-stage "Android: one minute with TalkBack"
-if "$ADB" shell pm path com.google.android.marvin.talkback 2>/dev/null | grep -q package; then
-  PREVIOUS_SERVICES=$("$ADB" shell settings get secure enabled_accessibility_services | tr -d '\r')
-  "$ADB" shell settings put secure enabled_accessibility_services "$TALKBACK"
-  "$ADB" shell settings put secure accessibility_enabled 1
-  step "TalkBack is on. Swipe right through TabFinder, double-tap Choose folder."
-  step "Everything should be announced with a meaningful name and work."
-  record "TalkBack announces and activates everything"
-  if [[ "$PREVIOUS_SERVICES" == "null" ]]; then
-    "$ADB" shell settings delete secure enabled_accessibility_services >/dev/null
-  else
-    "$ADB" shell settings put secure enabled_accessibility_services "$PREVIOUS_SERVICES"
-  fi
-  note "TalkBack is back as it was."
-else
-  warn "This device has no TalkBack; run the wizard again with a phone."
-  RESULTS+=("- [ ] TalkBack: not checked, device without TalkBack")
-fi
 "$ADB" shell rm -r "'/sdcard/Music/TabFinder test Library'" >/dev/null 2>&1 || true
 
 _clear

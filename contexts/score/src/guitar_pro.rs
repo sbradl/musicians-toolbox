@@ -1,12 +1,10 @@
-use mt_music_kernel::{Pitch, Tuning};
+use mt_music_kernel::Tuning;
 
-use crate::{Cursor, GuitarProFile, ScoreHeader, Track, Unreadable};
+use crate::{Cursor, GuitarProFile, MOST_TRACKS, ScoreHeader, Track, Unreadable, pitch_of};
 
 const MOST_BARS: usize = 10_000;
-const MOST_TRACKS: usize = 128;
 const STRING_SLOTS: usize = 7;
 const DRUM_CHANNEL: i32 = 10;
-const HIGHEST_MIDI_NUMBER: u8 = 127;
 
 const NUMBER: usize = 4;
 const VERSION_FIELD: usize = 30;
@@ -351,18 +349,6 @@ fn tuning_of(highest_first: &[i32], strings: usize) -> Result<Tuning, Unreadable
     }
 
     Ok(Tuning::of(lowest_string_first))
-}
-
-fn pitch_of(midi_number: i32) -> Result<Pitch, Unreadable> {
-    let Ok(midi_number) = u8::try_from(midi_number) else {
-        return Err(Unreadable);
-    };
-
-    if midi_number > HIGHEST_MIDI_NUMBER {
-        return Err(Unreadable);
-    }
-
-    Ok(Pitch::midi(midi_number))
 }
 
 fn skip_track_sound(cursor: &mut Cursor<'_>, version: Version) -> Result<(), Unreadable> {

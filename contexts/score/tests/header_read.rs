@@ -1,10 +1,17 @@
 pub mod support;
 
 use mt_music_kernel as _;
+use quick_xml as _;
 use std::fs;
+use std::time::{Duration, Instant};
 
-use mt_score::{LARGEST_TAB_FILE, ScoreHeader, Unreadable, read_header};
-use support::{BASS_E_STANDARD, DROP_D, E_STANDARD, GuitarProFile, OPEN_G, zip_holding};
+use mt_score::{LARGEST_SCORE_XML, LARGEST_TAB_FILE, ScoreHeader, Unreadable, read_header};
+use support::{
+    B_STANDARD_7, BASS_E_STANDARD, DROP_D, E_STANDARD, FileSystem, GuitarProFile, OPEN_G, ScoreXml,
+    compressed_guitar_pro_6_file, guitar_pro_6_file, guitar_pro_6_file_of_compressed_bytes,
+    guitar_pro_6_file_stating_length, guitar_pro_7_file, uncompressed_guitar_pro_6_file,
+    zip_holding,
+};
 
 const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
@@ -99,6 +106,152 @@ fn an_empty_or_blank_name_in_the_file_is_not_stated() {
 }
 
 #[test]
+fn a_guitar_pro_7_file_gives_its_tracks_tunings() {
+    let score = ScoreXml::guitar_pro(7)
+        .with_strings(&E_STANDARD)
+        .with_strings(&BASS_E_STANDARD)
+        .with_drums()
+        .with_strings(&B_STANDARD_7);
+    let tab_file = guitar_pro_7_file(&score.xml());
+
+    let header = read_header(&tab_file);
+
+    assert_tunings(
+        header,
+        &["6 E Standard", "4 E Standard", "no Tuning", "7 B Standard"],
+    );
+}
+
+#[test]
+fn a_guitar_pro_6_file_gives_its_tracks_tunings() {
+    let score = ScoreXml::guitar_pro(6)
+        .with_strings(&B_STANDARD_7)
+        .with_drums()
+        .with_strings(&BASS_E_STANDARD);
+    let tab_file = guitar_pro_6_file(&score.xml());
+
+    let header = read_header(&tab_file);
+
+    assert_tunings(header, &["7 B Standard", "no Tuning", "4 E Standard"]);
+}
+
+#[test]
+fn an_uncompressed_guitar_pro_6_file_gives_its_tracks_tunings() {
+    let score = ScoreXml::guitar_pro(6).with_strings(&DROP_D);
+    let tab_file = uncompressed_guitar_pro_6_file(&score.xml());
+
+    let header = read_header(&tab_file);
+
+    assert_tunings(header, &["6 Drop D"]);
+}
+
+#[test]
+fn a_guitar_pro_6_file_ending_before_its_stated_length_is_read() {
+    let xml = ScoreXml::guitar_pro(6).with_strings(&DROP_D).xml();
+    let one_byte_more = uncompressed_guitar_pro_6_file(&xml).len() + 1;
+    let tab_file = guitar_pro_6_file_stating_length(&xml, one_byte_more);
+
+    let header = read_header(&tab_file);
+
+    assert_tunings(header, &["6 Drop D"]);
+}
+
+#[test]
+fn what_follows_the_tracks_is_not_read() {
+    let score = ScoreXml::guitar_pro(7)
+        .with_strings(&DROP_D)
+        .followed_by("<Bars><Bar>no end");
+    let tab_file = guitar_pro_7_file(&score.xml());
+
+    let header = read_header(&tab_file);
+
+    assert_tunings(header, &["6 Drop D"]);
+}
+
+#[test]
+fn a_guitar_pro_7_file_whose_tracks_never_end_is_unreadable() {
+    let mut xml = ScoreXml::guitar_pro(7).with_strings(&DROP_D).xml();
+    xml.truncate(xml.len() / 2);
+    let tab_file = guitar_pro_7_file(&xml);
+
+    let header = read_header(&tab_file);
+
+    assert_eq!(header, Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_7_file_unpacking_too_much_before_its_tracks_is_unreadable() {
+    let padding = " ".repeat(LARGEST_SCORE_XML);
+    let score = ScoreXml::guitar_pro(7)
+        .preceded_by(&padding)
+        .with_strings(&DROP_D);
+    let tab_file = guitar_pro_7_file(&score.xml());
+
+    let header = read_header(&tab_file);
+
+    assert_eq!(header, Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_file_stating_more_than_the_largest_score_xml_is_unreadable() {
+    let xml = ScoreXml::guitar_pro(6).with_strings(&DROP_D).xml();
+    let tab_file = guitar_pro_6_file_stating_length(&xml, LARGEST_SCORE_XML + 1);
+
+    let header = read_header(&tab_file);
+
+    assert_eq!(header, Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_score_xml_stating_more_than_the_largest_score_xml_is_unreadable() {
+    let xml = ScoreXml::guitar_pro(6).with_strings(&DROP_D).xml();
+    let file_system = FileSystem::default()
+        .with_file_stating_size("score.gpif", LARGEST_SCORE_XML + 1, &xml)
+        .bytes();
+    let tab_file = compressed_guitar_pro_6_file(&file_system);
+
+    let header = read_header(&tab_file);
+
+    assert_eq!(header, Err(Unreadable));
+}
+
+#[test]
+fn a_score_xml_nested_too_deep_is_unreadable() {
+    let deep = format!("{}{}", "<Group>".repeat(100), "</Group>".repeat(100));
+    let score = ScoreXml::guitar_pro(7)
+        .preceded_by(&deep)
+        .with_strings(&DROP_D);
+    let tab_file = guitar_pro_7_file(&score.xml());
+
+    let header = read_header(&tab_file);
+
+    assert_eq!(header, Err(Unreadable));
+}
+
+#[test]
+fn a_score_xml_with_too_many_elements_is_unreadable() {
+    let many = "<Note/>".repeat(1_000_001);
+    let score = ScoreXml::guitar_pro(7)
+        .preceded_by(&many)
+        .with_strings(&DROP_D);
+    let tab_file = guitar_pro_7_file(&score.xml());
+
+    let header = read_header(&tab_file);
+
+    assert_eq!(header, Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_file_of_nothing_but_zeros_is_unreadable_at_once() {
+    let zero_bits = vec![0; LARGEST_TAB_FILE - 8];
+    let tab_file = guitar_pro_6_file_of_compressed_bytes(LARGEST_SCORE_XML, &zero_bits);
+
+    let header = read_header_timed(&tab_file);
+
+    assert_unreadable_at_once(header);
+}
+
+#[test]
 fn a_drum_track_has_no_tuning() {
     let tab_file = GuitarProFile::version(5, 0)
         .with_drums()
@@ -180,6 +333,19 @@ fn a_file_of_no_known_format_is_unreadable() {
     let header = read_header(b"Just some text that is no tab at all.");
 
     assert_eq!(header, Err(Unreadable));
+}
+
+fn read_header_timed(tab_file: &[u8]) -> (Result<ScoreHeader, Unreadable>, Duration) {
+    let started = Instant::now();
+    let header = read_header(tab_file);
+
+    (header, started.elapsed())
+}
+
+#[track_caller]
+fn assert_unreadable_at_once((header, took): (Result<ScoreHeader, Unreadable>, Duration)) {
+    assert_eq!(header, Err(Unreadable));
+    assert!(took < Duration::from_millis(100), "took {took:?}");
 }
 
 #[track_caller]

@@ -1,10 +1,15 @@
+mod guitar_pro_6_and_7;
+
 use std::io::Write as _;
 
 use rawzip::{CompressionMethod, ZipArchiveWriter};
 
+pub use guitar_pro_6_and_7::*;
+
 pub const E_STANDARD: [u8; 6] = [40, 45, 50, 55, 59, 64];
 pub const DROP_D: [u8; 6] = [38, 45, 50, 55, 59, 64];
 pub const BASS_E_STANDARD: [u8; 4] = [28, 33, 38, 43];
+pub const B_STANDARD_7: [u8; 7] = [35, 40, 45, 50, 55, 59, 64];
 pub const OPEN_G: [u8; 6] = [38, 43, 50, 55, 59, 62];
 
 #[derive(Debug)]

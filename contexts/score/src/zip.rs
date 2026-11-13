@@ -1,8 +1,16 @@
+use std::io::{self, BufReader, Read};
+
 use miniz_oxide::inflate::decompress_to_vec_with_limit;
+use miniz_oxide::inflate::stream::{InflateState, inflate};
+use miniz_oxide::{DataFormat, MZFlush};
 use rawzip::{CompressionMethod, ZipArchive, ZipFileHeaderRecord, ZipSliceArchive};
 
-use crate::{LARGEST_TAB_FILE, Unreadable, Zip};
+use crate::{
+    LARGEST_SCORE_XML, LARGEST_TAB_FILE, ScoreHeader, ScoreXml, Unreadable, Zip,
+    read_unzipped_header,
+};
 
+const SCORE_XML_PATH: &[u8] = b"Content/score.gpif";
 const MOST_ENTRIES: usize = 4096;
 const TAB_FILE_EXTENSIONS: [&[u8]; 8] =
     [b"gp3", b"gp4", b"gp5", b"gpx", b"gp", b"gtp", b"tg", b"ptb"];
@@ -16,7 +24,7 @@ impl<'file> Zip<'file> {
         None
     }
 
-    pub(super) fn tab_file(&self) -> Result<Vec<u8>, Unreadable> {
+    pub(super) fn read_header(&self) -> Result<ScoreHeader, Unreadable> {
         let Ok(archive) = ZipArchive::from_slice(self.0) else {
             return Err(Unreadable);
         };
@@ -26,8 +34,12 @@ impl<'file> Zip<'file> {
                 return Err(Unreadable);
             };
 
+            if entry.file_path().as_bytes() == SCORE_XML_PATH {
+                return read_score_xml_header(&archive, &entry);
+            }
+
             if is_tab_file(&entry) {
-                return unpacked(&archive, &entry);
+                return read_unzipped_header(&unpacked(&archive, &entry)?);
             }
         }
 
@@ -42,6 +54,22 @@ fn is_tab_file(entry: &ZipFileHeaderRecord<'_>) -> bool {
     };
 
     !entry.is_dir() && TAB_FILE_EXTENSIONS.contains(&&name[dot + 1..])
+}
+
+fn read_score_xml_header(
+    archive: &ZipSliceArchive<&[u8]>,
+    entry: &ZipFileHeaderRecord<'_>,
+) -> Result<ScoreHeader, Unreadable> {
+    let Ok(found) = archive.get_entry(entry.wayfinder()) else {
+        return Err(Unreadable);
+    };
+    let data = found.data();
+
+    match entry.compression_method() {
+        CompressionMethod::STORE => ScoreXml(data).read_header(),
+        CompressionMethod::DEFLATE => ScoreXml(BufReader::new(Inflating::over(data))).read_header(),
+        _ => Err(Unreadable),
+    }
 }
 
 fn unpacked(
@@ -63,4 +91,35 @@ fn unpacked(
     }
 
     decompress_to_vec_with_limit(data, LARGEST_TAB_FILE).map_err(|_| Unreadable)
+}
+
+struct Inflating<'file> {
+    state: Box<InflateState>,
+    deflated: &'file [u8],
+    inflated: usize,
+}
+
+impl<'file> Inflating<'file> {
+    fn over(deflated: &'file [u8]) -> Self {
+        Self {
+            state: InflateState::new_boxed(DataFormat::Raw),
+            deflated,
+            inflated: 0,
+        }
+    }
+}
+
+impl Read for Inflating<'_> {
+    fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+        let result = inflate(&mut self.state, self.deflated, buffer, MZFlush::None);
+        self.deflated = &self.deflated[result.bytes_consumed..];
+        self.inflated += result.bytes_written;
+
+        if result.status.is_err() && result.bytes_written == 0 || self.inflated > LARGEST_SCORE_XML
+        {
+            return Err(io::ErrorKind::InvalidData.into());
+        }
+
+        Ok(result.bytes_written)
+    }
 }

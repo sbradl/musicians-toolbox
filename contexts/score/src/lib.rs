@@ -1,10 +1,15 @@
 mod cursor;
+mod gpif;
+mod gpx;
 mod guitar_pro;
 mod zip;
 
-use mt_music_kernel::Tuning;
+use mt_music_kernel::{Pitch, Tuning};
 
 pub const LARGEST_TAB_FILE: usize = 64 * 1024 * 1024;
+pub const LARGEST_SCORE_XML: usize = 32 * 1024 * 1024;
+const MOST_TRACKS: usize = 128;
+const HIGHEST_MIDI_NUMBER: u8 = 127;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ScoreHeader {
@@ -28,13 +33,17 @@ pub fn read_header(tab_file: &[u8]) -> Result<ScoreHeader, Unreadable> {
     }
 
     if let Some(zip) = Zip::recognized(tab_file) {
-        return read_unzipped_header(&zip.tab_file()?);
+        return zip.read_header();
     }
 
     read_unzipped_header(tab_file)
 }
 
 fn read_unzipped_header(tab_file: &[u8]) -> Result<ScoreHeader, Unreadable> {
+    if let Some(guitar_pro_6) = GuitarPro6File::recognized(tab_file) {
+        return guitar_pro_6.read_header();
+    }
+
     let Some(guitar_pro) = GuitarProFile::recognized(tab_file) else {
         return Err(Unreadable);
     };
@@ -42,8 +51,26 @@ fn read_unzipped_header(tab_file: &[u8]) -> Result<ScoreHeader, Unreadable> {
     guitar_pro.read_header()
 }
 
+fn pitch_of(midi_number: i32) -> Result<Pitch, Unreadable> {
+    let Ok(midi_number) = u8::try_from(midi_number) else {
+        return Err(Unreadable);
+    };
+
+    if midi_number > HIGHEST_MIDI_NUMBER {
+        return Err(Unreadable);
+    }
+
+    Ok(Pitch::midi(midi_number))
+}
+
 #[derive(Debug)]
 struct Zip<'file>(&'file [u8]);
+
+#[derive(Debug)]
+struct ScoreXml<Xml>(Xml);
+
+#[derive(Debug)]
+struct GuitarPro6File<'file>(&'file [u8]);
 
 #[derive(Debug)]
 struct GuitarProFile<'file>(&'file [u8]);

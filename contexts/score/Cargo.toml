@@ -11,3 +11,4 @@ workspace = true
 mt-music-kernel.workspace = true
 miniz_oxide.workspace = true
 rawzip.workspace = true
+quick-xml.workspace = true

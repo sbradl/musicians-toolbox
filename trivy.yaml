@@ -10,3 +10,4 @@ scan:
     - target
     - "**/build"
     - .gradle
+quiet: true

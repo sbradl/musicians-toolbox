@@ -1,0 +1,6 @@
+#!/bin/sh
+# Runs the given mise tasks and prints their output only when one fails.
+echo "mise run $*"
+output=$(mise run --output keep-order "$@" 2>&1) && exit 0
+printf '%s\n' "$output"
+exit 1

@@ -1,11 +1,17 @@
 package io.github.sbradl.tabfinder.desktop
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.freedesktop.dbus.annotations.DBusInterfaceName
 import org.freedesktop.dbus.annotations.DBusMemberName
 import org.freedesktop.dbus.connections.impl.DBusConnection
@@ -17,10 +23,25 @@ import org.freedesktop.dbus.interfaces.DBusSigHandler
 import org.freedesktop.dbus.messages.DBusSignal
 import org.freedesktop.dbus.types.UInt32
 import org.freedesktop.dbus.types.Variant
+import kotlin.time.Duration.Companion.seconds
 
 class PortalAppearance(
     private val connectToSessionBus: () -> DBusConnection = { DBusConnectionBuilder.forSessionBus().build() },
 ) {
+    suspend fun followPrefersDark(scope: CoroutineScope): StateFlow<Boolean> {
+        val prefersDark = MutableStateFlow(false)
+        val firstAnswer = CompletableDeferred<Unit>()
+        scope.launch {
+            prefersDarkAsItChanges().collect { answer ->
+                prefersDark.value = answer
+                firstAnswer.complete(Unit)
+            }
+        }
+        withTimeoutOrNull(FIRST_ANSWER_WAIT) { firstAnswer.await() }
+
+        return prefersDark
+    }
+
     fun prefersDarkAsItChanges(): Flow<Boolean> =
         channelFlow {
             try {
@@ -59,6 +80,7 @@ class PortalAppearance(
         const val APPEARANCE_NAMESPACE = "org.freedesktop.appearance"
         const val COLOR_SCHEME_KEY = "color-scheme"
         const val COLOR_SCHEME_DARK = 1
+        val FIRST_ANSWER_WAIT = 1.seconds
     }
 }
 

@@ -11,6 +11,9 @@ import androidx.compose.ui.window.application
 import io.github.sbradl.tabfinder.core.desktopConfigDir
 import io.github.sbradl.tabfinder.ui.TabFinder
 import io.github.sbradl.tabfinder.ui.TabFinderCore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 
 private const val APP_NAME = "TabFinder"
 
@@ -28,9 +31,9 @@ private fun startCore(): TabFinderCore {
 }
 
 private fun showWindow(core: TabFinderCore) {
-    val desktopPrefersDark = PortalAppearance().prefersDarkAsItChanges()
+    val desktopPrefersDark = runBlocking { PortalAppearance().followPrefersDark(CoroutineScope(Dispatchers.IO)) }
     application {
-        val prefersDark by desktopPrefersDark.collectAsState(initial = false)
+        val prefersDark by desktopPrefersDark.collectAsState()
         Window(onCloseRequest = ::exitApplication, title = APP_NAME) {
             MaterialTheme(colorScheme = if (prefersDark) darkColorScheme() else lightColorScheme()) {
                 Surface { TabFinder(core, APP_NAME) }

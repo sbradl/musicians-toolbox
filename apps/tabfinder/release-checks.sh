@@ -245,7 +245,7 @@ step "The dialog's title should be \"Choose the Library folder\"."
 step "Pick this folder: $WORK/Library"
 step "TabFinder should show 3 Songs: Brasswing, Lantern Tide, Wexmoor."
 record "Desktop folder dialog picks a Library"
-step "TabFinder should be dark if your desktop is set to dark, light if it is set to light."
+step "TabFinder should open dark if your desktop is set to dark (no light flash), light if it is set to light."
 step "Switch your desktop between dark and light: TabFinder should follow straight away."
 record "Desktop follows its dark/light setting, also while open"
 kill "$DESKTOP_APP" 2>/dev/null || true

@@ -3,6 +3,9 @@ package io.github.sbradl.tabfinder.desktop
 import io.github.sbradl.tabfinder.desktop.support.DesktopAppearance
 import io.github.sbradl.tabfinder.desktop.support.TestSessionBus
 import io.github.sbradl.tabfinder.desktop.support.portalSaying
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
@@ -84,5 +87,35 @@ class PortalAppearanceTest {
         assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
     }
 
+    @Test
+    fun aDarkDesktopIsKnownBeforeTheWindowOpens() =
+        TestSessionBus().use { sessionBus ->
+            sessionBus.portalSaying(DesktopAppearance.DARK).use {
+                val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
+
+                val prefersDark = whileTabFinderRuns { scope -> appearance.followPrefersDark(scope).value }
+
+                assertTrue(prefersDark)
+            }
+        }
+
+    @Test
+    fun withoutASessionBusTheWindowOpensLightWithoutWaitingForTheBus() {
+        val appearance = PortalAppearance { DBusConnectionBuilder.forAddress("unix:path=/nonexistent/bus").build() }
+
+        val prefersDark = whileTabFinderRuns { scope -> withTimeout(3.seconds) { appearance.followPrefersDark(scope).value } }
+
+        assertFalse(prefersDark)
+    }
+
     private fun Flow<Boolean>.firstWithin(): Boolean = runBlocking { withTimeout(20.seconds) { first() } }
+
+    private fun <T> whileTabFinderRuns(use: suspend (CoroutineScope) -> T): T {
+        val scope = CoroutineScope(Dispatchers.IO)
+        try {
+            return runBlocking { use(scope) }
+        } finally {
+            scope.cancel()
+        }
+    }
 }

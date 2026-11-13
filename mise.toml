@@ -1,10 +1,10 @@
 [tools]
 rust = { version = "1.99.1", components = "rustfmt,clippy", targets = "aarch64-linux-android,x86_64-linux-android" }
-java = "temurin-21.0.13+9.0.LTS"
+java = "temurin-25.0.5+8.0.LTS"
 ktlint = "1.8.0"
 cargo-deny = "0.20.2"
 trivy = "0.76.2"
-opengrep = "1.33.1"
+opengrep = "2.0.0"
 "github:bbqsrc/cargo-ndk" = "4.1.2"
 zig = "0.17.1"
 "github:rust-cross/cargo-zigbuild" = "0.24.1"

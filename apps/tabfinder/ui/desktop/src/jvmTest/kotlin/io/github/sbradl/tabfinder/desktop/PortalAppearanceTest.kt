@@ -3,10 +3,19 @@ package io.github.sbradl.tabfinder.desktop
 import io.github.sbradl.tabfinder.desktop.support.DesktopAppearance
 import io.github.sbradl.tabfinder.desktop.support.TestSessionBus
 import io.github.sbradl.tabfinder.desktop.support.portalSaying
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class PortalAppearanceTest {
     @Test
@@ -15,7 +24,7 @@ class PortalAppearanceTest {
             sessionBus.portalSaying(DesktopAppearance.DARK).use {
                 val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
 
-                assertTrue(appearance.prefersDark())
+                assertTrue(appearance.prefersDarkAsItChanges().firstWithin())
             }
         }
 
@@ -25,7 +34,7 @@ class PortalAppearanceTest {
             sessionBus.portalSaying(DesktopAppearance.LIGHT).use {
                 val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
 
-                assertFalse(appearance.prefersDark())
+                assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
             }
         }
 
@@ -35,7 +44,28 @@ class PortalAppearanceTest {
             sessionBus.portalSaying(DesktopAppearance.NO_PREFERENCE).use {
                 val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
 
-                assertFalse(appearance.prefersDark())
+                assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
+            }
+        }
+
+    @Test
+    fun aDesktopSwitchingToDarkWhileTabFinderRunsPrefersDark() =
+        TestSessionBus().use { sessionBus ->
+            sessionBus.portalSaying(DesktopAppearance.LIGHT).use { portal ->
+                val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
+
+                val prefersDark =
+                    runBlocking {
+                        withTimeout(5.seconds) {
+                            appearance
+                                .prefersDarkAsItChanges()
+                                .onEach { portal.desktopSwitchesTo(DesktopAppearance.DARK) }
+                                .take(2)
+                                .toList()
+                        }
+                    }
+
+                assertEquals(listOf(false, true), prefersDark)
             }
         }
 
@@ -44,13 +74,15 @@ class PortalAppearanceTest {
         TestSessionBus().use { sessionBus ->
             val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
 
-            assertFalse(appearance.prefersDark())
+            assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
         }
 
     @Test
     fun withoutASessionBusNothingPrefersDark() {
         val appearance = PortalAppearance { DBusConnectionBuilder.forAddress("unix:path=/nonexistent/bus").build() }
 
-        assertFalse(appearance.prefersDark())
+        assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
     }
+
+    private fun Flow<Boolean>.firstWithin(): Boolean = runBlocking { withTimeout(20.seconds) { first() } }
 }

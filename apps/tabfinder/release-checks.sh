@@ -246,7 +246,8 @@ step "Pick this folder: $WORK/Library"
 step "TabFinder should show 3 Songs: Brasswing, Lantern Tide, Wexmoor."
 record "Desktop folder dialog picks a Library"
 step "TabFinder should be dark if your desktop is set to dark, light if it is set to light."
-record "Desktop follows its dark/light setting"
+step "Switch your desktop between dark and light: TabFinder should follow straight away."
+record "Desktop follows its dark/light setting, also while open"
 kill "$DESKTOP_APP" 2>/dev/null || true
 
 stage "Android: the system folder picker"

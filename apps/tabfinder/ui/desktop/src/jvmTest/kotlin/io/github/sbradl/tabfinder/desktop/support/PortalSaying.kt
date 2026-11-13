@@ -15,16 +15,30 @@ enum class DesktopAppearance(
     LIGHT(2),
 }
 
-fun TestSessionBus.portalSaying(appearance: DesktopAppearance): DBusConnection {
-    val portal = DBusConnectionBuilder.forAddress(address).build()
-    portal.exportObject(PortalSettings(appearance))
-    portal.requestBusName("org.freedesktop.portal.Desktop")
+fun TestSessionBus.portalSaying(appearance: DesktopAppearance) = FakePortal(address, appearance)
 
-    return portal
+class FakePortal(
+    busAddress: String,
+    appearance: DesktopAppearance,
+) : AutoCloseable {
+    private val settings = PortalSettings(appearance)
+    private val connection: DBusConnection = DBusConnectionBuilder.forAddress(busAddress).build()
+
+    init {
+        connection.exportObject(settings)
+        connection.requestBusName("org.freedesktop.portal.Desktop")
+    }
+
+    fun desktopSwitchesTo(appearance: DesktopAppearance) {
+        settings.appearance = appearance
+        connection.sendMessage(Settings.SettingChanged(settings.objectPath, NAMESPACE, KEY, appearance.asVariant()))
+    }
+
+    override fun close() = connection.close()
 }
 
 private class PortalSettings(
-    private val appearance: DesktopAppearance,
+    var appearance: DesktopAppearance,
 ) : Settings {
     override fun getObjectPath() = "/org/freedesktop/portal/desktop"
 
@@ -32,10 +46,15 @@ private class PortalSettings(
         namespace: String,
         key: String,
     ): Variant<*> {
-        if (namespace != "org.freedesktop.appearance" || key != "color-scheme") {
+        if (namespace != NAMESPACE || key != KEY) {
             throw DBusExecutionException("Requested setting not found")
         }
 
-        return Variant(UInt32(appearance.colorScheme.toLong()))
+        return appearance.asVariant()
     }
 }
+
+private fun DesktopAppearance.asVariant() = Variant(UInt32(colorScheme.toLong()))
+
+private const val NAMESPACE = "org.freedesktop.appearance"
+private const val KEY = "color-scheme"

@@ -4,6 +4,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import io.github.sbradl.tabfinder.core.desktopConfigDir
@@ -14,7 +16,7 @@ private const val APP_NAME = "TabFinder"
 
 fun main() {
     val core = startCore()
-    showWindow(core, PortalAppearance().prefersDark())
+    showWindow(core)
 }
 
 private fun startCore(): TabFinderCore {
@@ -25,13 +27,14 @@ private fun startCore(): TabFinderCore {
     return core
 }
 
-private fun showWindow(
-    core: TabFinderCore,
-    prefersDark: Boolean,
-) = application {
-    Window(onCloseRequest = ::exitApplication, title = APP_NAME) {
-        MaterialTheme(colorScheme = if (prefersDark) darkColorScheme() else lightColorScheme()) {
-            Surface { TabFinder(core, APP_NAME) }
+private fun showWindow(core: TabFinderCore) {
+    val desktopPrefersDark = PortalAppearance().prefersDarkAsItChanges()
+    application {
+        val prefersDark by desktopPrefersDark.collectAsState(initial = false)
+        Window(onCloseRequest = ::exitApplication, title = APP_NAME) {
+            MaterialTheme(colorScheme = if (prefersDark) darkColorScheme() else lightColorScheme()) {
+                Surface { TabFinder(core, APP_NAME) }
+            }
         }
     }
 }

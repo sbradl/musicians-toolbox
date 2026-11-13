@@ -15,10 +15,6 @@ class LibraryFolderThatCanBeHeld(
         hold = CountDownLatch(1)
     }
 
-    fun releaseReading() {
-        hold.countDown()
-    }
-
     override fun songs(location: String): List<Song> {
         hold.await(GIVE_UP_AFTER_SECONDS, TimeUnit.SECONDS)
 

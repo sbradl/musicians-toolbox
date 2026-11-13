@@ -33,6 +33,9 @@ _Avoid_: Broken, invalid
 Reading a Library to bring its Song summaries up to date.
 _Avoid_: Index, refresh
 
+**Last Scan**:
+The Song summaries the most recent Scan found, kept so TabFinder starts without Scanning.
+
 **Rescan**:
 A Scan of the open Library that the musician asks for.
 _Avoid_: Refresh, reload

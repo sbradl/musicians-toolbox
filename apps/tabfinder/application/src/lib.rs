@@ -32,18 +32,35 @@ pub trait RememberedLibraryLocation: Send + Sync + Debug {
     fn forget(&self);
 }
 
+pub trait LastScan: Send + Sync + Debug {
+    fn songs_of(&self, location: &LibraryLocation) -> Option<Vec<Song>>;
+    fn keep(&self, location: &LibraryLocation, songs: &[Song]);
+}
+
 #[derive(Debug)]
 pub struct Libraries {
     folder: Box<dyn LibraryFolder>,
     remembered: Box<dyn RememberedLibraryLocation>,
+    last_scan: Box<dyn LastScan>,
 }
 
 impl Libraries {
     pub fn new(
         folder: Box<dyn LibraryFolder>,
         remembered: Box<dyn RememberedLibraryLocation>,
+        last_scan: Box<dyn LastScan>,
     ) -> Self {
-        Self { folder, remembered }
+        Self {
+            folder,
+            remembered,
+            last_scan,
+        }
+    }
+
+    pub fn last_scan(&self, location: &LibraryLocation) -> Option<Library> {
+        let songs = self.last_scan.songs_of(location)?;
+
+        Some(Library::of(songs))
     }
 
     pub fn remembered_location(&self) -> Option<LibraryLocation> {
@@ -53,8 +70,9 @@ impl Libraries {
     pub fn open(&self, location: &LibraryLocation) -> Result<Library, LibraryFolderError> {
         let library = self.scan(location);
 
-        if library.is_ok() {
+        if let Ok(scanned) = &library {
             self.remembered.remember(location);
+            self.last_scan.keep(location, scanned.songs());
         } else if self.is_remembered(location) {
             self.remembered.forget();
         }

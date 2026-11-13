@@ -1,3 +1,7 @@
+mod last_scan;
+
+pub use last_scan::FsLastScan;
+
 use std::ffi::OsStr;
 use std::fs::{self, DirEntry, ReadDir};
 use std::io;
@@ -180,7 +184,7 @@ impl FsRememberedLibraryLocation {
     }
 }
 
-// A failure only costs the musician a re-pick on the next start.
+// A failure only costs the musician a re-pick or a Scan on the next start.
 fn ignore_failure(result: io::Result<()>) {
     drop(result);
 }

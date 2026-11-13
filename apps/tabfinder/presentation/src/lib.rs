@@ -7,7 +7,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use fluent_bundle::{FluentResource, concurrent::FluentBundle};
 use mt_library::{Filter, Library};
 use mt_tabfinder_application::{
-    Libraries, LibraryFolder, LibraryLocation, RememberedLibraryLocation,
+    LastScan, Libraries, LibraryFolder, LibraryLocation, RememberedLibraryLocation,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -90,10 +90,11 @@ impl App {
         listener: Box<dyn ViewModelListener>,
         library_folder: Box<dyn LibraryFolder>,
         remembered_library_location: Box<dyn RememberedLibraryLocation>,
+        last_scan: Box<dyn LastScan>,
     ) -> Self {
         Self {
             listener,
-            libraries: Libraries::new(library_folder, remembered_library_location),
+            libraries: Libraries::new(library_folder, remembered_library_location, last_scan),
             texts: Texts::english(),
             shown: Mutex::new(None),
             library: Mutex::new(None),
@@ -102,9 +103,15 @@ impl App {
     }
 
     pub fn start(&self) {
-        match self.libraries.remembered_location() {
-            Some(location) => _ = self.open_library(&location),
-            None => self.show(LibraryViewModel::no_folder_chosen(&self.texts)),
+        let Some(location) = self.libraries.remembered_location() else {
+            self.show(LibraryViewModel::no_folder_chosen(&self.texts));
+
+            return;
+        };
+
+        match self.libraries.last_scan(&location) {
+            Some(library) => _ = self.list(library),
+            None => _ = self.open_library(&location),
         }
     }
 
@@ -155,13 +162,7 @@ impl App {
     fn open_library(&self, location: &LibraryLocation) -> Option<usize> {
         self.show(LibraryViewModel::scanning(&self.texts));
         match self.libraries.open(location) {
-            Ok(library) => {
-                let song_count = library.songs().len();
-                *lock(&self.library) = Some(ListedLibrary::of(library, &self.texts));
-                self.show_library();
-
-                Some(song_count)
-            }
+            Ok(library) => Some(self.list(library)),
             Err(error) => {
                 *lock(&self.library) = None;
                 self.show(
@@ -172,6 +173,14 @@ impl App {
                 None
             }
         }
+    }
+
+    fn list(&self, library: Library) -> usize {
+        let song_count = library.songs().len();
+        *lock(&self.library) = Some(ListedLibrary::of(library, &self.texts));
+        self.show_library();
+
+        song_count
     }
 
     fn show_library(&self) {

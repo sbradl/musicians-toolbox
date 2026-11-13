@@ -7,7 +7,7 @@ use mt_library as _;
 use unic_langid as _;
 
 use mt_tabfinder_application::{
-    LibraryFolder, LibraryFolderError, LibraryLocation, RememberedLibraryLocation, Song,
+    LastScan, LibraryFolder, LibraryFolderError, LibraryLocation, RememberedLibraryLocation, Song,
 };
 use mt_tabfinder_presentation::{
     Action, App, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches,
@@ -18,6 +18,7 @@ use mt_tabfinder_presentation::{
 pub struct TabFinderSetup {
     folders: FakeLibraryFolders,
     remembered: FakeRememberedLibraryLocation,
+    last_scan: FakeLastScan,
 }
 
 impl TabFinderSetup {
@@ -62,12 +63,20 @@ impl TabFinderSetup {
         self
     }
 
+    pub fn with_last_scan_of(self, location: &str, song_titles: &[&str]) -> Self {
+        self.last_scan
+            .keep(&LibraryLocation::new(location), &songs_titled(song_titles));
+
+        self
+    }
+
     pub fn start(self) -> TabFinder {
         let screens = ShownScreens::default();
         let app = App::new(
             Box::new(screens.clone()),
             Box::new(self.folders.clone()),
             Box::new(self.remembered.clone()),
+            Box::new(self.last_scan.clone()),
         );
         app.start();
         TabFinder {
@@ -75,6 +84,7 @@ impl TabFinderSetup {
             screens,
             folders: self.folders,
             remembered: self.remembered,
+            last_scan: self.last_scan,
         }
     }
 }
@@ -85,6 +95,7 @@ pub struct TabFinder {
     screens: ShownScreens,
     folders: FakeLibraryFolders,
     remembered: FakeRememberedLibraryLocation,
+    last_scan: FakeLastScan,
 }
 
 impl TabFinder {
@@ -314,6 +325,21 @@ impl TabFinder {
     }
 
     #[track_caller]
+    pub fn assert_last_scan_of(&self, location: &str, song_titles: &[&str]) {
+        let kept = self.last_scan.songs_of(&LibraryLocation::new(location));
+
+        assert_eq!(kept, Some(songs_titled(song_titles)));
+    }
+
+    #[track_caller]
+    pub fn assert_no_last_scan_of(&self, location: &str) {
+        assert_eq!(
+            self.last_scan.songs_of(&LibraryLocation::new(location)),
+            None
+        );
+    }
+
+    #[track_caller]
     pub fn assert_remembers_nothing(&self) {
         assert_eq!(self.remembered.remembered(), None);
     }
@@ -497,11 +523,7 @@ struct FakeLibraryFolders {
 
 impl FakeLibraryFolders {
     fn add(&self, location: &str, song_titles: &[&str]) {
-        let mut songs = Vec::new();
-        for title in song_titles {
-            songs.push(Song::titled(title));
-        }
-        self.hold(location, songs);
+        self.hold(location, songs_titled(song_titles));
     }
 
     fn hold(&self, location: &str, songs: Vec<Song>) {
@@ -557,6 +579,34 @@ impl RememberedLibraryLocation for FakeRememberedLibraryLocation {
     fn forget(&self) {
         *lock(&self.location) = None;
     }
+}
+
+#[derive(Clone, Debug, Default)]
+struct FakeLastScan {
+    songs_by_location: Shared<HashMap<String, Vec<Song>>>,
+}
+
+impl LastScan for FakeLastScan {
+    fn songs_of(&self, location: &LibraryLocation) -> Option<Vec<Song>> {
+        lock(&self.songs_by_location)
+            .get(location.as_str())
+            .cloned()
+    }
+
+    fn keep(&self, location: &LibraryLocation, songs: &[Song]) {
+        let mut songs_by_location = lock(&self.songs_by_location);
+        songs_by_location.clear();
+        drop(songs_by_location.insert(location.as_str().to_owned(), songs.to_vec()));
+    }
+}
+
+fn songs_titled(song_titles: &[&str]) -> Vec<Song> {
+    let mut songs = Vec::new();
+    for title in song_titles {
+        songs.push(Song::titled(title));
+    }
+
+    songs
 }
 
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {

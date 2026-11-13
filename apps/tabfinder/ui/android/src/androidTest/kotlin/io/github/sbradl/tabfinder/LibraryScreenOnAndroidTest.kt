@@ -220,21 +220,7 @@ class LibraryScreenOnAndroidTest {
         }
 
     @Test
-    fun reopeningTabFinderAfterTheLibraryFolderIsGoneShowsNoFolderChosen() =
-        runTabFinderTest { tabfinder ->
-            tabfinder.libraryFolderContains("Wexmoor.gp5")
-            tabfinder.musicianOpensTabFinder()
-            tabfinder.musicianPicksTheLibraryFolder()
-            tabfinder.assertStatus("1 Song")
-            tabfinder.libraryFolderIsDeleted()
-
-            tabfinder.musicianReopensTabFinder()
-
-            tabfinder.assertStatus("No folder chosen")
-        }
-
-    @Test
-    fun reopeningTabFinderShowsScanningWhileTheRememberedLibraryIsScanned() =
+    fun reopeningTabFinderListsTheLastScanWithoutScanning() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
@@ -244,8 +230,55 @@ class LibraryScreenOnAndroidTest {
 
             tabfinder.musicianReopensTabFinder()
 
-            tabfinder.assertStatus("Scanning…")
-            tabfinder.libraryFolderFinishesReading()
             tabfinder.assertStatus("1 Song")
+            tabfinder.assertShown("Wexmoor")
+        }
+
+    @Test
+    fun songsAddedSinceTheLastScanAreListedOnlyAfterARescan() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("1 Song")
+            tabfinder.libraryFolderContains("Brasswing.gp5")
+            tabfinder.musicianReopensTabFinder()
+            tabfinder.assertStatus("1 Song")
+
+            tabfinder.musicianClicksRescan()
+
+            tabfinder.assertStatus("2 Songs")
+            tabfinder.assertShown("Brasswing")
+        }
+
+    @Test
+    fun reopeningTabFinderWithAnUnreadableLastScanScansTheLibraryAgain() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("1 Song")
+            tabfinder.libraryFolderContains("Brasswing.gp5")
+            tabfinder.lastScanIsUnreadable()
+
+            tabfinder.musicianReopensTabFinder()
+
+            tabfinder.assertStatus("2 Songs")
+        }
+
+    @Test
+    fun rescanAfterTheLibraryFolderIsGoneShowsNoFolderChosen() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("1 Song")
+            tabfinder.libraryFolderIsDeleted()
+            tabfinder.musicianReopensTabFinder()
+            tabfinder.assertStatus("1 Song")
+
+            tabfinder.musicianClicksRescan()
+
+            tabfinder.assertStatus("No folder chosen")
         }
 }

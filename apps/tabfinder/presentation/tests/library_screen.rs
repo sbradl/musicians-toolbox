@@ -149,6 +149,54 @@ fn starting_with_a_remembered_library_location_goes_straight_to_scanning() {
 }
 
 #[test]
+fn starting_with_a_last_scan_lists_its_songs_without_scanning() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor", "Brasswing"])
+        .remembering("/music")
+        .with_last_scan_of("/music", &["Wexmoor"])
+        .start();
+
+    assert_eq!(tabfinder.statuses_shown(), ["1 Song"]);
+    tabfinder.assert_song_titles(&["Wexmoor"]);
+}
+
+#[test]
+fn picking_a_folder_replaces_the_last_scan() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"])
+        .with_last_scan_of("/old", &["Brasswing"])
+        .start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_last_scan_of("/music", &["Wexmoor"]);
+    tabfinder.assert_no_last_scan_of("/old");
+}
+
+#[test]
+fn rescan_replaces_the_last_scan() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor", "Brasswing"])
+        .remembering("/music")
+        .with_last_scan_of("/music", &["Wexmoor"])
+        .start();
+
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.assert_last_scan_of("/music", &["Brasswing", "Wexmoor"]);
+}
+
+#[test]
+fn songs_added_since_the_last_scan_are_listed_only_after_a_rescan() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor", "Brasswing"])
+        .remembering("/music")
+        .with_last_scan_of("/music", &["Wexmoor"])
+        .start();
+    tabfinder.assert_song_titles(&["Wexmoor"]);
+
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.assert_song_titles(&["Brasswing", "Wexmoor"]);
+}
+
+#[test]
 fn a_picked_folder_becomes_the_remembered_library_location() {
     let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
 

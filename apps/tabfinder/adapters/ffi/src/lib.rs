@@ -1,7 +1,7 @@
 use std::fmt;
 
 use mt_tabfinder_application::{self as application, LibraryLocation, Song};
-use mt_tabfinder_fs::{FsLibraryFolder, FsRememberedLibraryLocation};
+use mt_tabfinder_fs::{FsLastScan, FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
 use presentation::{
     Action, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches, SongItem,
@@ -216,6 +216,7 @@ impl App {
             Box::new(ListenerInKotlin(listener)),
             library_folder,
             Box::new(FsRememberedLibraryLocation::in_config_dir(config_dir)),
+            Box::new(FsLastScan::in_config_dir(config_dir)),
         ))
     }
 }

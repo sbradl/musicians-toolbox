@@ -43,6 +43,12 @@
           "en": "An Artist field next to the Song field shows only the Songs of artists whose name contains what you type, ignoring upper and lower case. While you type, matching artists drop down below it; pick one to fill the field. Artist and Song together show only Songs matching both.",
           "de": "Ein Artist-Feld neben dem Song-Feld zeigt nur die Songs von Künstlern, deren Name enthält, was du tippst, egal ob groß oder klein geschrieben. Während du tippst, klappen passende Künstler darunter auf; wähle einen, um das Feld zu füllen. Artist und Song zusammen zeigen nur Songs, die zu beiden passen.",
           "fr": "Un champ Artist à côté du champ Song n'affiche que les morceaux des artistes dont le nom contient ce que vous tapez, sans tenir compte des majuscules et minuscules. Pendant la saisie, les artistes correspondants s'affichent en dessous ; choisissez-en un pour remplir le champ. Artist et Song ensemble n'affichent que les morceaux qui correspondent aux deux."
+        },
+        {
+          "id": "last-scan-at-start",
+          "en": "TabFinder now opens straight to your Songs: it shows the list from the last Scan instead of reading the whole folder again. Songs you added or deleted since then show up after Rescan.",
+          "de": "TabFinder zeigt deine Songs jetzt sofort beim Start: Es zeigt die Liste vom letzten Scan, statt den ganzen Ordner neu zu lesen. Songs, die du seitdem hinzugefügt oder gelöscht hast, erscheinen nach Rescan.",
+          "fr": "TabFinder affiche désormais vos morceaux dès l'ouverture : il montre la liste du dernier scan au lieu de relire tout le dossier. Les morceaux ajoutés ou supprimés depuis apparaissent après Rescan."
         }
       ]
     }

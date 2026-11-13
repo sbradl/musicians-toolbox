@@ -64,12 +64,12 @@ class TabFinderOnAndroid(
         libraryFolderReader.holdReading()
     }
 
-    fun libraryFolderFinishesReading() {
-        libraryFolderReader.releaseReading()
-    }
-
     fun libraryFolderIsDeleted() {
         libraryFolder.deleteRecursively()
+    }
+
+    fun lastScanIsUnreadable() {
+        File(configDir, "last-scan").writeText("not a Scan TabFinder wrote")
     }
 
     fun musicianDoublesTheTextSize() {

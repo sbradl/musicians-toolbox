@@ -1,0 +1,8 @@
+[package]
+name = "copy"
+
+[workspace.lints.rust]
+unused = "warn"
+
+[workspace.lints.clippy]
+pedantic = "allow"

@@ -16,7 +16,7 @@ Task runner: mise
 | rust | Linter | Opengrep | own rules (`.opengrep/`), offline |
 | rust, kotlin | Linter | `tools/blank-lines/check.awk` | blank line before every `if` and `return` unless it opens its block or continues an expression; implicit returns stay a review rule |
 | rust | Coverage rule | `tools/fuzz-targets/check.sh` | every type saving a file through `save_whole_or_nothing` is named by a fuzz target (ADR 0005) |
-| rust | Fuzzing | cargo-fuzz (nightly, own workspace `apps/tabfinder/adapters/fs/fuzz/`) | `fuzz:tabfinder`, 60 s per target, 5 s per input; fuzz crate carries a copy of the root lint tables and is linted in `lint:clippy` (user decision) |
+| rust | Fuzzing | cargo-fuzz (nightly, own workspace `apps/tabfinder/adapters/fs/fuzz/`) | `fuzz:tabfinder`, 60 s per target, 5 s per input; fuzz crate carries a copy of the root lint tables (`lint:same-lints` keeps it equal) and is linted in `lint:clippy` (user decision) |
 | rust | Formatter | rustfmt | defaults |
 | rust | Type strictness | rustc lint levels | allowed-by-default extras except `missing_docs` (docs not required, user decision) + lint groups; `warn` in manifests, `-D warnings` in `lint:clippy` |
 | rust | Complexity | Clippy thresholds | cognitive 15, lines 25, arguments 5, nesting 4, type complexity 250 |

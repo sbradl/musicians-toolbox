@@ -1,0 +1,8 @@
+[workspace]
+members = ["a"]
+
+[workspace.lints.rust]
+unused = "warn"
+
+[workspace.lints.clippy]
+pedantic = "warn"

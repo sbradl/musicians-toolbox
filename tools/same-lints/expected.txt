@@ -1,0 +1,4 @@
+sample/copy.toml has other lint rules than sample/root.toml:
+@@ -4 +4 @@
+-pedantic = "warn"
++pedantic = "allow"

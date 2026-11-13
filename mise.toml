@@ -39,6 +39,9 @@ run = [
   "cargo fmt --manifest-path {{vars.tabfinder_fs_fuzz}}/Cargo.toml --check",
 ]
 
+[tasks."lint:same-lints"]
+run = "sh tools/same-lints/check.sh Cargo.toml {{vars.tabfinder_fs_fuzz}}/Cargo.toml"
+
 [tasks."lint:fuzz-targets"]
 run = "sh tools/fuzz-targets/check.sh apps/tabfinder/adapters/fs/src {{vars.tabfinder_fs_fuzz}}/fuzz_targets"
 
@@ -61,7 +64,7 @@ run = "ktlint '**/*.kt' '**/*.kts' '!**/build/**'"
 run = "git ls-files '*.rs' '*.kt' '*.kts' | xargs awk -f tools/blank-lines/check.awk"
 
 [tasks.lint]
-depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint", "lint:blank-lines", "lint:fuzz-targets"]
+depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint", "lint:blank-lines", "lint:fuzz-targets", "lint:same-lints"]
 
 [tasks."test:cargo"]
 run = "cargo test --workspace --locked --quiet"
@@ -77,8 +80,12 @@ run = "awk -f check.awk sample.txt | diff - expected.txt"
 dir = "tools/fuzz-targets"
 run = "sh check.sh sample/src sample/fuzz_targets | diff - expected.txt"
 
+[tasks."test:same-lints"]
+dir = "tools/same-lints"
+run = "sh check.sh sample/root.toml sample/copy.toml | diff - expected.txt"
+
 [tasks.test]
-depends = ["test:cargo", "test:gradle", "test:blank-lines", "test:fuzz-targets"]
+depends = ["test:cargo", "test:gradle", "test:blank-lines", "test:fuzz-targets", "test:same-lints"]
 
 [tasks."security:opengrep"]
 run = "opengrep scan --error --quiet {{vars.opengrep_packs}} ."

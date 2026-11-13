@@ -1,6 +1,7 @@
 #!/bin/sh
 # Usage: check.sh <adapter src dir> <fuzz targets dir>
 # Fails when a type saves a file through save_whole_or_nothing and no fuzz target names it (ADR 0005).
+# shortcut: reads top-level src files and one-line, non-generic impl headers only; upgrade when an adapter saves from a submodule or a generic type.
 src=$1
 targets=$2
 status=0

@@ -1,0 +1,4 @@
+sample.txt:5: blank line needed before `if`
+sample.txt:7: blank line needed before `return`
+sample.txt:16: blank line needed before `return`
+sample.txt:22: blank line needed before `return`

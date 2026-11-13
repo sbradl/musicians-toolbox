@@ -40,6 +40,7 @@ abstract class CheckAndroidOnlyLibrariesHaveNotices : DefaultTask() {
         if (unlisted.isNotEmpty()) {
             throw GradleException("Add a notice to ${androidOnlyLibraries.get()} for: ${unlisted.joinToString()}")
         }
+
         if (stale.isNotEmpty()) {
             throw GradleException("Remove from ${androidOnlyLibraries.get()}, the app no longer ships: ${stale.joinToString()}")
         }

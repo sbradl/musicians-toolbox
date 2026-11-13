@@ -1,0 +1,27 @@
+fn opens_its_block(song: Option<Song>) -> usize {
+    if song.is_none() {
+        return 0;
+    }
+    if song.is_some() {
+        let count = 1;
+        return count;
+    }
+
+    // a comment belongs to the line below it
+    if true {
+        return 1;
+    }
+    let after_comment = 2;
+    // the blank line goes above the comment
+    return after_comment;
+}
+
+fun kotlin(text: String): Int {
+    val length =
+        if (text.isEmpty()) 0 else 1
+    return when (length) {
+        0 -> return 0
+        else ->
+            return 1
+    }
+}

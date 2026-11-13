@@ -44,8 +44,11 @@ run = "opengrep scan --error --quiet --config .opengrep ."
 [tasks."lint:ktlint"]
 run = "ktlint '**/*.kt' '**/*.kts' '!**/build/**'"
 
+[tasks."lint:blank-lines"]
+run = "git ls-files '*.rs' '*.kt' '*.kts' | xargs awk -f tools/blank-lines/check.awk"
+
 [tasks.lint]
-depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint"]
+depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint", "lint:blank-lines"]
 
 [tasks."test:cargo"]
 run = "cargo test --workspace --locked --quiet"
@@ -53,8 +56,12 @@ run = "cargo test --workspace --locked --quiet"
 [tasks."test:gradle"]
 run = "./gradlew check --quiet"
 
+[tasks."test:blank-lines"]
+dir = "tools/blank-lines"
+run = "awk -f check.awk sample.txt | diff - expected.txt"
+
 [tasks.test]
-depends = ["test:cargo", "test:gradle"]
+depends = ["test:cargo", "test:gradle", "test:blank-lines"]
 
 [tasks."security:opengrep"]
 run = "opengrep scan --error --quiet {{vars.opengrep_packs}} ."

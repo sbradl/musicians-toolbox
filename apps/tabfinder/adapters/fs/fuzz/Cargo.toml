@@ -79,3 +79,10 @@ path = "fuzz_targets/remembered_library_location.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "tab-file"
+path = "fuzz_targets/tab_file.rs"
+test = false
+doc = false
+bench = false

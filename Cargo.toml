@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
 members = [
+  "contexts/music-kernel",
+  "contexts/score",
   "contexts/library",
   "apps/tabfinder/application",
   "apps/tabfinder/presentation",
@@ -15,6 +17,8 @@ edition = "2024"
 publish = false
 
 [workspace.dependencies]
+mt-music-kernel = { path = "contexts/music-kernel" }
+mt-score = { path = "contexts/score" }
 mt-library = { path = "contexts/library" }
 mt-tabfinder-application = { path = "apps/tabfinder/application" }
 mt-tabfinder-presentation = { path = "apps/tabfinder/presentation" }
@@ -23,6 +27,8 @@ uniffi = "0.32.2"
 percent-encoding = "2.3.2"
 fluent-bundle = "0.16.0"
 unic-langid = "0.9.6"
+rawzip = "0.5.2"
+miniz_oxide = "0.9.1"
 
 [workspace.lints.rust]
 rust_2018_idioms = { level = "warn", priority = -1 }

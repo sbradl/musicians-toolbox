@@ -17,13 +17,14 @@ If a context's `adr/` doesn't exist, proceed silently; the `/domain-modeling` sk
 /
 ├── GLOSSARY-MAP.md
 ├── contexts/
-│   └── library/                       ← crate mt-library
-│       ├── GLOSSARY.md
-│       └── adr/                       ← context-specific decisions
+│   ├── library/                       ← crate mt-library
+│   │   ├── GLOSSARY.md
+│   │   └── adr/                       ← context-specific decisions
+│   └── score/                         ← crate mt-score (also music-kernel)
 └── docs/
     ├── adr/                           ← system-wide decisions
     └── contexts/
-        └── score/                     ← no crate yet
+        └── analysis/                  ← no crate yet
             └── GLOSSARY.md
 ```
 

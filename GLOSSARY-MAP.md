@@ -4,8 +4,8 @@ The domain of tools and apps for musicians, cut into bounded contexts by subdoma
 
 ## Contexts
 
-- [Music kernel](./docs/contexts/music-kernel/GLOSSARY.md): the few musical values every context agrees on
-- [Score](./docs/contexts/score/GLOSSARY.md): songs as written in tab files, read from foreign file formats
+- [Music kernel](./contexts/music-kernel/GLOSSARY.md): the few musical values every context agrees on
+- [Score](./contexts/score/GLOSSARY.md): songs as written in tab files, read from foreign file formats
 - [Library](./contexts/library/GLOSSARY.md): a musician's Songs: finding and reorganizing them
 - [Analysis](./docs/contexts/analysis/GLOSSARY.md): facts derived from a score, such as which techniques a part uses
 - [Drum Pattern](./docs/contexts/drum-pattern/GLOSSARY.md): writing and practicing snare and bass drum patterns

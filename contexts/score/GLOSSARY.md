@@ -20,6 +20,10 @@ _Avoid_: Extension, type
 What a Tab file states before its Bars: title, artist, album, Tracks with their Tunings, the opening Written tempo. Read alone when the Bars aren't needed (ADR 0001).
 _Avoid_: Metadata
 
+**Unreadable**:
+A Tab file in no supported File format, or one whose content breaks its format or the reader's limits.
+_Avoid_: Broken, invalid, corrupt
+
 **Track**:
 One instrument's part of a Score, with its Tuning when it has strings.
 _Avoid_: Instrument, channel

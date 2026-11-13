@@ -32,6 +32,8 @@ Exceptions: `syn` 2 + 3 duplicate allowed (UniFFI; `deny.toml` skip, `clippy.tom
 Not picked: Kotlin linter, complexity, architecture and dead-code tools; GitHub Actions linter and formatter.
 
 Layers (clean architecture dependency rule: dependencies point inward only):
+- `mt-music-kernel` (shared kernel) ← score, library, application
+- `mt-score` (context) ← application
 - `mt-library` (context) ← application, presentation (ffi reaches the domain through presentation)
 - `mt-tabfinder-application` ← presentation, fs, ffi
 - `mt-tabfinder-presentation` ← ffi

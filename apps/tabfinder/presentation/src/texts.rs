@@ -54,6 +54,14 @@ impl Texts {
         self.format("rescan-finished", Some(&args))
     }
 
+    pub(super) fn artist_and_album(&self, artist: &str, album: &str) -> String {
+        let mut args = FluentArgs::new();
+        args.set("artist", artist);
+        args.set("album", album);
+
+        self.format("artist-and-album", Some(&args))
+    }
+
     pub(super) fn choose_folder(&self) -> String {
         self.format("choose-folder", None)
     }

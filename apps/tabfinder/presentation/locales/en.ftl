@@ -17,3 +17,4 @@ scanning = Scanning…
 library-folder-gone = The Library folder is gone. It may have been moved or deleted.
 library-folder-no-access = TabFinder may not read the Library folder.
 folder-picker-unavailable = The system folder dialog is not available.
+artist-and-album = { $artist } · { $album }

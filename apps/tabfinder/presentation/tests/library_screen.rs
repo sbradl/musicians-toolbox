@@ -1,6 +1,9 @@
 pub mod support;
 
-use support::{TabFinder, because, listing, no_folder_chosen, no_folder_chosen_because, scanning};
+use support::{
+    SongRow as _, TabFinder, because, listing, no_folder_chosen, no_folder_chosen_because, row,
+    scanning, song,
+};
 
 #[test]
 fn starting_without_a_remembered_library_location_shows_no_folder_chosen() {
@@ -237,4 +240,25 @@ fn a_rescan_of_a_folder_that_is_gone_shows_why_and_no_message() {
         "The Library folder is gone. It may have been moved or deleted.",
     ));
     tabfinder.assert_no_message_shown();
+}
+
+#[test]
+fn each_song_row_shows_its_artist_and_album_below_the_title() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").by("Corvid Lane").on("Saltglass"),
+            song("Brasswing").by("Corvid Lane"),
+            song("Amberline"),
+        ],
+    )
+    .start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_song_rows(&[
+        row("Amberline"),
+        row("Brasswing").above("Corvid Lane"),
+        row("Wexmoor").above("Corvid Lane · Saltglass"),
+    ]);
 }

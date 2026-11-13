@@ -1,12 +1,16 @@
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Song {
     pub title: String,
+    pub artist: Option<String>,
+    pub album: Option<String>,
 }
 
 impl Song {
     pub fn titled(title: &str) -> Self {
         Self {
             title: title.to_owned(),
+            artist: None,
+            album: None,
         }
     }
 }

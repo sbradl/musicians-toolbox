@@ -4,7 +4,7 @@ use std::io;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::PermissionsExt;
 
-use mt_tabfinder_application::{LibraryFolder, LibraryFolderError, LibraryLocation};
+use mt_tabfinder_application::{LibraryFolder, LibraryFolderError, LibraryLocation, Song};
 use mt_tabfinder_fs::FsLibraryFolder;
 
 pub mod common;
@@ -81,6 +81,21 @@ impl TempFolder {
 
     fn song_titles(&self) -> Vec<String> {
         song_titles_at(&self.location())
+    }
+
+    fn song_titled(&self, title: &str) -> Option<Song> {
+        let songs = FsLibraryFolder.songs(&self.location()).unwrap_or_default();
+
+        songs.into_iter().find(|song| song.title == title)
+    }
+
+    #[track_caller]
+    fn assert_artist_and_album(&self, title: &str, artist: Option<&str>, album: Option<&str>) {
+        let mut expected = Song::titled(title);
+        expected.artist = artist.map(str::to_owned);
+        expected.album = album.map(str::to_owned);
+
+        assert_eq!(self.song_titled(title), Some(expected));
     }
 }
 
@@ -205,6 +220,22 @@ fn finds_songs_in_a_folder_whose_name_is_not_utf8() -> io::Result<()> {
     let titles = song_titles_at(&folder.location_of_subfolder("Caf%E9"));
 
     assert_eq!(titles, ["Amberline"]);
+
+    Ok(())
+}
+
+#[test]
+fn the_first_folder_names_the_artist_and_the_second_the_album() -> io::Result<()> {
+    let folder = TempFolder::new("artist-album")?
+        .with_file("Corvid Lane/Saltglass/Wexmoor.gp5")?
+        .with_file("Corvid Lane/Brasswing.gp5")?
+        .with_file("Amberline.gp4")?
+        .with_file("Corvid Lane/Saltglass/Disc 2/Lone Pine.gp5")?;
+
+    folder.assert_artist_and_album("Wexmoor", Some("Corvid Lane"), Some("Saltglass"));
+    folder.assert_artist_and_album("Brasswing", Some("Corvid Lane"), None);
+    folder.assert_artist_and_album("Amberline", None, None);
+    folder.assert_artist_and_album("Lone Pine", Some("Corvid Lane"), Some("Saltglass"));
 
     Ok(())
 }

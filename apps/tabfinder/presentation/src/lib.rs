@@ -26,6 +26,7 @@ pub struct LibraryViewModel {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SongItem {
     pub title: String,
+    pub artist_and_album: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

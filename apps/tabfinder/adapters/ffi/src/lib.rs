@@ -24,6 +24,7 @@ pub struct LibraryViewModel {
 #[uniffi::remote(Record)]
 pub struct SongItem {
     pub title: String,
+    pub artist_and_album: Option<String>,
 }
 
 #[uniffi::remote(Record)]
@@ -35,6 +36,8 @@ pub struct Action {
 #[uniffi::remote(Record)]
 pub struct Song {
     pub title: String,
+    pub artist: Option<String>,
+    pub album: Option<String>,
 }
 
 #[uniffi::remote(Enum)]
@@ -107,8 +110,8 @@ impl application::LibraryFolder for LibraryFolderInKotlin {
 }
 
 #[uniffi::export]
-pub fn song_from_file_name(file_name: &str) -> Option<Song> {
-    mt_tabfinder_fs::song_from_file_name(file_name)
+pub fn song_from_file(folders_down_to_song: &[String], file_name: &str) -> Option<Song> {
+    mt_tabfinder_fs::song_from_file(folders_down_to_song, file_name)
 }
 
 #[uniffi::export]

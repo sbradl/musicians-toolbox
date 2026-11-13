@@ -18,7 +18,7 @@ impl LibraryFolder for FsLibraryFolder {
         };
         let entries = open_library_folder(&folder)?;
 
-        Ok(songs_in(entries))
+        Ok(songs_in(entries, &[]))
     }
 }
 
@@ -40,7 +40,7 @@ fn open_library_folder(folder: &Path) -> Result<ReadDir, LibraryFolderError> {
     }
 }
 
-fn songs_in(folder: ReadDir) -> Vec<Song> {
+fn songs_in(folder: ReadDir, folders_down_to_song: &[String]) -> Vec<Song> {
     let mut songs = Vec::new();
     for entry in folder {
         let Ok(entry) = entry else {
@@ -48,8 +48,8 @@ fn songs_in(folder: ReadDir) -> Vec<Song> {
         };
 
         if is_visible_subfolder(&entry) {
-            songs.extend(songs_in_subfolder(&entry));
-        } else if let Some(song) = song_from(&entry) {
+            songs.extend(songs_in_subfolder(&entry, folders_down_to_song));
+        } else if let Some(song) = song_from(&entry, folders_down_to_song) {
             songs.push(song);
         }
     }
@@ -57,23 +57,25 @@ fn songs_in(folder: ReadDir) -> Vec<Song> {
     songs
 }
 
-fn songs_in_subfolder(subfolder: &DirEntry) -> Vec<Song> {
+fn songs_in_subfolder(subfolder: &DirEntry, folders_down_to_song: &[String]) -> Vec<Song> {
     let Some(folder) = open_folder(&subfolder.path()) else {
         return Vec::new();
     };
+    let mut folders_down_to_subfolder = folders_down_to_song.to_vec();
+    folders_down_to_subfolder.push(name_of(subfolder));
 
-    songs_in(folder)
+    songs_in(folder, &folders_down_to_subfolder)
 }
 
-fn song_from(entry: &DirEntry) -> Option<Song> {
+fn song_from(entry: &DirEntry, folders_down_to_song: &[String]) -> Option<Song> {
     if !is_file(entry) {
         return None;
     }
 
-    song_from_file_name(&entry.file_name().to_string_lossy())
+    song_from_file(folders_down_to_song, &name_of(entry))
 }
 
-pub fn song_from_file_name(file_name: &str) -> Option<Song> {
+pub fn song_from_file(folders_down_to_song: &[String], file_name: &str) -> Option<Song> {
     let file = Path::new(file_name);
 
     if file_name.starts_with('.') || !is_tab_file(file) {
@@ -82,7 +84,13 @@ pub fn song_from_file_name(file_name: &str) -> Option<Song> {
 
     Some(Song {
         title: file_name_without_extension(file)?,
+        artist: folders_down_to_song.first().cloned(),
+        album: folders_down_to_song.get(1).cloned(),
     })
+}
+
+fn name_of(entry: &DirEntry) -> String {
+    entry.file_name().to_string_lossy().into_owned()
 }
 
 fn open_folder(folder: &Path) -> Option<ReadDir> {
@@ -110,7 +118,7 @@ fn is_file(entry: &DirEntry) -> bool {
 }
 
 fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name().to_string_lossy().starts_with('.')
+    name_of(entry).starts_with('.')
 }
 
 fn is_tab_file(file: &Path) -> bool {

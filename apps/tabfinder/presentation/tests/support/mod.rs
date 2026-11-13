@@ -31,6 +31,16 @@ impl TabFinderSetup {
         self
     }
 
+    pub fn with_folder_of_songs(self, location: &str, songs: &[SongInFolder]) -> Self {
+        let mut found = Vec::new();
+        for song in songs {
+            found.push(song.0.clone());
+        }
+        self.folders.hold(location, found);
+
+        self
+    }
+
     pub fn remembering(self, location: &str) -> Self {
         self.remembered.remember(&LibraryLocation::new(location));
 
@@ -73,6 +83,10 @@ impl TabFinder {
 
     pub fn with_folder_it_may_not_read(location: &str) -> TabFinderSetup {
         TabFinderSetup::default().with_folder_it_may_not_read(location)
+    }
+
+    pub fn with_folder_of_songs(location: &str, songs: &[SongInFolder]) -> TabFinderSetup {
+        TabFinderSetup::default().with_folder_of_songs(location, songs)
     }
 
     pub fn musician_clicks_choose_folder(&self) {
@@ -149,12 +163,22 @@ impl TabFinder {
         assert_eq!(self.song_titles_shown(), expected);
     }
 
-    fn song_titles_shown(&self) -> Vec<String> {
+    #[track_caller]
+    pub fn assert_song_rows(&self, expected: &[SongItem]) {
+        assert_eq!(self.song_rows_shown(), expected);
+    }
+
+    fn song_rows_shown(&self) -> Vec<SongItem> {
         let Some(last_screen) = self.library_screens_shown().pop() else {
             return Vec::new();
         };
+
+        last_screen.songs
+    }
+
+    fn song_titles_shown(&self) -> Vec<String> {
         let mut titles = Vec::new();
-        for song in last_screen.songs {
+        for song in self.song_rows_shown() {
             titles.push(song.title);
         }
 
@@ -249,12 +273,55 @@ pub fn listing(status: &str, song_titles: &[&str]) -> LibraryViewModel {
 fn song_items(titles: &[&str]) -> Vec<SongItem> {
     let mut items = Vec::new();
     for title in titles {
-        items.push(SongItem {
-            title: (*title).to_owned(),
-        });
+        items.push(row(title));
     }
 
     items
+}
+
+#[must_use]
+pub fn row(title: &str) -> SongItem {
+    SongItem {
+        title: title.to_owned(),
+        artist_and_album: None,
+    }
+}
+
+pub trait SongRow {
+    #[must_use]
+    fn above(self, artist_and_album: &str) -> Self;
+}
+
+impl SongRow for SongItem {
+    fn above(mut self, artist_and_album: &str) -> Self {
+        self.artist_and_album = Some(artist_and_album.to_owned());
+
+        self
+    }
+}
+
+#[must_use]
+pub fn song(title: &str) -> SongInFolder {
+    SongInFolder(Song::titled(title))
+}
+
+#[derive(Debug)]
+pub struct SongInFolder(Song);
+
+impl SongInFolder {
+    #[must_use]
+    pub fn by(mut self, artist: &str) -> Self {
+        self.0.artist = Some(artist.to_owned());
+
+        self
+    }
+
+    #[must_use]
+    pub fn on(mut self, album: &str) -> Self {
+        self.0.album = Some(album.to_owned());
+
+        self
+    }
 }
 
 type Shared<T> = Arc<Mutex<T>>;
@@ -287,6 +354,10 @@ impl FakeLibraryFolders {
         for title in song_titles {
             songs.push(Song::titled(title));
         }
+        self.hold(location, songs);
+    }
+
+    fn hold(&self, location: &str, songs: Vec<Song>) {
         drop(lock(&self.songs_by_location).insert(location.to_owned(), songs));
     }
 

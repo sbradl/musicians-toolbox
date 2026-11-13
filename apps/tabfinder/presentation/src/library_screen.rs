@@ -16,7 +16,7 @@ impl LibraryViewModel {
 
         Self::with_status(Self::songs_found(songs, texts), texts)
             .with_rescan_enabled()
-            .with_songs(songs)
+            .with_songs(songs, texts)
     }
 
     fn songs_found(songs: &[Song], texts: &Texts) -> String {
@@ -61,17 +61,31 @@ impl LibraryViewModel {
         self
     }
 
-    fn with_songs(mut self, songs: &[Song]) -> Self {
-        self.songs = songs.iter().map(SongItem::from).collect();
+    fn with_songs(mut self, songs: &[Song], texts: &Texts) -> Self {
+        let mut items = Vec::new();
+        for song in songs {
+            items.push(SongItem::of(song, texts));
+        }
+        self.songs = items;
 
         self
     }
 }
 
-impl From<&Song> for SongItem {
-    fn from(song: &Song) -> Self {
+impl SongItem {
+    fn of(song: &Song, texts: &Texts) -> Self {
         Self {
             title: song.title.clone(),
+            artist_and_album: Self::artist_and_album(song, texts),
         }
+    }
+
+    fn artist_and_album(song: &Song, texts: &Texts) -> Option<String> {
+        let artist = song.artist.as_deref()?;
+        let Some(album) = song.album.as_deref() else {
+            return Some(artist.to_owned());
+        };
+
+        Some(texts.artist_and_album(artist, album))
     }
 }

@@ -9,7 +9,7 @@ import androidx.core.net.toUri
 import io.github.sbradl.tabfinder.core.LibraryFolder
 import io.github.sbradl.tabfinder.core.LibraryFolderException
 import io.github.sbradl.tabfinder.core.Song
-import io.github.sbradl.tabfinder.core.songFromFileName
+import io.github.sbradl.tabfinder.core.songFromFile
 
 class SafLibraryFolder(
     private val contentResolver: ContentResolver,
@@ -19,7 +19,7 @@ class SafLibraryFolder(
         val libraryFolderId = libraryFolderIdOf(tree) ?: throw LibraryFolderException.Gone()
         val entries = libraryFolderEntries(tree, libraryFolderId)
 
-        return songsIn(tree, entries)
+        return songsIn(tree, entries, foldersDownToSong = emptyList())
     }
 
     private fun libraryFolderEntries(
@@ -42,22 +42,24 @@ class SafLibraryFolder(
     private fun songsIn(
         tree: Uri,
         entries: List<FolderEntry>,
+        foldersDownToSong: List<String>,
     ): List<Song> =
         entries.flatMap { entry ->
             when {
-                entry.isVisibleSubfolder() -> songsInSubfolder(tree, entry)
+                entry.isVisibleSubfolder() -> songsInSubfolder(tree, entry, foldersDownToSong)
                 entry.isFolder() -> emptyList()
-                else -> listOfNotNull(songFromFileName(entry.name))
+                else -> listOfNotNull(songFromFile(foldersDownToSong, entry.name))
             }
         }
 
     private fun songsInSubfolder(
         tree: Uri,
         subfolder: FolderEntry,
+        foldersDownToSong: List<String>,
     ): List<Song> {
         val entries = entriesIn(tree, subfolder.id) ?: return emptyList()
 
-        return songsIn(tree, entries)
+        return songsIn(tree, entries, foldersDownToSong + subfolder.name)
     }
 
     private fun libraryFolderIdOf(tree: Uri): String? =

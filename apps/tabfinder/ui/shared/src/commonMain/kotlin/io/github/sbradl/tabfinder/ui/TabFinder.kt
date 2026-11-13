@@ -105,8 +105,18 @@ private fun ActionButton(
 @Composable
 private fun SongList(songs: List<SongItem>) {
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        items(songs) { song ->
-            Text(song.title, modifier = Modifier.padding(vertical = 4.dp))
+        items(songs) { song -> SongRow(song) }
+    }
+}
+
+@Composable
+private fun SongRow(song: SongItem) {
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(song.title)
+        val artistAndAlbum = song.artistAndAlbum
+
+        if (artistAndAlbum != null) {
+            Text(artistAndAlbum, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

@@ -26,6 +26,18 @@ class LibraryScreenTest {
         }
 
     @Test
+    fun eachSongShowsTheArtistAndAlbumItsFoldersName() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Corvid Lane/Saltglass/Wexmoor.gp5", "Hollow Fern/Brasswing.gp5")
+            tabfinder.musicianOpensTabFinder()
+
+            tabfinder.musicianPicksTheLibraryFolder()
+
+            tabfinder.assertStatus("2 Songs")
+            tabfinder.assertShown("Corvid Lane · Saltglass", "Hollow Fern")
+        }
+
+    @Test
     fun theHeaderShowsTabFinderAboveTheSongCount() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.gp5")

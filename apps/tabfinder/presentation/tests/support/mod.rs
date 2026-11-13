@@ -8,6 +8,7 @@ use unic_langid as _;
 
 use mt_tabfinder_application::{
     LastScan, LibraryFolder, LibraryFolderError, LibraryLocation, RememberedLibraryLocation, Song,
+    Tuning,
 };
 use mt_tabfinder_presentation::{
     Action, App, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches,
@@ -457,12 +458,18 @@ pub fn row(title: &str) -> SongItem {
     SongItem {
         title: title.to_owned(),
         artist_and_album: None,
+        tunings: vec![],
+        unreadable: None,
     }
 }
 
 pub trait SongRow {
     #[must_use]
     fn above(self, artist_and_album: &str) -> Self;
+    #[must_use]
+    fn with_badges(self, tunings: &[&str]) -> Self;
+    #[must_use]
+    fn marked(self, unreadable: &str) -> Self;
 }
 
 impl SongRow for SongItem {
@@ -471,7 +478,22 @@ impl SongRow for SongItem {
 
         self
     }
+
+    fn with_badges(mut self, tunings: &[&str]) -> Self {
+        self.tunings = owned_strings(tunings);
+
+        self
+    }
+
+    fn marked(mut self, unreadable: &str) -> Self {
+        self.unreadable = Some(unreadable.to_owned());
+
+        self
+    }
 }
+
+pub const DROP_D: [u8; 6] = [38, 45, 50, 55, 59, 64];
+pub const BASS_E_STANDARD: [u8; 4] = [28, 33, 38, 43];
 
 #[must_use]
 pub fn song(title: &str) -> SongInFolder {
@@ -492,6 +514,22 @@ impl SongInFolder {
     #[must_use]
     pub fn on(mut self, album: &str) -> Self {
         self.0.album = Some(album.to_owned());
+
+        self
+    }
+
+    #[must_use]
+    pub fn tuned(mut self, lowest_string_first: &[u8]) -> Self {
+        self.0
+            .tunings
+            .push(Tuning::of_midi_numbers(lowest_string_first));
+
+        self
+    }
+
+    #[must_use]
+    pub const fn unreadable(mut self) -> Self {
+        self.0.is_unreadable = true;
 
         self
     }

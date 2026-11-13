@@ -9,6 +9,11 @@ use mt_tabfinder_fs::FsLibraryFolder;
 
 pub mod common;
 
+const TAB_FILE_WITH_DROP_D_AND_BASS: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../../contexts/score/tests/fixtures/drop-d-and-bass.gp5"
+);
+
 use common::TempDir;
 
 struct TempFolder(TempDir);
@@ -28,6 +33,17 @@ impl TempFolder {
             fs::create_dir_all(parent)?;
         }
         fs::write(&file, b"")?;
+
+        Ok(self)
+    }
+
+    fn with_tab_file(self, relative: &str) -> io::Result<Self> {
+        let file = self.0.path().join(relative);
+
+        if let Some(parent) = file.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        _ = fs::copy(TAB_FILE_WITH_DROP_D_AND_BASS, &file)?;
 
         Ok(self)
     }
@@ -89,13 +105,37 @@ impl TempFolder {
         songs.into_iter().find(|song| song.title == title)
     }
 
+    fn song(&self, title: &str) -> Song {
+        self.song_titled(title)
+            .unwrap_or_else(|| Song::titled("no such Song"))
+    }
+
     #[track_caller]
     fn assert_artist_and_album(&self, title: &str, artist: Option<&str>, album: Option<&str>) {
-        let mut expected = Song::titled(title);
-        expected.artist = artist.map(str::to_owned);
-        expected.album = album.map(str::to_owned);
+        let song = self.song(title);
 
-        assert_eq!(self.song_titled(title), Some(expected));
+        assert_eq!(
+            (song.artist.as_deref(), song.album.as_deref()),
+            (artist, album)
+        );
+    }
+
+    #[track_caller]
+    fn assert_tunings(&self, title: &str, expected: &[&str]) {
+        let song = self.song(title);
+        let mut tunings = Vec::new();
+        for tuning in song.tunings {
+            tunings.push(format!("{} {}", tuning.strings(), tuning.name()));
+        }
+
+        assert_eq!(tunings, expected);
+    }
+
+    #[track_caller]
+    fn assert_unreadable(&self, title: &str, expected: bool) {
+        let song = self.song(title);
+
+        assert_eq!(song.is_unreadable, expected);
     }
 }
 
@@ -133,11 +173,17 @@ fn every_tab_extension_in_any_case_is_a_song_and_other_files_are_not() -> io::Re
         .with_file("e.GP")?
         .with_file("f.tg")?
         .with_file("g.PTB")?
+        .with_file("h.gtp")?
+        .with_file("i.zip")?
+        .with_file("j.crdownload")?
         .with_file("notes.txt")?
         .with_file("gp5")?
-        .with_file("h.gp5x")?;
+        .with_file("k.gp5x")?;
 
-    assert_eq!(folder.song_titles(), ["a", "b", "c", "d", "e", "f", "g"]);
+    assert_eq!(
+        folder.song_titles(),
+        ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+    );
 
     Ok(())
 }
@@ -236,6 +282,38 @@ fn the_first_folder_names_the_artist_and_the_second_the_album() -> io::Result<()
     folder.assert_artist_and_album("Brasswing", Some("Corvid Lane"), None);
     folder.assert_artist_and_album("Amberline", None, None);
     folder.assert_artist_and_album("Lone Pine", Some("Corvid Lane"), Some("Saltglass"));
+
+    Ok(())
+}
+
+#[test]
+fn a_songs_tunings_come_from_its_tab_file_once_each() -> io::Result<()> {
+    let folder = TempFolder::new("tunings")?.with_tab_file("Corvid Lane/Wexmoor.gp5")?;
+
+    folder.assert_tunings("Wexmoor", &["6 Drop D", "4 E Standard"]);
+    folder.assert_unreadable("Wexmoor", false);
+
+    Ok(())
+}
+
+#[test]
+fn a_tab_file_is_read_by_its_contents_whatever_its_name() -> io::Result<()> {
+    let folder = TempFolder::new("renamed")?
+        .with_tab_file("Wexmoor.gp3")?
+        .with_tab_file("Brasswing.crdownload")?;
+
+    folder.assert_tunings("Wexmoor", &["6 Drop D", "4 E Standard"]);
+    folder.assert_tunings("Brasswing", &["6 Drop D", "4 E Standard"]);
+
+    Ok(())
+}
+
+#[test]
+fn a_tab_file_that_cannot_be_read_is_an_unreadable_song() -> io::Result<()> {
+    let folder = TempFolder::new("unreadable")?.with_file("Corvid Lane/Lone Pine.gp5")?;
+
+    folder.assert_unreadable("Lone Pine", true);
+    folder.assert_artist_and_album("Lone Pine", Some("Corvid Lane"), None);
 
     Ok(())
 }

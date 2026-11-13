@@ -4,12 +4,13 @@ pub use last_scan::FsLastScan;
 
 use std::ffi::OsStr;
 use std::fs::{self, DirEntry, File, ReadDir};
-use std::io::{self, Write as _};
+use std::io::{self, Read as _, Write as _};
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 use mt_tabfinder_application::{
-    LibraryFolder, LibraryFolderError, LibraryLocation, RememberedLibraryLocation, Song,
+    LARGEST_TAB_FILE, LibraryFolder, LibraryFolderError, LibraryLocation,
+    RememberedLibraryLocation, Song, song_read_from_tab_file,
 };
 
 #[derive(Debug)]
@@ -76,21 +77,38 @@ fn song_from(entry: &DirEntry, folders_down_to_song: &[String]) -> Option<Song> 
         return None;
     }
 
-    song_from_file(folders_down_to_song, &name_of(entry))
+    song_from_file(folders_down_to_song, &name_of(entry), |most_bytes| {
+        contents_of(&entry.path(), most_bytes)
+    })
 }
 
-pub fn song_from_file(folders_down_to_song: &[String], file_name: &str) -> Option<Song> {
+pub fn song_from_file(
+    folders_down_to_song: &[String],
+    file_name: &str,
+    read_contents: impl FnOnce(usize) -> Option<Vec<u8>>,
+) -> Option<Song> {
     let file = Path::new(file_name);
 
     if file_name.starts_with('.') || !is_tab_file(file) {
         return None;
     }
+    let mut song = Song::titled(&file_name_without_extension(file)?);
+    song.artist = folders_down_to_song.first().cloned();
+    song.album = folders_down_to_song.get(1).cloned();
+    let contents = read_contents(LARGEST_TAB_FILE + 1);
 
-    Some(Song {
-        title: file_name_without_extension(file)?,
-        artist: folders_down_to_song.first().cloned(),
-        album: folders_down_to_song.get(1).cloned(),
-    })
+    Some(song_read_from_tab_file(song, contents.as_deref()))
+}
+
+fn contents_of(file: &Path, most_bytes: usize) -> Option<Vec<u8>> {
+    let mut contents = Vec::new();
+    let opened = File::open(file).ok()?;
+    _ = opened
+        .take(most_bytes as u64)
+        .read_to_end(&mut contents)
+        .ok()?;
+
+    Some(contents)
 }
 
 fn name_of(entry: &DirEntry) -> String {
@@ -132,7 +150,7 @@ fn is_tab_file(file: &Path) -> bool {
     let extension = extension.to_string_lossy().to_lowercase();
     matches!(
         extension.as_str(),
-        "gp3" | "gp4" | "gp5" | "gpx" | "gp" | "tg" | "ptb"
+        "gp3" | "gp4" | "gp5" | "gpx" | "gp" | "gtp" | "tg" | "ptb" | "zip" | "crdownload"
     )
 }
 

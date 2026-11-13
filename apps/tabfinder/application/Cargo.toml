@@ -6,6 +6,8 @@ publish.workspace = true
 
 [dependencies]
 mt-library.workspace = true
+mt-music-kernel.workspace = true
+mt-score.workspace = true
 
 [lints]
 workspace = true

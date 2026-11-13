@@ -1,8 +1,12 @@
+use mt_music_kernel::Tuning;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Song {
     pub title: String,
     pub artist: Option<String>,
     pub album: Option<String>,
+    pub tunings: Vec<Tuning>,
+    pub is_unreadable: bool,
 }
 
 impl Song {
@@ -11,6 +15,8 @@ impl Song {
             title: title.to_owned(),
             artist: None,
             album: None,
+            tunings: Vec::new(),
+            is_unreadable: false,
         }
     }
 }
@@ -29,6 +35,10 @@ impl Library {
 
     pub fn songs(&self) -> &[Song] {
         &self.songs
+    }
+
+    pub fn unreadable_songs(&self) -> usize {
+        self.songs.iter().filter(|song| song.is_unreadable).count()
     }
 
     pub fn artists_suggested_by(&self, filter: &Filter) -> Vec<&str> {

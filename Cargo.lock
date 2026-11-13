@@ -374,6 +374,9 @@ dependencies = [
 [[package]]
 name = "mt-library"
 version = "0.0.0"
+dependencies = [
+ "mt-music-kernel",
+]
 
 [[package]]
 name = "mt-music-kernel"
@@ -393,6 +396,8 @@ name = "mt-tabfinder-application"
 version = "0.0.0"
 dependencies = [
  "mt-library",
+ "mt-music-kernel",
+ "mt-score",
 ]
 
 [[package]]

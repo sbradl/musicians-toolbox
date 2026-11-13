@@ -1,6 +1,6 @@
 use std::fmt;
 
-use mt_tabfinder_application::{self as application, LibraryLocation, Song};
+use mt_tabfinder_application::{self as application, LibraryLocation, Pitch, Song, Tuning};
 use mt_tabfinder_fs::{FsLastScan, FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
 use presentation::{
@@ -50,6 +50,8 @@ pub struct NothingMatches {
 pub struct SongItem {
     pub title: String,
     pub artist_and_album: Option<String>,
+    pub tunings: Vec<String>,
+    pub unreadable: Option<String>,
 }
 
 #[uniffi::remote(Record)]
@@ -63,7 +65,20 @@ pub struct Song {
     pub title: String,
     pub artist: Option<String>,
     pub album: Option<String>,
+    pub tunings: Vec<Tuning>,
+    pub is_unreadable: bool,
 }
+
+#[uniffi::remote(Record)]
+pub struct Tuning {
+    pub lowest_string_first: Vec<Pitch>,
+}
+
+uniffi::custom_type!(Pitch, u8, {
+    remote,
+    lower: |pitch| pitch.midi_number(),
+    try_lift: |midi_number| Ok(Pitch::midi(midi_number)),
+});
 
 #[uniffi::remote(Enum)]
 pub enum Effect {
@@ -134,9 +149,20 @@ impl application::LibraryFolder for LibraryFolderInKotlin {
     }
 }
 
+#[uniffi::export(callback_interface)]
+pub trait TabFileContents: Send + Sync {
+    fn read(&self, most_bytes: u64) -> Option<Vec<u8>>;
+}
+
 #[uniffi::export]
-pub fn song_from_file(folders_down_to_song: &[String], file_name: &str) -> Option<Song> {
-    mt_tabfinder_fs::song_from_file(folders_down_to_song, file_name)
+pub fn song_from_file(
+    folders_down_to_song: &[String],
+    file_name: &str,
+    contents: Box<dyn TabFileContents>,
+) -> Option<Song> {
+    mt_tabfinder_fs::song_from_file(folders_down_to_song, file_name, move |most_bytes| {
+        contents.read(u64::try_from(most_bytes).unwrap_or(u64::MAX))
+    })
 }
 
 #[uniffi::export]

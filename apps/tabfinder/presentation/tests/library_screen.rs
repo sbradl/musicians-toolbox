@@ -3,8 +3,8 @@ pub mod support;
 use std::time::Duration;
 
 use support::{
-    FieldShown as _, SongRow as _, TabFinder, assert_within_budget, because, field, listing,
-    no_folder_chosen, no_folder_chosen_because, row, scanning, song,
+    BASS_E_STANDARD, DROP_D, FieldShown as _, SongRow as _, TabFinder, assert_within_budget,
+    because, field, listing, no_folder_chosen, no_folder_chosen_because, row, scanning, song,
 };
 
 #[test]
@@ -266,6 +266,52 @@ fn after_a_rescan_a_message_tells_how_many_songs_and_unreadable_files_it_found()
     tabfinder.musician_clicks_rescan();
 
     tabfinder.assert_message_shown("2 Songs, 0 unreadable");
+}
+
+#[test]
+fn the_rescan_message_counts_the_unreadable_songs() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor"),
+            song("Brasswing").unreadable(),
+            song("Lone Pine"),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.assert_message_shown("3 Songs, 1 unreadable");
+}
+
+#[test]
+fn each_song_row_shows_a_badge_per_tuning_with_its_strings() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[song("Wexmoor").tuned(&DROP_D).tuned(&BASS_E_STANDARD)],
+    )
+    .start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_song_rows(&[row("Wexmoor").with_badges(&["6 Drop D", "4 E Standard"])]);
+}
+
+#[test]
+fn an_unreadable_song_stays_listed_and_says_its_file_could_not_be_read() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[song("Wexmoor").unreadable().by("Corvid Lane")],
+    )
+    .start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_song_rows(&[row("Wexmoor")
+        .above("Corvid Lane")
+        .marked("Couldn't read this file")]);
 }
 
 #[test]

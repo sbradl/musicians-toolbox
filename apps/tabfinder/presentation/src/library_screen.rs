@@ -167,7 +167,26 @@ impl SongItem {
         Self {
             title: song.title.clone(),
             artist_and_album: Self::artist_and_album(song, texts),
+            tunings: Self::badges(song, texts),
+            unreadable: Self::unreadable(song, texts),
         }
+    }
+
+    fn badges(song: &Song, texts: &Texts) -> Vec<String> {
+        let mut badges = Vec::new();
+        for tuning in &song.tunings {
+            badges.push(texts.tuning_badge(tuning));
+        }
+
+        badges
+    }
+
+    fn unreadable(song: &Song, texts: &Texts) -> Option<String> {
+        if song.is_unreadable {
+            return Some(texts.unreadable_file());
+        }
+
+        None
     }
 
     fn artist_and_album(song: &Song, texts: &Texts) -> Option<String> {

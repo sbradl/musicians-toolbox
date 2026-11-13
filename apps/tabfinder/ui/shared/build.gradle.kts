@@ -12,6 +12,9 @@ kotlin {
             api(project(":apps:tabfinder:adapters:ffi"))
             implementation(libs.compose.material3)
         }
+        jvmTest {
+            resources.srcDir(rootProject.file("contexts/score/tests/fixtures"))
+        }
         jvmTest.dependencies {
             implementation(libs.compose.ui.test)
             implementation(libs.junit)

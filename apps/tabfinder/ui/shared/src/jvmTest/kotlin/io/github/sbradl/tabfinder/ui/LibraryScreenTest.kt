@@ -26,6 +26,18 @@ class LibraryScreenTest {
         }
 
     @Test
+    fun eachSongShowsABadgePerTuningAndAnUnreadableSongSaysSo() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContainsTheTabFileWithDropDAndBass("Corvid Lane/Wexmoor.gp5")
+            tabfinder.libraryFolderContains("Brasswing.gp5")
+            tabfinder.musicianOpensTabFinder()
+
+            tabfinder.musicianPicksTheLibraryFolder()
+
+            tabfinder.assertShown("6 Drop D", "4 E Standard", "Couldn't read this file")
+        }
+
+    @Test
     fun eachSongShowsTheArtistAndAlbumItsFoldersName() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Corvid Lane/Saltglass/Wexmoor.gp5", "Hollow Fern/Brasswing.gp5")
@@ -51,7 +63,7 @@ class LibraryScreenTest {
     @Test
     fun rescanListsNewSongsAndTellsWhatItFound() =
         runTabFinderTest { tabfinder ->
-            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.libraryFolderContainsTheTabFileWithDropDAndBass("Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
             tabfinder.assertStatus("1 Song")
@@ -60,7 +72,7 @@ class LibraryScreenTest {
             tabfinder.musicianClicksRescan()
 
             tabfinder.assertStatus("2 Songs")
-            tabfinder.assertShown("Brasswing", "Wexmoor", "2 Songs, 0 unreadable")
+            tabfinder.assertShown("Brasswing", "Wexmoor", "2 Songs, 1 unreadable")
         }
 
     @Test

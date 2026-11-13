@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "adler2"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
+
+[[package]]
 name = "arbitrary"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -70,14 +76,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "miniz_oxide"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b63fbc4a50860e98e7b2aa7804ded1db5cbc3aff9193adaff57a6931bf7c4b4c"
+dependencies = [
+ "adler2",
+]
+
+[[package]]
 name = "mt-library"
 version = "0.0.0"
+dependencies = [
+ "mt-music-kernel",
+]
+
+[[package]]
+name = "mt-music-kernel"
+version = "0.0.0"
+
+[[package]]
+name = "mt-score"
+version = "0.0.0"
+dependencies = [
+ "miniz_oxide",
+ "mt-music-kernel",
+ "rawzip",
+]
 
 [[package]]
 name = "mt-tabfinder-application"
 version = "0.0.0"
 dependencies = [
  "mt-library",
+ "mt-music-kernel",
+ "mt-score",
 ]
 
 [[package]]
@@ -108,6 +141,12 @@ name = "r-efi"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
+
+[[package]]
+name = "rawzip"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac9999039f74cd73c03158cddfe4362991703c74efe5ce5c8073026f80a5e48c"
 
 [[package]]
 name = "shlex"

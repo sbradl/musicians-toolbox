@@ -1,13 +1,16 @@
 use std::fs;
 use std::path::PathBuf;
 
-use mt_tabfinder_application::{LastScan, LibraryLocation, Song};
+use mt_tabfinder_application::{LastScan, LibraryLocation, Pitch, Song, Tuning};
 use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, utf8_percent_encode};
 
 use crate::save_whole_or_nothing;
 
 const ESCAPED: &AsciiSet = &CONTROLS.add(b'%');
 const FIELD_SEPARATOR: &str = "\t";
+const TUNING_SEPARATOR: &str = ",";
+const PITCH_SEPARATOR: &str = " ";
+const UNREADABLE: &str = "unreadable";
 
 #[derive(Debug)]
 pub struct FsLastScan {
@@ -56,9 +59,32 @@ fn line_of(song: &Song) -> String {
         encoded(&song.title),
         encoded(song.artist.as_deref().unwrap_or_default()),
         encoded(song.album.as_deref().unwrap_or_default()),
+        tunings_field(&song.tunings),
+        unreadable_field(song.is_unreadable),
     ];
 
     fields.join(FIELD_SEPARATOR)
+}
+
+fn tunings_field(tunings: &[Tuning]) -> String {
+    let mut fields = Vec::new();
+    for tuning in tunings {
+        let mut pitches = Vec::new();
+        for pitch in &tuning.lowest_string_first {
+            pitches.push(pitch.midi_number().to_string());
+        }
+        fields.push(pitches.join(PITCH_SEPARATOR));
+    }
+
+    fields.join(TUNING_SEPARATOR)
+}
+
+fn unreadable_field(is_unreadable: bool) -> String {
+    if is_unreadable {
+        return UNREADABLE.to_owned();
+    }
+
+    String::new()
 }
 
 fn songs_from<'contents>(lines: impl Iterator<Item = &'contents str>) -> Option<Vec<Song>> {
@@ -72,7 +98,7 @@ fn songs_from<'contents>(lines: impl Iterator<Item = &'contents str>) -> Option<
 
 fn song_from_line(line: &str) -> Option<Song> {
     let fields: Vec<&str> = line.split(FIELD_SEPARATOR).collect();
-    let [title, artist, album] = fields.as_slice() else {
+    let [title, artist, album, tunings, unreadable] = fields.as_slice() else {
         return None;
     };
 
@@ -80,7 +106,34 @@ fn song_from_line(line: &str) -> Option<Song> {
         title: decoded(title)?,
         artist: non_empty(decoded(artist)?),
         album: non_empty(decoded(album)?),
+        tunings: tunings_from(tunings)?,
+        is_unreadable: is_unreadable_from(unreadable)?,
     })
+}
+
+fn tunings_from(field: &str) -> Option<Vec<Tuning>> {
+    let mut tunings = Vec::new();
+
+    if field.is_empty() {
+        return Some(tunings);
+    }
+    for tuning in field.split(TUNING_SEPARATOR) {
+        let mut pitches = Vec::new();
+        for midi_number in tuning.split(PITCH_SEPARATOR) {
+            pitches.push(Pitch::midi(midi_number.parse().ok()?));
+        }
+        tunings.push(Tuning::of(pitches));
+    }
+
+    Some(tunings)
+}
+
+fn is_unreadable_from(field: &str) -> Option<bool> {
+    match field {
+        UNREADABLE => Some(true),
+        "" => Some(false),
+        _ => None,
+    }
 }
 
 fn encoded(text: &str) -> String {

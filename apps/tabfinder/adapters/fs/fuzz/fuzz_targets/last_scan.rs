@@ -2,7 +2,7 @@
 
 use libfuzzer_sys::arbitrary::{Arbitrary as _, Unstructured};
 use libfuzzer_sys::fuzz_target;
-use mt_tabfinder_application::{LastScan, LibraryLocation, Song};
+use mt_tabfinder_application::{LastScan, LibraryLocation, Song, Tuning};
 use mt_tabfinder_fs::FsLastScan;
 use mt_tabfinder_fs_fuzz::{config_dir, config_dir_with};
 
@@ -31,18 +31,31 @@ fn kept_songs_come_back_unchanged(bytes: &[u8]) {
 fn location_and_songs(bytes: &[u8]) -> Option<(LibraryLocation, Vec<Song>)> {
     let mut input = Unstructured::new(bytes);
     let location = String::arbitrary(&mut input).ok()?;
-    let fields = Vec::<(String, Option<String>, Option<String>)>::arbitrary(&mut input).ok()?;
+    let fields = Vec::<SongFields>::arbitrary(&mut input).ok()?;
     let songs = fields.into_iter().map(song_as_found_in_a_folder).collect();
 
     Some((LibraryLocation::new(&location), songs))
 }
 
-fn song_as_found_in_a_folder(
-    (title, artist, album): (String, Option<String>, Option<String>),
-) -> Song {
+type SongFields = (String, Option<String>, Option<String>, Vec<Vec<u8>>, bool);
+
+fn song_as_found_in_a_folder((title, artist, album, tunings, is_unreadable): SongFields) -> Song {
     Song {
         title,
         artist: artist.filter(|name| !name.is_empty()),
         album: album.filter(|name| !name.is_empty()),
+        tunings: tunings_with_strings(tunings),
+        is_unreadable,
     }
+}
+
+fn tunings_with_strings(tunings: Vec<Vec<u8>>) -> Vec<Tuning> {
+    let mut with_strings = Vec::new();
+    for midi_numbers in tunings {
+        if !midi_numbers.is_empty() {
+            with_strings.push(Tuning::of_midi_numbers(&midi_numbers));
+        }
+    }
+
+    with_strings
 }

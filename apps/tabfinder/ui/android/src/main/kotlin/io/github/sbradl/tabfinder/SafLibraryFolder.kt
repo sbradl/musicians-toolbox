@@ -9,7 +9,11 @@ import androidx.core.net.toUri
 import io.github.sbradl.tabfinder.core.LibraryFolder
 import io.github.sbradl.tabfinder.core.LibraryFolderException
 import io.github.sbradl.tabfinder.core.Song
+import io.github.sbradl.tabfinder.core.TabFileContents
 import io.github.sbradl.tabfinder.core.songFromFile
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
 
 class SafLibraryFolder(
     private val contentResolver: ContentResolver,
@@ -48,7 +52,7 @@ class SafLibraryFolder(
             when {
                 entry.isVisibleSubfolder() -> songsInSubfolder(tree, entry, foldersDownToSong)
                 entry.isFolder() -> emptyList()
-                else -> listOfNotNull(songFromFile(foldersDownToSong, entry.name))
+                else -> listOfNotNull(songFromFile(foldersDownToSong, entry.name, DocumentContents(contentResolver, tree, entry.id)))
             }
         }
 
@@ -106,6 +110,43 @@ class SafLibraryFolder(
         return entries
     }
 }
+
+private class DocumentContents(
+    private val contentResolver: ContentResolver,
+    private val tree: Uri,
+    private val documentId: String,
+) : TabFileContents {
+    override fun read(mostBytes: ULong): ByteArray? {
+        val document = DocumentsContract.buildDocumentUriUsingTree(tree, documentId)
+
+        return try {
+            contentResolver.openInputStream(document)?.use { it.readAtMost(mostBytes.toInt()) }
+        } catch (_: IOException) {
+            null
+        } catch (_: SecurityException) {
+            null
+        }
+    }
+}
+
+private fun InputStream.readAtMost(mostBytes: Int): ByteArray {
+    val contents = ByteArrayOutputStream()
+    val chunk = ByteArray(CHUNK_BYTES)
+    var read = 0
+    while (read < mostBytes) {
+        val count = read(chunk, 0, minOf(chunk.size, mostBytes - read))
+
+        if (count < 0) {
+            break
+        }
+        contents.write(chunk, 0, count)
+        read += count
+    }
+
+    return contents.toByteArray()
+}
+
+private const val CHUNK_BYTES = 64 * 1024
 
 private class FolderEntry(
     val id: String,

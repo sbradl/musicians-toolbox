@@ -2,6 +2,42 @@ use std::fmt::Debug;
 
 use mt_library::Library;
 pub use mt_library::Song;
+pub use mt_music_kernel::{Pitch, Tuning};
+pub use mt_score::LARGEST_TAB_FILE;
+use mt_score::{ScoreHeader, read_header};
+
+pub fn song_read_from_tab_file(mut song: Song, tab_file: Option<&[u8]>) -> Song {
+    let Some(tab_file) = tab_file else {
+        return unreadable(song);
+    };
+    let Ok(header) = read_header(tab_file) else {
+        return unreadable(song);
+    };
+    song.tunings = distinct_tunings_of(header);
+
+    song
+}
+
+fn distinct_tunings_of(header: ScoreHeader) -> Vec<Tuning> {
+    let mut tunings = Vec::new();
+    for track in header.tracks {
+        let Some(tuning) = track.tuning else {
+            continue;
+        };
+
+        if !tunings.contains(&tuning) {
+            tunings.push(tuning);
+        }
+    }
+
+    tunings
+}
+
+const fn unreadable(mut song: Song) -> Song {
+    song.is_unreadable = true;
+
+    song
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LibraryLocation(String);

@@ -26,6 +26,7 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.deleteRecursively
+import kotlin.io.path.writeBytes
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
@@ -54,6 +55,14 @@ class TabFinderOnDesktop(
             val path = libraryFolder.resolve(file)
             path.parent.createDirectories()
             path.createFile()
+        }
+    }
+
+    fun libraryFolderContainsTheTabFileWithDropDAndBass(file: String) {
+        val path = libraryFolder.resolve(file)
+        path.parent.createDirectories()
+        javaClass.getResourceAsStream("/drop-d-and-bass.gp5").use { fixture ->
+            path.writeBytes(requireNotNull(fixture).readBytes())
         }
     }
 

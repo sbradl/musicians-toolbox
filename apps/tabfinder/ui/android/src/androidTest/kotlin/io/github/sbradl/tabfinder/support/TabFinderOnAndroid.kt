@@ -60,6 +60,14 @@ class TabFinderOnAndroid(
         }
     }
 
+    fun libraryFolderContainsTheTabFileWithDropDAndBass(file: String) {
+        val path = File(libraryFolder, file)
+        path.parentFile?.mkdirs()
+        InstrumentationRegistry.getInstrumentation().context.assets.open("drop-d-and-bass.gp5").use { fixture ->
+            path.writeBytes(fixture.readBytes())
+        }
+    }
+
     fun libraryFolderIsSlowToRead() {
         libraryFolderReader.holdReading()
     }

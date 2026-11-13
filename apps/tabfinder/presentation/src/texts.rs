@@ -1,7 +1,7 @@
 use fluent_bundle::{FluentArgs, FluentResource, concurrent::FluentBundle};
 
 use crate::Texts;
-use mt_tabfinder_application::LibraryFolderError;
+use mt_tabfinder_application::{LibraryFolderError, Tuning};
 use unic_langid::LanguageIdentifier;
 
 impl Texts {
@@ -68,6 +68,18 @@ impl Texts {
         args.set("album", album);
 
         self.format("artist-and-album", Some(&args))
+    }
+
+    pub(super) fn tuning_badge(&self, tuning: &Tuning) -> String {
+        let mut args = FluentArgs::new();
+        args.set("strings", tuning.strings());
+        args.set("tuning", tuning.name().to_string());
+
+        self.format("tuning-badge", Some(&args))
+    }
+
+    pub(super) fn unreadable_file(&self) -> String {
+        self.format("unreadable-file", None)
     }
 
     pub(super) fn artist_filter(&self) -> String {

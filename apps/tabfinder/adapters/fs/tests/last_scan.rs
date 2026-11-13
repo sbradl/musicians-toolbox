@@ -1,7 +1,7 @@
 use std::fs;
 use std::io;
 
-use mt_tabfinder_application::{LastScan, LibraryLocation, Song};
+use mt_tabfinder_application::{LastScan, LibraryLocation, Song, Tuning};
 use mt_tabfinder_fs::FsLastScan;
 
 pub mod common;
@@ -26,11 +26,28 @@ fn config_with_hand_edited_last_scan(name: &str, contents: &str) -> io::Result<T
 }
 
 fn song(title: &str, artist: Option<&str>, album: Option<&str>) -> Song {
-    Song {
-        title: title.to_owned(),
-        artist: artist.map(str::to_owned),
-        album: album.map(str::to_owned),
+    let mut song = Song::titled(title);
+    song.artist = artist.map(str::to_owned);
+    song.album = album.map(str::to_owned);
+
+    song
+}
+
+fn song_with_tunings(title: &str, tunings: &[&[u8]]) -> Song {
+    let mut song = song(title, None, None);
+    for lowest_string_first in tunings {
+        song.tunings
+            .push(Tuning::of_midi_numbers(lowest_string_first));
     }
+
+    song
+}
+
+fn unreadable_song(title: &str) -> Song {
+    let mut song = song(title, None, None);
+    song.is_unreadable = true;
+
+    song
 }
 
 #[test]
@@ -52,6 +69,31 @@ fn a_kept_scan_survives_a_restart() {
     last_scan(&config).keep(&tabs(), &songs);
 
     assert_eq!(last_scan(&config).songs_of(&tabs()), Some(songs.to_vec()));
+}
+
+#[test]
+fn tunings_and_unreadable_songs_survive_a_restart() {
+    let config = TempDir::new("scan-tunings");
+    let songs = [
+        song_with_tunings("Wexmoor", &[&[38, 45, 50, 55, 59, 64], &[28, 33, 38, 43]]),
+        unreadable_song("Brasswing"),
+    ];
+
+    last_scan(&config).keep(&tabs(), &songs);
+
+    assert_eq!(last_scan(&config).songs_of(&tabs()), Some(songs.to_vec()));
+}
+
+#[test]
+fn a_last_scan_kept_before_tunings_were_read_is_no_scan() -> io::Result<()> {
+    let config = config_with_hand_edited_last_scan(
+        "scan-before-tunings",
+        "file:///home/me/Tabs\nWexmoor\tCorvid Lane\tSaltglass\n",
+    )?;
+
+    assert_eq!(last_scan(&config).songs_of(&tabs()), None);
+
+    Ok(())
 }
 
 #[test]

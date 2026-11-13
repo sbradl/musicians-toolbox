@@ -1,4 +1,5 @@
 use mt_library::{Library, Song};
+use mt_music_kernel as _;
 
 fn library_of(titles: &[&str]) -> Library {
     let mut songs = Vec::new();

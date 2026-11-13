@@ -49,6 +49,12 @@
           "en": "TabFinder now opens straight to your Songs: it shows the list from the last Scan instead of reading the whole folder again. Songs you added or deleted since then show up after Rescan.",
           "de": "TabFinder zeigt deine Songs jetzt sofort beim Start: Es zeigt die Liste vom letzten Scan, statt den ganzen Ordner neu zu lesen. Songs, die du seitdem hinzugefügt oder gelöscht hast, erscheinen nach Rescan.",
           "fr": "TabFinder affiche désormais vos morceaux dès l'ouverture : il montre la liste du dernier scan au lieu de relire tout le dossier. Les morceaux ajoutés ou supprimés depuis apparaissent après Rescan."
+        },
+        {
+          "id": "tuning-badges-and-unreadable-songs",
+          "en": "Each Song shows its tunings as badges, such as \"6 Drop D\" or \"4 E Standard\", read from Guitar Pro 3, 4 and 5 files, renamed, half-downloaded and zipped ones too. A file TabFinder can't read stays in the list with \"Couldn't read this file\", and the Rescan message counts them.",
+          "de": "Jeder Song zeigt seine Stimmungen als Plaketten, etwa „6 Drop D“ oder „4 E Standard“, gelesen aus Guitar-Pro-3-, -4- und -5-Dateien, auch umbenannten, halb heruntergeladenen und gezippten. Eine Datei, die TabFinder nicht lesen kann, bleibt mit „Couldn't read this file“ in der Liste, und die Rescan-Meldung zählt sie.",
+          "fr": "Chaque morceau affiche ses accordages sous forme de badges, comme « 6 Drop D » ou « 4 E Standard », lus dans les fichiers Guitar Pro 3, 4 et 5, y compris renommés, à moitié téléchargés ou zippés. Un fichier que TabFinder ne peut pas lire reste dans la liste avec « Couldn't read this file », et le message de Rescan les compte."
         }
       ]
     }

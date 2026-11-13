@@ -7,6 +7,9 @@ android {
     defaultConfig {
         applicationId = "io.github.sbradl.tabfinder"
     }
+    sourceSets {
+        getByName("androidTest").assets.directories.add(rootProject.file("contexts/score/tests/fixtures").path)
+    }
 }
 
 dependencies {

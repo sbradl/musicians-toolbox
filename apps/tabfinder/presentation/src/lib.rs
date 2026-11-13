@@ -51,6 +51,8 @@ pub struct NothingMatches {
 pub struct SongItem {
     pub title: String,
     pub artist_and_album: Option<String>,
+    pub tunings: Vec<String>,
+    pub unreadable: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -129,12 +131,12 @@ impl App {
         let Some(location) = self.libraries.remembered_location() else {
             return;
         };
-        let Some(song_count) = self.open_library(&location) else {
+        let Some(scanned) = self.open_library(&location) else {
             return;
         };
         let text = self
             .texts
-            .rescan_finished(song_count, UNREADABLE_WITHOUT_TAB_FILE_READERS);
+            .rescan_finished(scanned.songs, scanned.unreadable);
 
         self.listener.on_effect(Effect::ShowMessage { text });
     }
@@ -159,7 +161,7 @@ impl App {
         self.show(shown.because(self.texts.folder_picker_unavailable()));
     }
 
-    fn open_library(&self, location: &LibraryLocation) -> Option<usize> {
+    fn open_library(&self, location: &LibraryLocation) -> Option<Scanned> {
         self.show(LibraryViewModel::scanning(&self.texts));
         match self.libraries.open(location) {
             Ok(library) => Some(self.list(library)),
@@ -175,12 +177,15 @@ impl App {
         }
     }
 
-    fn list(&self, library: Library) -> usize {
-        let song_count = library.songs().len();
+    fn list(&self, library: Library) -> Scanned {
+        let scanned = Scanned {
+            songs: library.songs().len(),
+            unreadable: library.unreadable_songs(),
+        };
         *lock(&self.library) = Some(ListedLibrary::of(library, &self.texts));
         self.show_library();
 
-        song_count
+        scanned
     }
 
     fn show_library(&self) {
@@ -213,13 +218,17 @@ impl App {
     }
 }
 
-const UNREADABLE_WITHOUT_TAB_FILE_READERS: usize = 0;
-
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 struct Texts(FluentBundle<FluentResource>);
+
+#[derive(Debug)]
+struct Scanned {
+    songs: usize,
+    unreadable: usize,
+}
 
 #[derive(Debug)]
 struct ListedLibrary {

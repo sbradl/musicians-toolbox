@@ -1,9 +1,14 @@
 package io.github.sbradl.tabfinder.desktop
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import io.github.sbradl.tabfinder.core.desktopConfigDir
 import io.github.sbradl.tabfinder.ui.TabFinder
 import io.github.sbradl.tabfinder.ui.TabFinderCore
@@ -13,6 +18,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 private const val APP_NAME = "TabFinder"
+private val DEFAULT_WIDTH = 800.dp
+private val DEFAULT_HEIGHT = 600.dp
 
 fun main() {
     val core = startCore()
@@ -28,11 +35,15 @@ private fun startCore(): TabFinderCore {
 }
 
 private fun showWindow(core: TabFinderCore) {
+    val desktopScale = DesktopScale.ofThisDesktop()
     val desktopPrefersDark = runBlocking { PortalAppearance().followPrefersDark(CoroutineScope(Dispatchers.IO)) }
     application {
         val prefersDark by desktopPrefersDark.collectAsState()
-        Window(onCloseRequest = ::exitApplication, title = APP_NAME) {
-            TabFinderTheme(prefersDark) { TabFinder(core, APP_NAME) }
+        val windowState = rememberWindowState(size = desktopScale.applyTo(DpSize(DEFAULT_WIDTH, DEFAULT_HEIGHT)))
+        Window(onCloseRequest = ::exitApplication, title = APP_NAME, state = windowState) {
+            CompositionLocalProvider(LocalDensity provides desktopScale.applyTo(LocalDensity.current)) {
+                TabFinderTheme(prefersDark) { TabFinder(core, APP_NAME) }
+            }
         }
     }
 }

@@ -1,0 +1,16 @@
+rules:
+  - id: save-whole-or-nothing
+    message: "Save files through save_whole_or_nothing: a half-written or outdated file must never be read back at the next start"
+    severity: ERROR
+    languages: [rust]
+    patterns:
+      - pattern-either:
+          - pattern: fs::write(...)
+          - pattern: std::fs::write(...)
+          - pattern: File::create(...)
+          - pattern: std::fs::File::create(...)
+          - pattern: OpenOptions::new()
+      - pattern-not-inside: |
+          fn write_whole(...) -> $T { ... }
+    paths:
+      include: ["apps/*/adapters/*/src/"]

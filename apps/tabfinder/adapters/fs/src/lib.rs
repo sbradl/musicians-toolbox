@@ -3,8 +3,8 @@ mod last_scan;
 pub use last_scan::FsLastScan;
 
 use std::ffi::OsStr;
-use std::fs::{self, DirEntry, ReadDir};
-use std::io;
+use std::fs::{self, DirEntry, File, ReadDir};
+use std::io::{self, Write as _};
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
@@ -166,7 +166,7 @@ impl RememberedLibraryLocation for FsRememberedLibraryLocation {
     }
 
     fn remember(&self, location: &LibraryLocation) {
-        ignore_failure(self.write(location));
+        save_whole_or_nothing(&self.file, location.as_str());
     }
 
     fn forget(&self) {
@@ -174,14 +174,23 @@ impl RememberedLibraryLocation for FsRememberedLibraryLocation {
     }
 }
 
-impl FsRememberedLibraryLocation {
-    fn write(&self, location: &LibraryLocation) -> io::Result<()> {
-        if let Some(config_dir) = self.file.parent() {
-            fs::create_dir_all(config_dir)?;
-        }
-
-        fs::write(&self.file, location.as_str())
+fn save_whole_or_nothing(file: &Path, contents: &str) {
+    if write_whole(file, contents).is_err() {
+        ignore_failure(fs::remove_file(file));
     }
+}
+
+fn write_whole(file: &Path, contents: &str) -> io::Result<()> {
+    let unfinished = file.with_extension("unfinished");
+
+    if let Some(config_dir) = file.parent() {
+        fs::create_dir_all(config_dir)?;
+    }
+    let mut written = File::create(&unfinished)?;
+    written.write_all(contents.as_bytes())?;
+    written.sync_all()?;
+
+    fs::rename(unfinished, file)
 }
 
 // A failure only costs the musician a re-pick or a Scan on the next start.

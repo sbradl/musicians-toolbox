@@ -6,7 +6,7 @@ use mt_tabfinder_fs::FsRememberedLibraryLocation;
 
 pub mod common;
 
-use common::TempDir;
+use common::{TempDir, saving_is_blocked};
 
 fn remembered_library_location(config: &TempDir) -> FsRememberedLibraryLocation {
     FsRememberedLibraryLocation::in_config_dir(config.path().join("tabfinder"))
@@ -69,6 +69,19 @@ fn a_hand_edited_location_ignores_its_trailing_line_break() -> io::Result<()> {
 #[test]
 fn a_hand_edited_empty_location_is_nothing_remembered() -> io::Result<()> {
     let config = config_with_hand_edited_location("empty", "\n")?;
+
+    assert_eq!(remembered_library_location(&config).remembered(), None);
+
+    Ok(())
+}
+
+#[test]
+fn a_location_that_could_not_be_remembered_leaves_no_outdated_location_behind() -> io::Result<()> {
+    let config = TempDir::new("not-remembered");
+    remembered_library_location(&config).remember(&tabs());
+    saving_is_blocked(&config, "library-location")?;
+
+    remembered_library_location(&config).remember(&LibraryLocation::new("/home/me/Other"));
 
     assert_eq!(remembered_library_location(&config).remembered(), None);
 

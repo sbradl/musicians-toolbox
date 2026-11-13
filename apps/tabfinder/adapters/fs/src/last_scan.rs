@@ -1,11 +1,10 @@
-use std::fs::{self, File};
-use std::io::{self, Write as _};
+use std::fs;
 use std::path::PathBuf;
 
 use mt_tabfinder_application::{LastScan, LibraryLocation, Song};
 use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, utf8_percent_encode};
 
-use crate::ignore_failure;
+use crate::save_whole_or_nothing;
 
 const ESCAPED: &AsciiSet = &CONTROLS.add(b'%');
 const FIELD_SEPARATOR: &str = "\t";
@@ -20,19 +19,6 @@ impl FsLastScan {
         Self {
             file: config_dir.into().join("last-scan"),
         }
-    }
-
-    fn write(&self, contents: &str) -> io::Result<()> {
-        let unfinished = self.file.with_extension("unfinished");
-
-        if let Some(config_dir) = self.file.parent() {
-            fs::create_dir_all(config_dir)?;
-        }
-        let mut file = File::create(&unfinished)?;
-        file.write_all(contents.as_bytes())?;
-        file.sync_all()?;
-
-        fs::rename(unfinished, &self.file)
     }
 }
 
@@ -50,9 +36,7 @@ impl LastScan for FsLastScan {
     }
 
     fn keep(&self, location: &LibraryLocation, songs: &[Song]) {
-        if self.write(&contents_of(location, songs)).is_err() {
-            ignore_failure(fs::remove_file(&self.file));
-        }
+        save_whole_or_nothing(&self.file, &contents_of(location, songs));
     }
 }
 

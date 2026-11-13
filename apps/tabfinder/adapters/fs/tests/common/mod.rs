@@ -24,3 +24,9 @@ impl Drop for TempDir {
         drop(fs::remove_dir_all(&self.0));
     }
 }
+
+pub fn saving_is_blocked(config: &TempDir, file: &str) -> std::io::Result<()> {
+    let unfinished = format!("{file}.unfinished");
+
+    fs::create_dir_all(config.path().join("tabfinder").join(unfinished))
+}

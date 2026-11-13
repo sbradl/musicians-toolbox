@@ -6,7 +6,7 @@ use mt_tabfinder_fs::FsLastScan;
 
 pub mod common;
 
-use common::TempDir;
+use common::{TempDir, saving_is_blocked};
 
 fn last_scan(config: &TempDir) -> FsLastScan {
     FsLastScan::in_config_dir(config.path().join("tabfinder"))
@@ -23,10 +23,6 @@ fn config_with_hand_edited_last_scan(name: &str, contents: &str) -> io::Result<T
     fs::write(tabfinder_dir.join("last-scan"), contents)?;
 
     Ok(config)
-}
-
-fn saving_is_blocked(config: &TempDir) -> io::Result<()> {
-    fs::create_dir_all(config.path().join("tabfinder").join("last-scan.unfinished"))
 }
 
 fn song(title: &str, artist: Option<&str>, album: Option<&str>) -> Song {
@@ -101,7 +97,7 @@ fn keeping_a_scan_replaces_the_one_before() {
 #[test]
 fn a_last_scan_tabfinder_cannot_read_is_no_scan() -> io::Result<()> {
     let config = config_with_hand_edited_last_scan(
-        "scan-unreadable",
+        "scan-damaged",
         "file:///home/me/Tabs\nonly a title, no artist or album fields\n",
     )?;
 
@@ -114,7 +110,7 @@ fn a_last_scan_tabfinder_cannot_read_is_no_scan() -> io::Result<()> {
 fn a_scan_that_could_not_be_kept_leaves_no_outdated_scan_behind() -> io::Result<()> {
     let config = TempDir::new("scan-not-kept");
     last_scan(&config).keep(&tabs(), &[song("Wexmoor", None, None)]);
-    saving_is_blocked(&config)?;
+    saving_is_blocked(&config, "last-scan")?;
 
     last_scan(&config).keep(&tabs(), &[song("Brasswing", None, None)]);
 

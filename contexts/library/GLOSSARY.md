@@ -22,6 +22,10 @@ _Avoid_: Score (Score's word), tab, tab file, file, entry
 What the Library knows about a Song: title, artist, album, Tunings, Written tempos and Tags per Part.
 _Avoid_: Metadata, row
 
+**Spelling**:
+An artist, or one artist's album, named in other letter case is still one; the Library spells it as most of its Songs do, a tie going to fewer capitals.
+_Avoid_: Normalizing
+
 **Source**:
 Where a summary field came from: the Song itself, or its folder and name in the Library as a fallback.
 

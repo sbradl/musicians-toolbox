@@ -1,3 +1,6 @@
+use std::cmp::Reverse;
+use std::collections::HashMap;
+
 use mt_music_kernel::Tuning;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -29,6 +32,7 @@ pub struct Library {
 impl Library {
     pub fn of(mut songs: Vec<Song>) -> Self {
         songs.sort_by_cached_key(|song| song.title.to_lowercase());
+        spell_names_as_most_songs_do(&mut songs);
 
         Self { songs }
     }
@@ -52,6 +56,112 @@ impl Library {
         artists.dedup();
 
         artists
+    }
+}
+
+fn spell_names_as_most_songs_do(songs: &mut [Song]) {
+    spell_artists_as_most_songs_do(songs);
+    spell_albums_as_most_songs_do(songs);
+}
+
+fn spell_artists_as_most_songs_do(songs: &mut [Song]) {
+    let no_owner = "";
+    let mut spellings = Spellings::default();
+    for song in songs.iter() {
+        spellings.count(no_owner, song.artist.as_deref());
+    }
+    let most_used = spellings.most_used();
+    for song in songs {
+        most_used.respell(no_owner, &mut song.artist);
+    }
+}
+
+fn spell_albums_as_most_songs_do(songs: &mut [Song]) {
+    let mut spellings = Spellings::default();
+    for song in songs.iter() {
+        spellings.count(artist_of(song), song.album.as_deref());
+    }
+    let most_used = spellings.most_used();
+    for song in songs {
+        most_used.respell(song.artist.as_deref().unwrap_or_default(), &mut song.album);
+    }
+}
+
+fn artist_of(song: &Song) -> &str {
+    song.artist.as_deref().unwrap_or_default()
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct SameName {
+    owner: String,
+    ignoring_case: String,
+}
+
+impl SameName {
+    fn of(owner: &str, name: &str) -> Self {
+        Self {
+            owner: owner.to_lowercase(),
+            ignoring_case: name.to_lowercase(),
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+struct Spellings {
+    uses: HashMap<SameName, HashMap<String, usize>>,
+}
+
+impl Spellings {
+    fn count(&mut self, owner: &str, name: Option<&str>) {
+        let Some(name) = name else {
+            return;
+        };
+        let uses = self.uses.entry(SameName::of(owner, name)).or_default();
+        *uses.entry(name.to_owned()).or_default() += 1;
+    }
+
+    fn most_used(self) -> MostUsedSpellings {
+        let mut most_used = HashMap::new();
+        for (same_name, uses) in self.uses {
+            drop(most_used.insert(same_name, most_used_of(uses)));
+        }
+
+        MostUsedSpellings(most_used)
+    }
+}
+
+fn most_used_of(uses: HashMap<String, usize>) -> String {
+    let mut spellings: Vec<(String, usize)> = uses.into_iter().collect();
+    spellings.sort_by_cached_key(|(spelling, used)| {
+        (Reverse(*used), capitals_in(spelling), spelling.clone())
+    });
+    let mut ranked = spellings.into_iter();
+
+    ranked
+        .next()
+        .map(|(spelling, _)| spelling)
+        .unwrap_or_default()
+}
+
+fn capitals_in(spelling: &str) -> usize {
+    spelling
+        .chars()
+        .filter(|letter| letter.is_uppercase())
+        .count()
+}
+
+#[derive(Debug)]
+struct MostUsedSpellings(HashMap<SameName, String>);
+
+impl MostUsedSpellings {
+    fn respell(&self, owner: &str, name: &mut Option<String>) {
+        let Some(spelled) = name.as_deref() else {
+            return;
+        };
+
+        if let Some(most_used) = self.0.get(&SameName::of(owner, spelled)) {
+            most_used.clone_into(name.get_or_insert_default());
+        }
     }
 }
 

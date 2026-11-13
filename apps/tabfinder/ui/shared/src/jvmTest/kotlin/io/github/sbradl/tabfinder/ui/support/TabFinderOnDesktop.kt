@@ -59,9 +59,20 @@ class TabFinderOnDesktop(
     }
 
     fun libraryFolderContainsTheTabFileWithDropDAndBass(file: String) {
+        libraryFolderContainsACopyOf("drop-d-and-bass.gp5", file)
+    }
+
+    fun libraryFolderContainsTheTabFileNamingAshgroveReel(file: String) {
+        libraryFolderContainsACopyOf("named-drop-d.gp5", file)
+    }
+
+    private fun libraryFolderContainsACopyOf(
+        tabFile: String,
+        file: String,
+    ) {
         val path = libraryFolder.resolve(file)
         path.parent.createDirectories()
-        javaClass.getResourceAsStream("/drop-d-and-bass.gp5").use { fixture ->
+        javaClass.getResourceAsStream("/$tabFile").use { fixture ->
             path.writeBytes(requireNotNull(fixture).readBytes())
         }
     }

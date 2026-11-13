@@ -12,6 +12,9 @@ pub struct GuitarProFile {
     major: u8,
     minor: u8,
     bars: usize,
+    title: String,
+    artist: String,
+    album: String,
     tracks: Vec<TrackInFile>,
 }
 
@@ -28,8 +31,32 @@ impl GuitarProFile {
             major,
             minor,
             bars: 2,
+            title: String::new(),
+            artist: String::new(),
+            album: String::new(),
             tracks: Vec::new(),
         }
+    }
+
+    #[must_use]
+    pub fn titled(mut self, title: &str) -> Self {
+        title.clone_into(&mut self.title);
+
+        self
+    }
+
+    #[must_use]
+    pub fn by(mut self, artist: &str) -> Self {
+        artist.clone_into(&mut self.artist);
+
+        self
+    }
+
+    #[must_use]
+    pub fn on_album(mut self, album: &str) -> Self {
+        album.clone_into(&mut self.album);
+
+        self
     }
 
     #[must_use]
@@ -75,10 +102,10 @@ impl GuitarProFile {
             &format!("FICHIER GUITAR PRO v{}.{:02}", self.major, self.minor),
             30,
         );
-        file.text("Invented Title");
+        file.text(&self.title);
         file.text("");
-        file.text("Invented Artist");
-        file.text("Invented Album");
+        file.text(&self.artist);
+        file.text(&self.album);
         file.text("");
 
         if self.major == 5 {

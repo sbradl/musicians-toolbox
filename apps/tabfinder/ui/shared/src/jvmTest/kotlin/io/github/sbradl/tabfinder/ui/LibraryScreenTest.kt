@@ -50,6 +50,19 @@ class LibraryScreenTest {
         }
 
     @Test
+    fun aSongShowsTheNamesItsTabFileStatesOverItsFileAndFolderNames() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContainsTheTabFileNamingAshgroveReel("Corvid Lane/Saltglass/Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+
+            tabfinder.musicianPicksTheLibraryFolder()
+
+            tabfinder.assertShown("Ashgrove Reel", "Marrow Bay · Tidewater")
+            tabfinder.assertNotShown("Wexmoor")
+            tabfinder.assertNotShown("Corvid Lane · Saltglass")
+        }
+
+    @Test
     fun theHeaderShowsTabFinderAboveTheSongCount() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.gp5")

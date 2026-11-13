@@ -4,7 +4,7 @@ use mt_library::Library;
 pub use mt_library::Song;
 pub use mt_music_kernel::{Pitch, Tuning};
 pub use mt_score::LARGEST_TAB_FILE;
-use mt_score::{ScoreHeader, read_header};
+use mt_score::{Track, read_header};
 
 pub fn song_read_from_tab_file(mut song: Song, tab_file: Option<&[u8]>) -> Song {
     let Some(tab_file) = tab_file else {
@@ -13,14 +13,17 @@ pub fn song_read_from_tab_file(mut song: Song, tab_file: Option<&[u8]>) -> Song 
     let Ok(header) = read_header(tab_file) else {
         return unreadable(song);
     };
-    song.tunings = distinct_tunings_of(header);
+    song.title = header.title.unwrap_or(song.title);
+    song.artist = header.artist.or(song.artist);
+    song.album = header.album.or(song.album);
+    song.tunings = distinct_tunings_of(header.tracks);
 
     song
 }
 
-fn distinct_tunings_of(header: ScoreHeader) -> Vec<Tuning> {
+fn distinct_tunings_of(tracks: Vec<Track>) -> Vec<Tuning> {
     let mut tunings = Vec::new();
-    for track in header.tracks {
+    for track in tracks {
         let Some(tuning) = track.tuning else {
             continue;
         };

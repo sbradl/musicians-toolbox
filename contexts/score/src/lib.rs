@@ -8,6 +8,9 @@ pub const LARGEST_TAB_FILE: usize = 64 * 1024 * 1024;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ScoreHeader {
+    pub title: Option<String>,
+    pub artist: Option<String>,
+    pub album: Option<String>,
     pub tracks: Vec<Track>,
 }
 

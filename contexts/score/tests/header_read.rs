@@ -6,10 +6,7 @@ use std::fs;
 use mt_score::{LARGEST_TAB_FILE, ScoreHeader, Unreadable, read_header};
 use support::{BASS_E_STANDARD, DROP_D, E_STANDARD, GuitarProFile, OPEN_G, zip_holding};
 
-const FIXTURE: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/fixtures/drop-d-and-bass.gp5"
-);
+const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
 
 #[test]
 fn a_guitar_pro_5_file_gives_its_tracks_tunings() {
@@ -53,6 +50,52 @@ fn a_guitar_pro_3_file_gives_its_tracks_tunings() {
     let header = read_header(&tab_file);
 
     assert_tunings(header, &["6 E Standard", "6 Drop D"]);
+}
+
+#[test]
+fn a_guitar_pro_5_file_gives_its_title_artist_and_album() {
+    let tab_file = GuitarProFile::version(5, 10)
+        .titled("Wexmoor")
+        .by("Corvid Lane")
+        .on_album("Saltglass")
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_names(
+        header,
+        [Some("Wexmoor"), Some("Corvid Lane"), Some("Saltglass")],
+    );
+}
+
+#[test]
+fn a_guitar_pro_3_file_gives_its_title_artist_and_album() {
+    let tab_file = GuitarProFile::version(3, 0)
+        .titled("Wexmoor")
+        .by("Corvid Lane")
+        .on_album("Saltglass")
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_names(
+        header,
+        [Some("Wexmoor"), Some("Corvid Lane"), Some("Saltglass")],
+    );
+}
+
+#[test]
+fn an_empty_or_blank_name_in_the_file_is_not_stated() {
+    let tab_file = GuitarProFile::version(4, 6)
+        .by(" \t ")
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_names(header, [None, None, None]);
 }
 
 #[test]
@@ -144,6 +187,13 @@ fn assert_tunings(header: Result<ScoreHeader, Unreadable>, expected: &[&str]) {
     assert_eq!(tunings_in(header), expected);
 }
 
+#[track_caller]
+fn assert_names(header: Result<ScoreHeader, Unreadable>, expected: [Option<&str>; 3]) {
+    let names = header.map(|header| [header.title, header.artist, header.album]);
+
+    assert_eq!(names, Ok(expected.map(|name| name.map(str::to_owned))));
+}
+
 fn tunings_in(header: Result<ScoreHeader, Unreadable>) -> Vec<String> {
     let Ok(header) = header else {
         return vec!["Unreadable".to_owned()];
@@ -172,22 +222,35 @@ fn a_file_larger_than_the_largest_tab_file_is_unreadable() {
 }
 
 #[test]
-fn the_fixture_for_the_apps_tests_is_what_the_builder_writes() {
-    let built = GuitarProFile::version(5, 0)
+fn the_fixtures_for_the_apps_tests_are_what_the_builder_writes() {
+    let drop_d_and_bass = GuitarProFile::version(5, 0)
+        .by(" ")
         .with_strings(&DROP_D)
         .with_drums()
         .with_strings(&BASS_E_STANDARD)
-        .with_strings(&DROP_D)
-        .bytes();
+        .with_strings(&DROP_D);
+    let named = GuitarProFile::version(5, 0)
+        .titled("Ashgrove Reel")
+        .by("Marrow Bay")
+        .on_album("Tidewater")
+        .with_strings(&DROP_D);
+
+    assert_fixture("drop-d-and-bass.gp5", &drop_d_and_bass);
+    assert_fixture("named-drop-d.gp5", &named);
+}
+
+#[track_caller]
+fn assert_fixture(name: &str, builder: &GuitarProFile) {
+    let path = format!("{FIXTURES}/{name}");
+    let built = builder.bytes();
 
     if std::env::var_os("WRITE_FIXTURES").is_some() {
-        drop(fs::write(FIXTURE, &built));
+        drop(fs::write(&path, &built));
     }
-
-    let fixture = fs::read(FIXTURE).unwrap_or_default();
+    let fixture = fs::read(&path).unwrap_or_default();
 
     assert!(
         fixture == built,
-        "{FIXTURE} differs from the builder; write it anew with: WRITE_FIXTURES=1 cargo test -p mt-score"
+        "{path} differs from the builder; write it anew with: WRITE_FIXTURES=1 cargo test -p mt-score"
     );
 }

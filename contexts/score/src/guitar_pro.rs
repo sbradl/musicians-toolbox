@@ -67,7 +67,8 @@ impl<'file> GuitarProFile<'file> {
     pub(super) fn read_header(&self) -> Result<ScoreHeader, Unreadable> {
         let mut cursor = Cursor::over(self.0);
         let version = read_version(&mut cursor)?;
-        skip_song_information(&mut cursor, version)?;
+        let [title, artist, album] = read_names(&mut cursor)?;
+        skip_song_information_after_album(&mut cursor, version)?;
         skip_page_setup_and_tempo(&mut cursor, version)?;
         skip_midi_channels(&mut cursor, version)?;
         let bars = cursor.count_up_to(MOST_BARS)?;
@@ -79,6 +80,9 @@ impl<'file> GuitarProFile<'file> {
         skip_bar_headers(&mut cursor, version, bars)?;
 
         Ok(ScoreHeader {
+            title,
+            artist,
+            album,
             tracks: read_tracks(&mut cursor, version, tracks)?,
         })
     }
@@ -105,9 +109,53 @@ fn read_version(cursor: &mut Cursor<'_>) -> Result<Version, Unreadable> {
     Ok(Version { major, minor })
 }
 
-fn skip_song_information(cursor: &mut Cursor<'_>, version: Version) -> Result<(), Unreadable> {
-    let title_to_instructions = if version.is_5() { 9 } else { 8 };
-    skip_texts(cursor, title_to_instructions)?;
+fn read_names(cursor: &mut Cursor<'_>) -> Result<[Option<String>; 3], Unreadable> {
+    let subtitle = 1;
+    let title = read_name(cursor)?;
+    skip_texts(cursor, subtitle)?;
+    let artist = read_name(cursor)?;
+    let album = read_name(cursor)?;
+
+    Ok([title, artist, album])
+}
+
+fn read_name(cursor: &mut Cursor<'_>) -> Result<Option<String>, Unreadable> {
+    let Ok(size) = usize::try_from(cursor.number()?) else {
+        return Ok(None);
+    };
+    let Some((&length, text)) = cursor.bytes(size)?.split_first() else {
+        return Ok(None);
+    };
+    let text = &text[..usize::from(length).min(text.len())];
+
+    Ok(stated(&decoded(text)))
+}
+
+// shortcut: Latin-1 stands in for Windows-1252 (differs in 0x80-0x9F: curly quotes, €), upgrade if such names show wrong signs.
+fn decoded(text: &[u8]) -> String {
+    if let Ok(utf8) = str::from_utf8(text) {
+        return utf8.to_owned();
+    }
+
+    text.iter().map(|&byte| char::from(byte)).collect()
+}
+
+fn stated(name: &str) -> Option<String> {
+    let name = name.trim();
+
+    if name.is_empty() {
+        return None;
+    }
+
+    Some(name.to_owned())
+}
+
+fn skip_song_information_after_album(
+    cursor: &mut Cursor<'_>,
+    version: Version,
+) -> Result<(), Unreadable> {
+    let lyricist_to_instructions = if version.is_5() { 5 } else { 4 };
+    skip_texts(cursor, lyricist_to_instructions)?;
     let notice_lines = cursor.count_up_to(usize::MAX)?;
 
     skip_texts(cursor, notice_lines)

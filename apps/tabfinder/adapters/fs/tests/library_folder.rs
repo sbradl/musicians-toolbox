@@ -14,6 +14,10 @@ const TAB_FILE_WITH_DROP_D_AND_BASS: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../../../../contexts/score/tests/fixtures/drop-d-and-bass.gp5"
 );
+const TAB_FILE_NAMING_ASHGROVE_REEL: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../../../contexts/score/tests/fixtures/named-drop-d.gp5"
+);
 
 use common::TempDir;
 
@@ -39,12 +43,20 @@ impl TempFolder {
     }
 
     fn with_tab_file(self, relative: &str) -> io::Result<Self> {
+        self.with_copy_of(TAB_FILE_WITH_DROP_D_AND_BASS, relative)
+    }
+
+    fn with_tab_file_naming_ashgrove_reel(self, relative: &str) -> io::Result<Self> {
+        self.with_copy_of(TAB_FILE_NAMING_ASHGROVE_REEL, relative)
+    }
+
+    fn with_copy_of(self, tab_file: &str, relative: &str) -> io::Result<Self> {
         let file = self.0.path().join(relative);
 
         if let Some(parent) = file.parent() {
             fs::create_dir_all(parent)?;
         }
-        _ = fs::copy(TAB_FILE_WITH_DROP_D_AND_BASS, &file)?;
+        _ = fs::copy(tab_file, &file)?;
 
         Ok(self)
     }
@@ -283,6 +295,27 @@ fn the_first_folder_names_the_artist_and_the_second_the_album() -> io::Result<()
     folder.assert_artist_and_album("Brasswing", Some("Corvid Lane"), None);
     folder.assert_artist_and_album("Amberline", None, None);
     folder.assert_artist_and_album("Lone Pine", Some("Corvid Lane"), Some("Saltglass"));
+
+    Ok(())
+}
+
+#[test]
+fn a_tab_file_that_names_its_title_artist_and_album_is_known_by_them() -> io::Result<()> {
+    let folder = TempFolder::new("named")?
+        .with_tab_file_naming_ashgrove_reel("Corvid Lane/Saltglass/Wexmoor.gp5")?;
+
+    assert_eq!(folder.song_titles(), ["Ashgrove Reel"]);
+    folder.assert_artist_and_album("Ashgrove Reel", Some("Marrow Bay"), Some("Tidewater"));
+
+    Ok(())
+}
+
+#[test]
+fn a_tab_file_with_empty_or_blank_names_is_known_by_its_file_name_and_folders() -> io::Result<()> {
+    let folder = TempFolder::new("unnamed")?.with_tab_file("Corvid Lane/Saltglass/Wexmoor.gp5")?;
+
+    assert_eq!(folder.song_titles(), ["Wexmoor"]);
+    folder.assert_artist_and_album("Wexmoor", Some("Corvid Lane"), Some("Saltglass"));
 
     Ok(())
 }

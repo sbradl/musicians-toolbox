@@ -128,6 +128,9 @@ if [ $threw -eq 1 ]; then echo "TabFinder threw an uncaught exception" >&2; exit
 [tasks."release-checks:tabfinder"]
 run = "apps/tabfinder/release-checks.sh"
 
+[tasks."bench:tabfinder"]
+run = "cargo test --release --locked -p mt-tabfinder-presentation --test library_screen -- --ignored"
+
 [tasks."test:android"]
 run = """
 results=apps/tabfinder/ui/android/build/outputs/androidTest-results/connected

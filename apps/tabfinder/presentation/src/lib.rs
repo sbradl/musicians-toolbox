@@ -5,6 +5,7 @@ use std::fmt;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use fluent_bundle::{FluentResource, concurrent::FluentBundle};
+use mt_library::{Filter, Library};
 use mt_tabfinder_application::{
     Libraries, LibraryFolder, LibraryLocation, RememberedLibraryLocation,
 };
@@ -20,7 +21,28 @@ pub struct LibraryViewModel {
     pub problem: Option<String>,
     pub choose_folder: Action,
     pub rescan: Action,
+    pub filters: Option<Filters>,
     pub songs: Vec<SongItem>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Filters {
+    pub song: FilterField,
+    pub match_count: String,
+    pub nothing_matches: Option<NothingMatches>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FilterField {
+    pub label: String,
+    pub text: String,
+    pub clear: Action,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NothingMatches {
+    pub text: String,
+    pub clear_filters: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -51,6 +73,8 @@ pub struct App {
     libraries: Libraries,
     texts: Texts,
     shown: Mutex<Option<LibraryViewModel>>,
+    library: Mutex<Option<ListedLibrary>>,
+    filter: Mutex<Filter>,
 }
 
 impl fmt::Debug for App {
@@ -70,6 +94,8 @@ impl App {
             libraries: Libraries::new(library_folder, remembered_library_location),
             texts: Texts::english(),
             shown: Mutex::new(None),
+            library: Mutex::new(None),
+            filter: Mutex::new(Filter::default()),
         }
     }
 
@@ -104,6 +130,16 @@ impl App {
         self.listener.on_effect(Effect::ShowMessage { text });
     }
 
+    pub fn song_filter_changed(&self, text: &str) {
+        *lock(&self.filter) = Filter::song(text);
+        self.show_library();
+    }
+
+    pub fn clear_filters(&self) {
+        *lock(&self.filter) = Filter::default();
+        self.show_library();
+    }
+
     pub fn folder_picker_unavailable(&self) {
         let shown = self.shown_library();
         self.show(shown.because(self.texts.folder_picker_unavailable()));
@@ -113,11 +149,14 @@ impl App {
         self.show(LibraryViewModel::scanning(&self.texts));
         match self.libraries.open(location) {
             Ok(library) => {
-                self.show(LibraryViewModel::listing(&library, &self.texts));
+                let song_count = library.songs().len();
+                *lock(&self.library) = Some(ListedLibrary::of(library, &self.texts));
+                self.show_library();
 
-                Some(library.songs().len())
+                Some(song_count)
             }
             Err(error) => {
+                *lock(&self.library) = None;
                 self.show(
                     LibraryViewModel::no_folder_chosen(&self.texts)
                         .because(self.texts.library_folder_problem(&error)),
@@ -126,6 +165,24 @@ impl App {
                 None
             }
         }
+    }
+
+    fn show_library(&self) {
+        let filter = lock(&self.filter).clone();
+        let Some(listing) = self.listing(&filter) else {
+            return;
+        };
+        self.show(listing);
+    }
+
+    fn listing(&self, filter: &Filter) -> Option<LibraryViewModel> {
+        let listed = lock(&self.library);
+
+        Some(LibraryViewModel::listing(
+            listed.as_ref()?,
+            filter,
+            &self.texts,
+        ))
     }
 
     fn show(&self, library: LibraryViewModel) {
@@ -147,3 +204,9 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 }
 
 struct Texts(FluentBundle<FluentResource>);
+
+#[derive(Debug)]
+struct ListedLibrary {
+    library: Library,
+    items: Vec<SongItem>,
+}

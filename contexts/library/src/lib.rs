@@ -31,3 +31,26 @@ impl Library {
         &self.songs
     }
 }
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Filter {
+    song: String,
+    song_ignoring_case: String,
+}
+
+impl Filter {
+    pub fn song(text: &str) -> Self {
+        Self {
+            song: text.to_owned(),
+            song_ignoring_case: text.to_lowercase(),
+        }
+    }
+
+    pub fn song_text(&self) -> &str {
+        &self.song
+    }
+
+    pub fn matches(&self, song: &Song) -> bool {
+        song.title.to_lowercase().contains(&self.song_ignoring_case)
+    }
+}

@@ -1,8 +1,10 @@
 pub mod support;
 
+use std::time::Duration;
+
 use support::{
-    SongRow as _, TabFinder, because, listing, no_folder_chosen, no_folder_chosen_because, row,
-    scanning, song,
+    SongRow as _, TabFinder, assert_within_budget, because, listing, no_folder_chosen,
+    no_folder_chosen_because, row, scanning, song,
 };
 
 #[test]
@@ -261,4 +263,101 @@ fn each_song_row_shows_its_artist_and_album_below_the_title() {
         row("Brasswing").above("Corvid Lane"),
         row("Wexmoor").above("Corvid Lane · Saltglass"),
     ]);
+}
+
+#[test]
+fn typing_in_the_song_field_lists_only_songs_whose_title_contains_it_ignoring_case() {
+    let tabfinder =
+        TabFinder::with_folder("/music", &["Raise Your Lanterns", "Wexmoor", "LANTERN"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_song_field("lant");
+
+    tabfinder.assert_song_titles(&["LANTERN", "Raise Your Lanterns"]);
+}
+
+#[test]
+fn the_counter_shows_how_many_of_all_songs_match() {
+    let tabfinder =
+        TabFinder::with_folder("/music", &["Raise Your Lanterns", "Wexmoor", "LANTERN"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_song_field("lant");
+
+    tabfinder.assert_match_count("2 / 3");
+}
+
+#[test]
+fn before_typing_the_counter_shows_all_songs_matching() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor", "Brasswing"]).start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_match_count("2 / 2");
+}
+
+#[test]
+fn when_no_song_matches_the_list_says_so_and_offers_clear_filters() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_song_field("lant");
+
+    tabfinder.assert_nothing_matches("No Songs match", "Clear filters");
+}
+
+#[test]
+fn while_songs_match_no_songs_match_is_not_shown() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_song_field("wex");
+
+    tabfinder.assert_something_matches();
+}
+
+#[test]
+fn clear_filters_empties_the_song_field_and_lists_all_songs_again() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor", "Brasswing"]).start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.musician_types_in_the_song_field("lant");
+
+    tabfinder.musician_clicks_clear_filters();
+
+    tabfinder.assert_library_screen(&listing("2 Songs", &["Brasswing", "Wexmoor"]));
+}
+
+#[test]
+fn the_song_field_shows_what_the_musician_typed() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_song_field("Wex");
+
+    tabfinder.assert_song_field_shows("Wex");
+}
+
+#[test]
+#[ignore = "benchmark, on demand: mise run bench:tabfinder (ADR 0005)"]
+fn typing_in_the_song_field_of_ten_thousand_songs_answers_within_16_ms() {
+    let tabfinder = TabFinder::with_ten_thousand_songs_in("/music").start();
+    tabfinder.musician_picks_folder("/music");
+
+    let answered_in = tabfinder.time_for(|| tabfinder.musician_types_in_the_song_field("wex"));
+
+    assert_within_budget(answered_in, Duration::from_millis(16));
+}
+
+#[test]
+fn typing_after_a_rescan_found_the_folder_gone_keeps_saying_why() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.folder_is_deleted("/music");
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.musician_types_in_the_song_field("wex");
+
+    tabfinder.assert_library_screen(&no_folder_chosen_because(
+        "The Library folder is gone. It may have been moved or deleted.",
+    ));
 }

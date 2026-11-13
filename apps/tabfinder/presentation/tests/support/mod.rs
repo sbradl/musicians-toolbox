@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::time::{Duration, Instant};
 
 use fluent_bundle as _;
 use mt_library as _;
@@ -9,7 +10,8 @@ use mt_tabfinder_application::{
     LibraryFolder, LibraryFolderError, LibraryLocation, RememberedLibraryLocation, Song,
 };
 use mt_tabfinder_presentation::{
-    Action, App, AppViewModel, Effect, LibraryViewModel, SongItem, ViewModelListener,
+    Action, App, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches,
+    SongItem, ViewModelListener,
 };
 
 #[derive(Debug, Default)]
@@ -39,6 +41,19 @@ impl TabFinderSetup {
         self.folders.hold(location, found);
 
         self
+    }
+
+    pub fn with_ten_thousand_songs_in(self, location: &str) -> Self {
+        let mut songs = Vec::new();
+        for number in 0..10_000 {
+            songs.push(
+                song(&format!("Wexmoor {number}"))
+                    .by("Corvid Lane")
+                    .on("Saltglass"),
+            );
+        }
+
+        self.with_folder_of_songs(location, &songs)
     }
 
     pub fn remembering(self, location: &str) -> Self {
@@ -89,6 +104,17 @@ impl TabFinder {
         TabFinderSetup::default().with_folder_of_songs(location, songs)
     }
 
+    pub fn with_ten_thousand_songs_in(location: &str) -> TabFinderSetup {
+        TabFinderSetup::default().with_ten_thousand_songs_in(location)
+    }
+
+    pub fn time_for(&self, action: impl FnOnce()) -> Duration {
+        let started = Instant::now();
+        action();
+
+        started.elapsed()
+    }
+
     pub fn musician_clicks_choose_folder(&self) {
         self.app.choose_folder();
     }
@@ -109,6 +135,14 @@ impl TabFinder {
 
     pub fn musician_clicks_rescan(&self) {
         self.app.rescan();
+    }
+
+    pub fn musician_types_in_the_song_field(&self, text: &str) {
+        self.app.song_filter_changed(text);
+    }
+
+    pub fn musician_clicks_clear_filters(&self) {
+        self.app.clear_filters();
     }
 
     pub fn folder_now_holds(&self, location: &str, song_titles: &[&str]) {
@@ -156,6 +190,44 @@ impl TabFinder {
         let last_screen = self.library_screens_shown().pop()?;
 
         Some(last_screen.rescan.is_enabled)
+    }
+
+    #[track_caller]
+    pub fn assert_match_count(&self, expected: &str) {
+        assert_eq!(
+            self.filters_shown().map(|filters| filters.match_count),
+            Some(expected.to_owned())
+        );
+    }
+
+    #[track_caller]
+    pub fn assert_nothing_matches(&self, text: &str, clear_filters: &str) {
+        let nothing_matches = NothingMatches {
+            text: text.to_owned(),
+            clear_filters: clear_filters.to_owned(),
+        };
+
+        assert_eq!(self.nothing_matches_shown(), Some(nothing_matches));
+    }
+
+    #[track_caller]
+    pub fn assert_something_matches(&self) {
+        assert_eq!(self.nothing_matches_shown(), None);
+    }
+
+    fn nothing_matches_shown(&self) -> Option<NothingMatches> {
+        self.filters_shown()?.nothing_matches
+    }
+
+    #[track_caller]
+    pub fn assert_song_field_shows(&self, expected: &str) {
+        let song_field = self.filters_shown().map(|filters| filters.song.text);
+
+        assert_eq!(song_field, Some(expected.to_owned()));
+    }
+
+    fn filters_shown(&self) -> Option<Filters> {
+        self.library_screens_shown().pop()?.filters
     }
 
     #[track_caller]
@@ -227,8 +299,13 @@ impl TabFinder {
     }
 }
 
+#[track_caller]
+pub fn assert_within_budget(took: Duration, budget: Duration) {
+    assert!(took < budget, "took {took:?}, budget {budget:?}");
+}
+
 pub fn no_folder_chosen() -> LibraryViewModel {
-    without_rescan(listing("No folder chosen", &[]))
+    without_library(listing("No folder chosen", &[]))
 }
 
 pub fn no_folder_chosen_because(problem: &str) -> LibraryViewModel {
@@ -242,14 +319,15 @@ pub fn because(mut screen: LibraryViewModel, problem: &str) -> LibraryViewModel 
 }
 
 pub fn scanning() -> LibraryViewModel {
-    let mut screen = without_rescan(listing("Scanning…", &[]));
+    let mut screen = without_library(listing("Scanning…", &[]));
     screen.choose_folder.is_enabled = false;
 
     screen
 }
 
-const fn without_rescan(mut screen: LibraryViewModel) -> LibraryViewModel {
+fn without_library(mut screen: LibraryViewModel) -> LibraryViewModel {
     screen.rescan.is_enabled = false;
+    screen.filters = None;
 
     screen
 }
@@ -266,6 +344,18 @@ pub fn listing(status: &str, song_titles: &[&str]) -> LibraryViewModel {
             label: "Rescan".to_owned(),
             is_enabled: true,
         },
+        filters: Some(Filters {
+            song: FilterField {
+                label: "Song".to_owned(),
+                text: String::new(),
+                clear: Action {
+                    label: "Clear Song".to_owned(),
+                    is_enabled: false,
+                },
+            },
+            match_count: format!("{0} / {0}", song_titles.len()),
+            nothing_matches: None,
+        }),
         songs: song_items(song_titles),
     }
 }

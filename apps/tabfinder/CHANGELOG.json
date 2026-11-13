@@ -31,6 +31,12 @@
           "en": "A Rescan button at the top looks for new or deleted Tab files in your folder and then briefly shows how many Songs it found.",
           "de": "Ein Knopf „Rescan“ oben sucht in deinem Ordner nach neuen oder gelöschten Tab-Dateien und zeigt danach kurz, wie viele Songs er gefunden hat.",
           "fr": "Un bouton « Rescan » en haut recherche les fichiers de tablature nouveaux ou supprimés dans votre dossier, puis indique brièvement combien de morceaux il a trouvés."
+        },
+        {
+          "id": "song-search-field",
+          "en": "A Song field above the list shows only the Songs whose title contains what you type, ignoring upper and lower case. A counter like \"12 / 20\" shows how many Songs match, ✕ empties the field, and when nothing matches, \"Clear filters\" brings the full list back.",
+          "de": "Ein Song-Feld über der Liste zeigt nur die Songs, deren Titel enthält, was du tippst, egal ob groß oder klein geschrieben. Ein Zähler wie „12 / 20“ zeigt, wie viele Songs passen, ✕ leert das Feld, und wenn nichts passt, holt „Clear filters“ die ganze Liste zurück.",
+          "fr": "Un champ Song au-dessus de la liste n'affiche que les morceaux dont le titre contient ce que vous tapez, sans tenir compte des majuscules et minuscules. Un compteur comme « 12 / 20 » indique combien de morceaux correspondent, ✕ vide le champ et, quand rien ne correspond, « Clear filters » ramène la liste complète."
         }
       ]
     }

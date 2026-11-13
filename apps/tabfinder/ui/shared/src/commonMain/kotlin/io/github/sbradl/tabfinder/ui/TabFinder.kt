@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -20,10 +22,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.sbradl.tabfinder.core.Action
+import io.github.sbradl.tabfinder.core.FilterField
+import io.github.sbradl.tabfinder.core.Filters
 import io.github.sbradl.tabfinder.core.LibraryViewModel
+import io.github.sbradl.tabfinder.core.NothingMatches
 import io.github.sbradl.tabfinder.core.SongItem
 
 @Composable
@@ -41,6 +50,8 @@ fun TabFinder(
             appName,
             onChooseFolder = core::chooseFolder,
             onRescan = core::rescan,
+            onSongFilterChanged = core::songFilterChanged,
+            onClearFilters = core::clearFilters,
             modifier = Modifier.padding(insets),
         )
     }
@@ -52,6 +63,8 @@ internal fun LibraryScreen(
     appName: String,
     onChooseFolder: () -> Unit,
     onRescan: () -> Unit,
+    onSongFilterChanged: (String) -> Unit,
+    onClearFilters: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -60,7 +73,74 @@ internal fun LibraryScreen(
     ) {
         Header(viewModel, appName, onChooseFolder, onRescan)
         Problem(viewModel.problem)
+        val filters = viewModel.filters
+
+        if (filters != null) {
+            FilterBar(filters, onSongFilterChanged)
+            NoSongsMatch(filters.nothingMatches, onClearFilters)
+        }
         SongList(viewModel.songs)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FilterBar(
+    filters: Filters,
+    onSongFilterChanged: (String) -> Unit,
+) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        FilterTextField(filters.song, onSongFilterChanged)
+        Text(filters.matchCount)
+    }
+}
+
+@Composable
+private fun FilterTextField(
+    field: FilterField,
+    onTextChanged: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = field.text,
+        onValueChange = onTextChanged,
+        label = { Text(field.label) },
+        singleLine = true,
+        trailingIcon = { ClearButton(field, onTextChanged) },
+    )
+}
+
+@Composable
+private fun ClearButton(
+    field: FilterField,
+    onTextChanged: (String) -> Unit,
+) {
+    if (!field.clear.isEnabled) {
+        return
+    }
+
+    IconButton(onClick = { onTextChanged("") }, modifier = Modifier.semantics { contentDescription = field.clear.label }) {
+        Text("✕", modifier = Modifier.clearAndSetSemantics {})
+    }
+}
+
+@Composable
+private fun NoSongsMatch(
+    nothingMatches: NothingMatches?,
+    onClearFilters: () -> Unit,
+) {
+    if (nothingMatches == null) {
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(nothingMatches.text)
+        Button(onClick = onClearFilters) {
+            Text(nothingMatches.clearFilters)
+        }
     }
 }
 

@@ -5,11 +5,15 @@ import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.test.waitUntilAtLeastOneExists
+import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import io.github.sbradl.tabfinder.ui.FolderPick
 import io.github.sbradl.tabfinder.ui.FolderPicker
@@ -90,6 +94,22 @@ class TabFinderOnDesktop(
 
     fun musicianClicksRescan() {
         ui.onNodeWithText("Rescan").performClick()
+    }
+
+    fun musicianTypesInTheSongField(text: String) {
+        ui.onNode(hasSetTextAction() and hasText("Song")).performTextInput(text)
+    }
+
+    fun musicianClearsTheSongField() {
+        ui.onNodeWithContentDescription("Clear Song").performClick()
+    }
+
+    fun musicianClicksClearFilters() {
+        ui.onNodeWithText("Clear filters").performClick()
+    }
+
+    fun assertNotShown(text: String) {
+        ui.waitUntilDoesNotExist(hasText(text))
     }
 
     fun assertStatus(status: String) {

@@ -3,7 +3,9 @@ use std::fmt;
 use mt_tabfinder_application::{self as application, LibraryLocation, Song};
 use mt_tabfinder_fs::{FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
-use presentation::{Action, AppViewModel, Effect, LibraryViewModel, SongItem};
+use presentation::{
+    Action, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches, SongItem,
+};
 
 uniffi::setup_scaffolding!();
 
@@ -18,7 +20,28 @@ pub struct LibraryViewModel {
     pub problem: Option<String>,
     pub choose_folder: Action,
     pub rescan: Action,
+    pub filters: Option<Filters>,
     pub songs: Vec<SongItem>,
+}
+
+#[uniffi::remote(Record)]
+pub struct Filters {
+    pub song: FilterField,
+    pub match_count: String,
+    pub nothing_matches: Option<NothingMatches>,
+}
+
+#[uniffi::remote(Record)]
+pub struct FilterField {
+    pub label: String,
+    pub text: String,
+    pub clear: Action,
+}
+
+#[uniffi::remote(Record)]
+pub struct NothingMatches {
+    pub text: String,
+    pub clear_filters: String,
 }
 
 #[uniffi::remote(Record)]
@@ -166,6 +189,14 @@ impl App {
 
     pub fn rescan(&self) {
         self.0.rescan();
+    }
+
+    pub fn song_filter_changed(&self, text: &str) {
+        self.0.song_filter_changed(text);
+    }
+
+    pub fn clear_filters(&self) {
+        self.0.clear_filters();
     }
 }
 

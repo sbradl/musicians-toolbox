@@ -7,11 +7,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.test.waitUntilAtLeastOneExists
+import androidx.compose.ui.test.waitUntilDoesNotExist
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.sbradl.tabfinder.LibraryFolderForTests
@@ -106,6 +110,18 @@ class TabFinderOnAndroid(
         ui.onNodeWithText("Rescan").performClick()
     }
 
+    fun musicianTypesInTheSongField(text: String) {
+        ui.onNode(hasSetTextAction() and hasText("Song")).performTextInput(text)
+    }
+
+    fun musicianClearsTheSongField() {
+        ui.onNodeWithContentDescription("Clear Song").performClick()
+    }
+
+    fun musicianClicksClearFilters() {
+        ui.onNodeWithText("Clear filters").performClick()
+    }
+
     fun assertStatus(status: String) {
         ui.waitUntilExactlyOneExists(hasText(status))
     }
@@ -121,7 +137,7 @@ class TabFinderOnAndroid(
     fun assertEveryControlIsLabelled() = ui.assertEveryControlIsLabelled()
 
     fun assertNotShown(text: String) {
-        ui.onNodeWithText(text).assertDoesNotExist()
+        ui.waitUntilDoesNotExist(hasText(text))
     }
 
     internal fun deleteFolders() {

@@ -64,6 +64,49 @@ class LibraryScreenTest {
         }
 
     @Test
+    fun typingInTheSongFieldListsOnlySongsWhoseTitleContainsIt() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Raise Your Lanterns.gp5", "Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("2 Songs")
+
+            tabfinder.musicianTypesInTheSongField("LANT")
+
+            tabfinder.assertShown("Raise Your Lanterns", "1 / 2")
+            tabfinder.assertNotShown("Wexmoor")
+        }
+
+    @Test
+    fun theCrossEmptiesTheSongFieldAndListsAllSongsAgain() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Raise Your Lanterns.gp5", "Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.musicianTypesInTheSongField("lant")
+            tabfinder.assertNotShown("Wexmoor")
+
+            tabfinder.musicianClearsTheSongField()
+
+            tabfinder.assertShown("Raise Your Lanterns", "Wexmoor", "2 / 2")
+        }
+
+    @Test
+    fun whenNoSongMatchesClearFiltersListsAllSongsAgain() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.musicianTypesInTheSongField("lant")
+            tabfinder.assertShown("No Songs match")
+
+            tabfinder.musicianClicksClearFilters()
+
+            tabfinder.assertShown("Wexmoor", "1 / 1")
+            tabfinder.assertNotShown("No Songs match")
+        }
+
+    @Test
     fun choosingAFolderWithoutSongsShowsNoSongsFound() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("notes.txt")

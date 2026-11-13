@@ -54,12 +54,36 @@ impl Texts {
         self.format("rescan-finished", Some(&args))
     }
 
+    pub(super) fn songs_matching(&self, matching: usize, all: usize) -> String {
+        let mut args = FluentArgs::new();
+        args.set("matching", matching);
+        args.set("all", all);
+
+        self.format("songs-matching", Some(&args))
+    }
+
     pub(super) fn artist_and_album(&self, artist: &str, album: &str) -> String {
         let mut args = FluentArgs::new();
         args.set("artist", artist);
         args.set("album", album);
 
         self.format("artist-and-album", Some(&args))
+    }
+
+    pub(super) fn song_filter(&self) -> String {
+        self.format("song-filter", None)
+    }
+
+    pub(super) fn clear_song_filter(&self) -> String {
+        self.format("clear-song-filter", None)
+    }
+
+    pub(super) fn no_songs_match(&self) -> String {
+        self.format("no-songs-match", None)
+    }
+
+    pub(super) fn clear_filters(&self) -> String {
+        self.format("clear-filters", None)
     }
 
     pub(super) fn choose_folder(&self) -> String {

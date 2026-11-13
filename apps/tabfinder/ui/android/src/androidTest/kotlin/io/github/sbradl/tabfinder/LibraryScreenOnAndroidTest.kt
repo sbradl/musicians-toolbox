@@ -252,14 +252,14 @@ class LibraryScreenOnAndroidTest {
         }
 
     @Test
-    fun reopeningTabFinderWithAnUnreadableLastScanScansTheLibraryAgain() =
+    fun reopeningTabFinderWithALastScanItCannotReadScansTheLibraryAgain() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
             tabfinder.assertStatus("1 Song")
             tabfinder.libraryFolderContains("Brasswing.gp5")
-            tabfinder.lastScanIsUnreadable()
+            tabfinder.lastScanIsDamaged()
 
             tabfinder.musicianReopensTabFinder()
 

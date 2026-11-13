@@ -68,7 +68,7 @@ class TabFinderOnAndroid(
         libraryFolder.deleteRecursively()
     }
 
-    fun lastScanIsUnreadable() {
+    fun lastScanIsDamaged() {
         File(configDir, "last-scan").writeText("not a Scan TabFinder wrote")
     }
 

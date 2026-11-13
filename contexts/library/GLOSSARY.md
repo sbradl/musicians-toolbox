@@ -34,7 +34,8 @@ Reading a Library to bring its Song summaries up to date.
 _Avoid_: Index, refresh
 
 **Last Scan**:
-The Song summaries the most recent Scan found, kept so TabFinder starts without Scanning.
+The Song summaries the most recent Scan found, kept so TabFinder starts without Scanning. One TabFinder cannot read counts as none: it Scans.
+_Avoid_: Cache, index; Unreadable (that is a Song)
 
 **Rescan**:
 A Scan of the open Library that the musician asks for.

@@ -102,8 +102,6 @@ class PortalFolderPicker(
     }
 
     private companion object {
-        const val PORTAL_BUS_NAME = "org.freedesktop.portal.Desktop"
-        const val PORTAL_OBJECT_PATH = "/org/freedesktop/portal/desktop"
         const val RESPONSE_SUCCESS = 0
     }
 }

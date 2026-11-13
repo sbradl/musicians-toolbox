@@ -3,8 +3,8 @@ package io.github.sbradl.tabfinder.desktop
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ProducerScope
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +42,7 @@ class PortalAppearance(
         return prefersDark
     }
 
-    fun prefersDarkAsItChanges(): Flow<Boolean> =
+    private fun prefersDarkAsItChanges(): Flow<Boolean> =
         channelFlow {
             try {
                 connectToSessionBus().use { connection -> followColorScheme(connection) }
@@ -54,29 +54,44 @@ class PortalAppearance(
         }.flowOn(Dispatchers.IO)
 
     private suspend fun ProducerScope<Boolean>.followColorScheme(connection: DBusConnection) {
+        val changes = Channel<Boolean>(Channel.UNLIMITED)
         val listenForChanges =
-            DBusSigHandler<Settings.SettingChanged> { change ->
-                if (change.isColorScheme()) trySend(isDark(change.value))
+            DBusSigHandler<PortalSettings.SettingChanged> { change ->
+                if (change.isColorScheme()) changes.trySend(isDark(change.value))
             }
-        connection.addSigHandler(Settings.SettingChanged::class.java, listenForChanges).use {
+        connection.addSigHandler(PortalSettings.SettingChanged::class.java, listenForChanges).use {
             send(isDark(colorSchemeOf(connection)))
-            awaitClose()
+            for (change in changes) send(change)
         }
     }
 
     private fun colorSchemeOf(connection: DBusConnection): Variant<*> {
-        val settings = connection.getRemoteObject(PORTAL_BUS_NAME, PORTAL_OBJECT_PATH, Settings::class.java)
+        val settings = connection.getRemoteObject(PORTAL_BUS_NAME, PORTAL_OBJECT_PATH, PortalSettings::class.java)
 
-        return settings.readOne(APPEARANCE_NAMESPACE, COLOR_SCHEME_KEY)
+        return try {
+            settings.readOne(APPEARANCE_NAMESPACE, COLOR_SCHEME_KEY)
+        } catch (_: DBusExecutionException) {
+            settings.read(APPEARANCE_NAMESPACE, COLOR_SCHEME_KEY)
+        }
     }
 
-    private fun Settings.SettingChanged.isColorScheme() = namespace == APPEARANCE_NAMESPACE && key == COLOR_SCHEME_KEY
+    private fun PortalSettings.SettingChanged.isColorScheme() = namespace == APPEARANCE_NAMESPACE && key == COLOR_SCHEME_KEY
 
-    private fun isDark(colorScheme: Variant<*>) = (colorScheme.value as? UInt32)?.toInt() == COLOR_SCHEME_DARK
+    private fun isDark(colorScheme: Variant<*>): Boolean {
+        val value = unwrapped(colorScheme)
+
+        return (value as? UInt32)?.toInt() == COLOR_SCHEME_DARK
+    }
+
+    private fun unwrapped(colorScheme: Variant<*>): Any? {
+        val value = colorScheme.value
+
+        if (value is Variant<*>) return value.value
+
+        return value
+    }
 
     private companion object {
-        const val PORTAL_BUS_NAME = "org.freedesktop.portal.Desktop"
-        const val PORTAL_OBJECT_PATH = "/org/freedesktop/portal/desktop"
         const val APPEARANCE_NAMESPACE = "org.freedesktop.appearance"
         const val COLOR_SCHEME_KEY = "color-scheme"
         const val COLOR_SCHEME_DARK = 1
@@ -85,9 +100,15 @@ class PortalAppearance(
 }
 
 @DBusInterfaceName("org.freedesktop.portal.Settings")
-interface Settings : DBusInterface {
+interface PortalSettings : DBusInterface {
     @DBusMemberName("ReadOne")
     fun readOne(
+        namespace: String,
+        key: String,
+    ): Variant<*>
+
+    @DBusMemberName("Read")
+    fun read(
         namespace: String,
         key: String,
     ): Variant<*>

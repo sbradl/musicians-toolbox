@@ -1,9 +1,14 @@
 package io.github.sbradl.tabfinder.desktop.support
 
-import io.github.sbradl.tabfinder.desktop.Settings
+import io.github.sbradl.tabfinder.desktop.PORTAL_BUS_NAME
+import io.github.sbradl.tabfinder.desktop.PORTAL_OBJECT_PATH
+import io.github.sbradl.tabfinder.desktop.PortalSettings
+import org.freedesktop.dbus.annotations.DBusInterfaceName
+import org.freedesktop.dbus.annotations.DBusMemberName
 import org.freedesktop.dbus.connections.impl.DBusConnection
 import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder
 import org.freedesktop.dbus.exceptions.DBusExecutionException
+import org.freedesktop.dbus.interfaces.DBusInterface
 import org.freedesktop.dbus.types.UInt32
 import org.freedesktop.dbus.types.Variant
 
@@ -15,34 +20,35 @@ enum class DesktopAppearance(
     LIGHT(2),
 }
 
-fun TestSessionBus.portalSaying(appearance: DesktopAppearance) = FakePortal(address, appearance)
+fun TestSessionBus.portalSaying(appearance: DesktopAppearance) = FakePortal(address, SettingsWithReadOne(appearance))
+
+fun TestSessionBus.portalBeforeReadOneSaying(appearance: DesktopAppearance) = FakePortal(address, SettingsBeforeReadOne(appearance))
 
 class FakePortal(
     busAddress: String,
-    appearance: DesktopAppearance,
+    private val settings: FakeSettings,
 ) : AutoCloseable {
-    private val settings = PortalSettings(appearance)
     private val connection: DBusConnection = DBusConnectionBuilder.forAddress(busAddress).build()
 
     init {
         connection.exportObject(settings)
-        connection.requestBusName("org.freedesktop.portal.Desktop")
+        connection.requestBusName(PORTAL_BUS_NAME)
     }
 
     fun desktopSwitchesTo(appearance: DesktopAppearance) {
         settings.appearance = appearance
-        connection.sendMessage(Settings.SettingChanged(settings.objectPath, NAMESPACE, KEY, appearance.asVariant()))
+        connection.sendMessage(PortalSettings.SettingChanged(PORTAL_OBJECT_PATH, NAMESPACE, KEY, appearance.asVariant()))
     }
 
     override fun close() = connection.close()
 }
 
-private class PortalSettings(
+abstract class FakeSettings(
     var appearance: DesktopAppearance,
-) : Settings {
-    override fun getObjectPath() = "/org/freedesktop/portal/desktop"
+) : DBusInterface {
+    override fun getObjectPath() = PORTAL_OBJECT_PATH
 
-    override fun readOne(
+    protected fun colorScheme(
         namespace: String,
         key: String,
     ): Variant<*> {
@@ -52,6 +58,40 @@ private class PortalSettings(
 
         return appearance.asVariant()
     }
+}
+
+@DBusInterfaceName("org.freedesktop.portal.Settings")
+interface SettingsWithOnlyRead : DBusInterface {
+    @DBusMemberName("Read")
+    fun read(
+        namespace: String,
+        key: String,
+    ): Variant<*>
+}
+
+private class SettingsWithReadOne(
+    appearance: DesktopAppearance,
+) : FakeSettings(appearance),
+    PortalSettings {
+    override fun readOne(
+        namespace: String,
+        key: String,
+    ) = colorScheme(namespace, key)
+
+    override fun read(
+        namespace: String,
+        key: String,
+    ) = Variant(colorScheme(namespace, key))
+}
+
+private class SettingsBeforeReadOne(
+    appearance: DesktopAppearance,
+) : FakeSettings(appearance),
+    SettingsWithOnlyRead {
+    override fun read(
+        namespace: String,
+        key: String,
+    ) = Variant(colorScheme(namespace, key))
 }
 
 private fun DesktopAppearance.asVariant() = Variant(UInt32(colorScheme.toLong()))

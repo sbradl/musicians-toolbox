@@ -2,120 +2,79 @@ package io.github.sbradl.tabfinder.desktop
 
 import io.github.sbradl.tabfinder.desktop.support.DesktopAppearance
 import io.github.sbradl.tabfinder.desktop.support.TestSessionBus
+import io.github.sbradl.tabfinder.desktop.support.connectToAMissingSessionBus
+import io.github.sbradl.tabfinder.desktop.support.connectToAMissingSessionBusSlowToGiveUp
+import io.github.sbradl.tabfinder.desktop.support.portalBeforeReadOneSaying
 import io.github.sbradl.tabfinder.desktop.support.portalSaying
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
-import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder
+import io.github.sbradl.tabfinder.desktop.support.prefersDarkWhenTheWindowOpens
+import io.github.sbradl.tabfinder.desktop.support.tabFinderAppearance
+import io.github.sbradl.tabfinder.desktop.support.turnsDarkAfter
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 class PortalAppearanceTest {
     @Test
-    fun aDarkDesktopPrefersDark() =
+    fun aDarkDesktopOpensTabFinderDark() =
         TestSessionBus().use { sessionBus ->
             sessionBus.portalSaying(DesktopAppearance.DARK).use {
-                val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
-
-                assertTrue(appearance.prefersDarkAsItChanges().firstWithin())
+                assertTrue(sessionBus.tabFinderAppearance().prefersDarkWhenTheWindowOpens())
             }
         }
 
     @Test
-    fun aLightDesktopDoesNotPreferDark() =
+    fun aLightDesktopOpensTabFinderLight() =
         TestSessionBus().use { sessionBus ->
             sessionBus.portalSaying(DesktopAppearance.LIGHT).use {
-                val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
-
-                assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
+                assertFalse(sessionBus.tabFinderAppearance().prefersDarkWhenTheWindowOpens())
             }
         }
 
     @Test
-    fun aDesktopWithoutPreferenceDoesNotPreferDark() =
+    fun aDesktopWithoutPreferenceOpensTabFinderLight() =
         TestSessionBus().use { sessionBus ->
             sessionBus.portalSaying(DesktopAppearance.NO_PREFERENCE).use {
-                val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
-
-                assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
+                assertFalse(sessionBus.tabFinderAppearance().prefersDarkWhenTheWindowOpens())
             }
         }
 
     @Test
-    fun aDesktopSwitchingToDarkWhileTabFinderRunsPrefersDark() =
+    fun aDarkDesktopWithAnOlderPortalOpensTabFinderDark() =
+        TestSessionBus().use { sessionBus ->
+            sessionBus.portalBeforeReadOneSaying(DesktopAppearance.DARK).use {
+                assertTrue(sessionBus.tabFinderAppearance().prefersDarkWhenTheWindowOpens())
+            }
+        }
+
+    @Test
+    fun aDesktopSwitchingToDarkWhileTabFinderRunsTurnsItDark() =
         TestSessionBus().use { sessionBus ->
             sessionBus.portalSaying(DesktopAppearance.LIGHT).use { portal ->
-                val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
+                val appearance = sessionBus.tabFinderAppearance()
 
-                val prefersDark =
-                    runBlocking {
-                        withTimeout(5.seconds) {
-                            appearance
-                                .prefersDarkAsItChanges()
-                                .onEach { portal.desktopSwitchesTo(DesktopAppearance.DARK) }
-                                .take(2)
-                                .toList()
-                        }
-                    }
+                val turnedDark = appearance.turnsDarkAfter { portal.desktopSwitchesTo(DesktopAppearance.DARK) }
 
-                assertEquals(listOf(false, true), prefersDark)
+                assertTrue(turnedDark)
             }
         }
 
     @Test
-    fun withoutAPortalNothingPrefersDark() =
+    fun withoutAPortalTabFinderOpensLight() =
         TestSessionBus().use { sessionBus ->
-            val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
-
-            assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
+            assertFalse(sessionBus.tabFinderAppearance().prefersDarkWhenTheWindowOpens())
         }
 
     @Test
-    fun withoutASessionBusNothingPrefersDark() {
-        val appearance = PortalAppearance { DBusConnectionBuilder.forAddress("unix:path=/nonexistent/bus").build() }
+    fun withoutASessionBusTabFinderOpensLight() {
+        val appearance = PortalAppearance(::connectToAMissingSessionBus)
 
-        assertFalse(appearance.prefersDarkAsItChanges().firstWithin())
+        assertFalse(appearance.prefersDarkWhenTheWindowOpens())
     }
 
     @Test
-    fun aDarkDesktopIsKnownBeforeTheWindowOpens() =
-        TestSessionBus().use { sessionBus ->
-            sessionBus.portalSaying(DesktopAppearance.DARK).use {
-                val appearance = PortalAppearance { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
+    fun aSessionBusSlowToGiveUpOpensTabFinderLightWithoutWaitingForIt() {
+        val appearance = PortalAppearance(::connectToAMissingSessionBusSlowToGiveUp)
 
-                val prefersDark = whileTabFinderRuns { scope -> appearance.followPrefersDark(scope).value }
-
-                assertTrue(prefersDark)
-            }
-        }
-
-    @Test
-    fun withoutASessionBusTheWindowOpensLightWithoutWaitingForTheBus() {
-        val appearance = PortalAppearance { DBusConnectionBuilder.forAddress("unix:path=/nonexistent/bus").build() }
-
-        val prefersDark = whileTabFinderRuns { scope -> withTimeout(3.seconds) { appearance.followPrefersDark(scope).value } }
-
-        assertFalse(prefersDark)
-    }
-
-    private fun Flow<Boolean>.firstWithin(): Boolean = runBlocking { withTimeout(20.seconds) { first() } }
-
-    private fun <T> whileTabFinderRuns(use: suspend (CoroutineScope) -> T): T {
-        val scope = CoroutineScope(Dispatchers.IO)
-        try {
-            return runBlocking { use(scope) }
-        } finally {
-            scope.cancel()
-        }
+        assertFalse(appearance.prefersDarkWhenTheWindowOpens())
     }
 }

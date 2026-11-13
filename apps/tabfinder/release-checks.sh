@@ -204,7 +204,7 @@ if [ ! -t 0 ]; then
   exit 1
 fi
 
-TOTAL_STAGES=2
+TOTAL_STAGES=3
 
 ADB="${ANDROID_HOME:-$HOME/Android/Sdk}/platform-tools/adb"
 WORK=$(mktemp -d)
@@ -226,6 +226,43 @@ make_test_library() { # make_test_library FOLDER → three invented Songs and a 
   touch "$1/Wexmoor.gp5" "$1/Brasswing.gpx" "$1/Some Band/Lantern Tide.tg" "$1/notes.txt"
 }
 
+start_desktop_app() { # start_desktop_app → TabFinder from the package, its PID in DESKTOP_APP
+  XDG_CONFIG_HOME="$WORK/config" "$WORK/TabFinder/bin/TabFinder" >/dev/null 2>&1 &
+  DESKTOP_APP=$!
+}
+
+kde_color_scheme() { # kde_color_scheme → the Plasma 6 or 5 colour scheme, BreezeLight when never set
+  local read=kreadconfig6
+  command -v kreadconfig6 >/dev/null 2>&1 || read=kreadconfig5
+  "$read" --file kdeglobals --group General --key ColorScheme --default BreezeLight
+}
+
+apply_kde_color_scheme() { # apply_kde_color_scheme NAME
+  plasma-apply-colorscheme "$1" >/dev/null 2>&1 || warn "could not switch the desktop to $1"
+}
+
+desktop_appearance() { # desktop_appearance dark|light|remember|restore; fails on desktops it cannot switch
+  case "${XDG_CURRENT_DESKTOP:-}:$1" in
+    *KDE*:remember) DESKTOP_APPEARANCE_BEFORE=$(kde_color_scheme) ;;
+    *KDE*:restore) apply_kde_color_scheme "$DESKTOP_APPEARANCE_BEFORE" ;;
+    *KDE*:dark) apply_kde_color_scheme BreezeDark ;;
+    *KDE*:light) apply_kde_color_scheme BreezeLight ;;
+    *GNOME*:remember) DESKTOP_APPEARANCE_BEFORE=$(gsettings get org.gnome.desktop.interface color-scheme) ;;
+    *GNOME*:restore) gsettings set org.gnome.desktop.interface color-scheme "$DESKTOP_APPEARANCE_BEFORE" ;;
+    *GNOME*:dark) gsettings set org.gnome.desktop.interface color-scheme prefer-dark ;;
+    *GNOME*:light) gsettings set org.gnome.desktop.interface color-scheme default ;;
+    *) return 1 ;;
+  esac
+}
+
+put_settings_back() { # put_settings_back → the desktop and phone dark/light as before the wizard, also after Ctrl-C
+  [[ -n "${DESKTOP_APPEARANCE_BEFORE:-}" ]] && desktop_appearance restore
+  [[ -n "${NIGHT_MODE:-}" ]] && "$ADB" shell cmd uimode night "$NIGHT_MODE" >/dev/null 2>&1
+  [[ -n "${DESKTOP_APP:-}" ]] && kill "$DESKTOP_APP" 2>/dev/null
+  return 0
+}
+trap put_settings_back EXIT
+
 banner "TabFinder release checks"
 
 note "Fetching the newest green package-tabfinder build of master…"
@@ -238,16 +275,36 @@ printf '  %s✓%s CI run %s downloaded, checksums verified\n' "$GREEN" "$RESET" 
 pause
 
 stage "Desktop: the system folder dialog"
-XDG_CONFIG_HOME="$WORK/config" "$WORK/TabFinder/bin/TabFinder" >/dev/null 2>&1 &
-DESKTOP_APP=$!
+start_desktop_app
 step "In TabFinder, click Choose folder."
 step "The dialog's title should be \"Choose the Library folder\"."
 step "Pick this folder: $WORK/Library"
 step "TabFinder should show 3 Songs: Brasswing, Lantern Tide, Wexmoor."
 record "Desktop folder dialog picks a Library"
-step "TabFinder should open dark if your desktop is set to dark (no light flash), light if it is set to light."
-step "Switch your desktop between dark and light: TabFinder should follow straight away."
-record "Desktop follows its dark/light setting, also while open"
+kill "$DESKTOP_APP" 2>/dev/null || true
+
+stage "Desktop: dark and light"
+if desktop_appearance remember; then
+  desktop_appearance dark
+  sleep 1
+  start_desktop_app
+  step "Your desktop is now dark: TabFinder should open dark, with no light flash."
+  record "Desktop opens dark on a dark desktop"
+  desktop_appearance light
+  step "Your desktop is now light: TabFinder should turn light straight away."
+  record "Desktop follows a switch to light while open"
+  desktop_appearance dark
+  step "Your desktop is dark again: TabFinder should turn dark straight away."
+  record "Desktop follows a switch to dark while open"
+  desktop_appearance restore
+  DESKTOP_APPEARANCE_BEFORE=""
+else
+  start_desktop_app
+  say "This wizard cannot switch the dark/light setting of ${XDG_CURRENT_DESKTOP:-this desktop}."
+  step "TabFinder should open dark if your desktop is set to dark (no light flash), light if it is set to light."
+  step "Switch your desktop between dark and light: TabFinder should follow straight away."
+  record "Desktop follows its dark/light setting, also while open"
+fi
 kill "$DESKTOP_APP" 2>/dev/null || true
 
 stage "Android: the system folder picker"
@@ -271,6 +328,7 @@ record "Android follows the system dark setting"
 step "The phone is now set to light: TabFinder should be light."
 record "Android follows the system light setting"
 "$ADB" shell cmd uimode night "$NIGHT_MODE" >/dev/null || true
+NIGHT_MODE=""
 
 "$ADB" shell rm -r "'/sdcard/Music/TabFinder test Library'" >/dev/null 2>&1 || true
 

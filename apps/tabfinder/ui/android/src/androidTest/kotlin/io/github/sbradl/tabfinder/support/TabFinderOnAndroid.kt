@@ -7,8 +7,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -117,6 +119,29 @@ class TabFinderOnAndroid(
     fun musicianClearsTheSongField() {
         ui.onNodeWithContentDescription("Clear Song").performClick()
     }
+
+    fun musicianTypesInTheArtistField(text: String) {
+        ui.onNode(hasSetTextAction() and hasText("Artist")).performTextInput(text)
+    }
+
+    fun musicianPicksTheSuggestion(artist: String) {
+        ui.waitUntilExactlyOneExists(suggestion(artist))
+        ui.onNode(suggestion(artist)).performClick()
+    }
+
+    fun musicianClearsTheArtistField() {
+        ui.onNodeWithContentDescription("Clear Artist").performClick()
+    }
+
+    fun assertArtistFieldShows(text: String) {
+        ui.waitUntilExactlyOneExists(hasSetTextAction() and hasText(text))
+    }
+
+    fun assertNoSuggestionShown(artist: String) {
+        ui.waitUntilDoesNotExist(suggestion(artist))
+    }
+
+    private fun suggestion(artist: String) = hasAnyAncestor(isPopup()) and hasText(artist)
 
     fun musicianClicksClearFilters() {
         ui.onNodeWithText("Clear filters").performClick()

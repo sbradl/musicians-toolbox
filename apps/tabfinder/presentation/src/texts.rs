@@ -70,6 +70,14 @@ impl Texts {
         self.format("artist-and-album", Some(&args))
     }
 
+    pub(super) fn artist_filter(&self) -> String {
+        self.format("artist-filter", None)
+    }
+
+    pub(super) fn clear_artist_filter(&self) -> String {
+        self.format("clear-artist-filter", None)
+    }
+
     pub(super) fn song_filter(&self) -> String {
         self.format("song-filter", None)
     }

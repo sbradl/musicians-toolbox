@@ -106,6 +106,49 @@ class LibraryScreenOnAndroidTest {
         }
 
     @Test
+    fun typingInTheArtistFieldListsOnlyThatArtistsSongs() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Corvid Lane/Wexmoor.gp5", "Hollow Fern/Brasswing.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("2 Songs")
+
+            tabfinder.musicianTypesInTheArtistField("CORV")
+
+            tabfinder.assertShown("Wexmoor", "1 / 2")
+            tabfinder.assertNotShown("Brasswing")
+        }
+
+    @Test
+    fun pickingAnArtistSuggestionFillsTheArtistField() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Corvid Lane/Wexmoor.gp5", "Hollow Fern/Brasswing.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.musicianTypesInTheArtistField("corv")
+
+            tabfinder.musicianPicksTheSuggestion("Corvid Lane")
+
+            tabfinder.assertArtistFieldShows("Corvid Lane")
+            tabfinder.assertNoSuggestionShown("Corvid Lane")
+            tabfinder.assertShown("Wexmoor", "1 / 2")
+        }
+
+    @Test
+    fun theCrossEmptiesTheArtistFieldAndListsAllSongsAgain() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContains("Corvid Lane/Wexmoor.gp5", "Hollow Fern/Brasswing.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.musicianTypesInTheArtistField("corv")
+            tabfinder.assertNotShown("Brasswing")
+
+            tabfinder.musicianClearsTheArtistField()
+
+            tabfinder.assertShown("Wexmoor", "Brasswing", "2 / 2")
+        }
+
+    @Test
     fun songsInHiddenFoldersAreSkipped() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Wexmoor.gp5", ".backup/Old Wexmoor.gp5")

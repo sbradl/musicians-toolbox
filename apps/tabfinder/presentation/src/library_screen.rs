@@ -16,7 +16,8 @@ impl LibraryViewModel {
     pub(super) fn listing(listed: &ListedLibrary, filter: &Filter, texts: &Texts) -> Self {
         let all_songs = listed.library.songs();
         let matching = listed.items_matching(filter);
-        let filters = Filters::of(filter, matching.len(), all_songs.len(), texts);
+        let filters = Filters::of(filter, matching.len(), all_songs.len(), texts)
+            .with_artist_suggestions(listed.artists_suggested_by(filter));
 
         Self::with_status(Self::songs_found(all_songs, texts), texts)
             .with_rescan_enabled()
@@ -90,6 +91,15 @@ impl ListedLibrary {
         Self { library, items }
     }
 
+    fn artists_suggested_by(&self, filter: &Filter) -> Vec<String> {
+        let mut suggested = Vec::new();
+        for artist in self.library.artists_suggested_by(filter) {
+            suggested.push(artist.to_owned());
+        }
+
+        suggested
+    }
+
     fn items_matching(&self, filter: &Filter) -> Vec<SongItem> {
         let mut matching = Vec::new();
         for (song, item) in self.library.songs().iter().zip(&self.items) {
@@ -105,17 +115,25 @@ impl ListedLibrary {
 impl Filters {
     fn of(filter: &Filter, matching: usize, all: usize, texts: &Texts) -> Self {
         Self {
-            song: FilterField {
-                label: texts.song_filter(),
-                text: filter.song_text().to_owned(),
-                clear: Action {
-                    label: texts.clear_song_filter(),
-                    is_enabled: !filter.song_text().is_empty(),
-                },
-            },
+            artist: FilterField::of(
+                texts.artist_filter(),
+                filter.artist_text(),
+                texts.clear_artist_filter(),
+            ),
+            song: FilterField::of(
+                texts.song_filter(),
+                filter.song_text(),
+                texts.clear_song_filter(),
+            ),
             match_count: texts.songs_matching(matching, all),
             nothing_matches: Self::nothing_matches(matching, all, texts),
         }
+    }
+
+    fn with_artist_suggestions(mut self, suggestions: Vec<String>) -> Self {
+        self.artist.suggestions = suggestions;
+
+        self
     }
 
     fn nothing_matches(matching: usize, all: usize, texts: &Texts) -> Option<NothingMatches> {
@@ -127,6 +145,20 @@ impl Filters {
             text: texts.no_songs_match(),
             clear_filters: texts.clear_filters(),
         })
+    }
+}
+
+impl FilterField {
+    fn of(label: String, text: &str, clear_label: String) -> Self {
+        Self {
+            label,
+            text: text.to_owned(),
+            clear: Action {
+                label: clear_label,
+                is_enabled: !text.is_empty(),
+            },
+            suggestions: Vec::new(),
+        }
     }
 }
 

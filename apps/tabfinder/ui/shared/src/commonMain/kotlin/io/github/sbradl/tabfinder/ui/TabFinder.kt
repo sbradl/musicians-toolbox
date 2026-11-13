@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -21,9 +25,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -50,6 +57,7 @@ fun TabFinder(
             appName,
             onChooseFolder = core::chooseFolder,
             onRescan = core::rescan,
+            onArtistFilterChanged = core::artistFilterChanged,
             onSongFilterChanged = core::songFilterChanged,
             onClearFilters = core::clearFilters,
             modifier = Modifier.padding(insets),
@@ -63,6 +71,7 @@ internal fun LibraryScreen(
     appName: String,
     onChooseFolder: () -> Unit,
     onRescan: () -> Unit,
+    onArtistFilterChanged: (String) -> Unit,
     onSongFilterChanged: (String) -> Unit,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier,
@@ -76,7 +85,7 @@ internal fun LibraryScreen(
         val filters = viewModel.filters
 
         if (filters != null) {
-            FilterBar(filters, onSongFilterChanged)
+            FilterBar(filters, onArtistFilterChanged, onSongFilterChanged)
             NoSongsMatch(filters.nothingMatches, onClearFilters)
         }
         SongList(viewModel.songs)
@@ -87,6 +96,7 @@ internal fun LibraryScreen(
 @Composable
 private fun FilterBar(
     filters: Filters,
+    onArtistFilterChanged: (String) -> Unit,
     onSongFilterChanged: (String) -> Unit,
 ) {
     FlowRow(
@@ -94,8 +104,38 @@ private fun FilterBar(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
+        FilterTextFieldWithSuggestions(filters.artist, onArtistFilterChanged)
         FilterTextField(filters.song, onSongFilterChanged)
         Text(filters.matchCount)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterTextFieldWithSuggestions(
+    field: FilterField,
+    onTextChanged: (String) -> Unit,
+) {
+    var wantsSuggestions by remember { mutableStateOf(false) }
+    val showsSuggestions = wantsSuggestions && field.suggestions.isNotEmpty()
+    val onTyped = { text: String ->
+        wantsSuggestions = true
+        onTextChanged(text)
+    }
+    ExposedDropdownMenuBox(expanded = showsSuggestions, onExpandedChange = { wantsSuggestions = it }) {
+        val anchor =
+            Modifier
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                .onFocusChanged { focus -> if (!focus.isFocused) wantsSuggestions = false }
+        FilterTextField(field, onTyped, anchor)
+        ExposedDropdownMenu(expanded = showsSuggestions, onDismissRequest = { wantsSuggestions = false }) {
+            field.suggestions.forEach { suggestion ->
+                DropdownMenuItem(text = { Text(suggestion) }, onClick = {
+                    wantsSuggestions = false
+                    onTextChanged(suggestion)
+                })
+            }
+        }
     }
 }
 
@@ -103,6 +143,7 @@ private fun FilterBar(
 private fun FilterTextField(
     field: FilterField,
     onTextChanged: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     OutlinedTextField(
         value = field.text,
@@ -110,6 +151,7 @@ private fun FilterTextField(
         label = { Text(field.label) },
         singleLine = true,
         trailingIcon = { ClearButton(field, onTextChanged) },
+        modifier = modifier,
     )
 }
 

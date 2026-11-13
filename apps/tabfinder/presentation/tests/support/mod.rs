@@ -141,6 +141,10 @@ impl TabFinder {
         self.app.song_filter_changed(text);
     }
 
+    pub fn musician_types_in_the_artist_field(&self, text: &str) {
+        self.app.artist_filter_changed(text);
+    }
+
     pub fn musician_clicks_clear_filters(&self) {
         self.app.clear_filters();
     }
@@ -224,6 +228,22 @@ impl TabFinder {
         let song_field = self.filters_shown().map(|filters| filters.song.text);
 
         assert_eq!(song_field, Some(expected.to_owned()));
+    }
+
+    #[track_caller]
+    pub fn assert_artist_field(&self, expected: &FilterField) {
+        let artist_field = self.filters_shown().map(|filters| filters.artist);
+
+        assert_eq!(artist_field.as_ref(), Some(expected));
+    }
+
+    #[track_caller]
+    pub fn assert_artist_suggestions(&self, expected: &[&str]) {
+        let suggestions = self
+            .filters_shown()
+            .map(|filters| filters.artist.suggestions);
+
+        assert_eq!(suggestions, Some(owned_strings(expected)));
     }
 
     fn filters_shown(&self) -> Option<Filters> {
@@ -345,19 +365,56 @@ pub fn listing(status: &str, song_titles: &[&str]) -> LibraryViewModel {
             is_enabled: true,
         },
         filters: Some(Filters {
-            song: FilterField {
-                label: "Song".to_owned(),
-                text: String::new(),
-                clear: Action {
-                    label: "Clear Song".to_owned(),
-                    is_enabled: false,
-                },
-            },
+            artist: field("Artist", "", "Clear Artist"),
+            song: field("Song", "", "Clear Song"),
             match_count: format!("{0} / {0}", song_titles.len()),
             nothing_matches: None,
         }),
         songs: song_items(song_titles),
     }
+}
+
+#[must_use]
+pub fn field(label: &str, text: &str, clear_label: &str) -> FilterField {
+    FilterField {
+        label: label.to_owned(),
+        text: text.to_owned(),
+        clear: Action {
+            label: clear_label.to_owned(),
+            is_enabled: false,
+        },
+        suggestions: vec![],
+    }
+}
+
+pub trait FieldShown {
+    #[must_use]
+    fn clearable(self) -> Self;
+    #[must_use]
+    fn suggesting(self, suggestions: &[&str]) -> Self;
+}
+
+impl FieldShown for FilterField {
+    fn clearable(mut self) -> Self {
+        self.clear.is_enabled = true;
+
+        self
+    }
+
+    fn suggesting(mut self, suggestions: &[&str]) -> Self {
+        self.suggestions = owned_strings(suggestions);
+
+        self
+    }
+}
+
+fn owned_strings(texts: &[&str]) -> Vec<String> {
+    let mut owned = Vec::new();
+    for text in texts {
+        owned.push((*text).to_owned());
+    }
+
+    owned
 }
 
 fn song_items(titles: &[&str]) -> Vec<SongItem> {

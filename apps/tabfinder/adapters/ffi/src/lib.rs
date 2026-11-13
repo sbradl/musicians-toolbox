@@ -26,6 +26,7 @@ pub struct LibraryViewModel {
 
 #[uniffi::remote(Record)]
 pub struct Filters {
+    pub artist: FilterField,
     pub song: FilterField,
     pub match_count: String,
     pub nothing_matches: Option<NothingMatches>,
@@ -36,6 +37,7 @@ pub struct FilterField {
     pub label: String,
     pub text: String,
     pub clear: Action,
+    pub suggestions: Vec<String>,
 }
 
 #[uniffi::remote(Record)]
@@ -189,6 +191,10 @@ impl App {
 
     pub fn rescan(&self) {
         self.0.rescan();
+    }
+
+    pub fn artist_filter_changed(&self, text: &str) {
+        self.0.artist_filter_changed(text);
     }
 
     pub fn song_filter_changed(&self, text: &str) {

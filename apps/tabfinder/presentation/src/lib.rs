@@ -27,6 +27,7 @@ pub struct LibraryViewModel {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Filters {
+    pub artist: FilterField,
     pub song: FilterField,
     pub match_count: String,
     pub nothing_matches: Option<NothingMatches>,
@@ -37,6 +38,7 @@ pub struct FilterField {
     pub label: String,
     pub text: String,
     pub clear: Action,
+    pub suggestions: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -131,7 +133,12 @@ impl App {
     }
 
     pub fn song_filter_changed(&self, text: &str) {
-        *lock(&self.filter) = Filter::song(text);
+        lock(&self.filter).set_song(text);
+        self.show_library();
+    }
+
+    pub fn artist_filter_changed(&self, text: &str) {
+        lock(&self.filter).set_artist(text);
         self.show_library();
     }
 

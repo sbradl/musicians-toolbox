@@ -39,6 +39,8 @@ class TabFinderCore private constructor(
         scope.launch { scanOffTheUiThread { app.rescan() } }
     }
 
+    fun artistFilterChanged(text: String) = app.artistFilterChanged(text)
+
     fun songFilterChanged(text: String) = app.songFilterChanged(text)
 
     fun clearFilters() = app.clearFilters()

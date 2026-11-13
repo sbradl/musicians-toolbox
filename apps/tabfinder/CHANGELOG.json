@@ -37,6 +37,12 @@
           "en": "A Song field above the list shows only the Songs whose title contains what you type, ignoring upper and lower case. A counter like \"12 / 20\" shows how many Songs match, ✕ empties the field, and when nothing matches, \"Clear filters\" brings the full list back.",
           "de": "Ein Song-Feld über der Liste zeigt nur die Songs, deren Titel enthält, was du tippst, egal ob groß oder klein geschrieben. Ein Zähler wie „12 / 20“ zeigt, wie viele Songs passen, ✕ leert das Feld, und wenn nichts passt, holt „Clear filters“ die ganze Liste zurück.",
           "fr": "Un champ Song au-dessus de la liste n'affiche que les morceaux dont le titre contient ce que vous tapez, sans tenir compte des majuscules et minuscules. Un compteur comme « 12 / 20 » indique combien de morceaux correspondent, ✕ vide le champ et, quand rien ne correspond, « Clear filters » ramène la liste complète."
+        },
+        {
+          "id": "artist-search-field",
+          "en": "An Artist field next to the Song field shows only the Songs of artists whose name contains what you type, ignoring upper and lower case. While you type, matching artists drop down below it; pick one to fill the field. Artist and Song together show only Songs matching both.",
+          "de": "Ein Artist-Feld neben dem Song-Feld zeigt nur die Songs von Künstlern, deren Name enthält, was du tippst, egal ob groß oder klein geschrieben. Während du tippst, klappen passende Künstler darunter auf; wähle einen, um das Feld zu füllen. Artist und Song zusammen zeigen nur Songs, die zu beiden passen.",
+          "fr": "Un champ Artist à côté du champ Song n'affiche que les morceaux des artistes dont le nom contient ce que vous tapez, sans tenir compte des majuscules et minuscules. Pendant la saisie, les artistes correspondants s'affichent en dessous ; choisissez-en un pour remplir le champ. Artist et Song ensemble n'affichent que les morceaux qui correspondent aux deux."
         }
       ]
     }

@@ -3,8 +3,8 @@ pub mod support;
 use std::time::Duration;
 
 use support::{
-    SongRow as _, TabFinder, assert_within_budget, because, listing, no_folder_chosen,
-    no_folder_chosen_because, row, scanning, song,
+    FieldShown as _, SongRow as _, TabFinder, assert_within_budget, because, field, listing,
+    no_folder_chosen, no_folder_chosen_because, row, scanning, song,
 };
 
 #[test]
@@ -360,4 +360,128 @@ fn typing_after_a_rescan_found_the_folder_gone_keeps_saying_why() {
     tabfinder.assert_library_screen(&no_folder_chosen_because(
         "The Library folder is gone. It may have been moved or deleted.",
     ));
+}
+
+#[test]
+fn typing_in_the_artist_field_lists_only_songs_whose_artist_contains_it_ignoring_case() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").by("Corvid Lane"),
+            song("Brasswing").by("Hollow Fern"),
+            song("Amberline"),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_artist_field("LANE");
+
+    tabfinder.assert_song_titles(&["Wexmoor"]);
+}
+
+#[test]
+fn the_artist_field_shows_what_the_musician_typed_and_offers_its_cross() {
+    let tabfinder =
+        TabFinder::with_folder_of_songs("/music", &[song("Wexmoor").by("Corvid Lane")]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_artist_field("Corv");
+
+    tabfinder.assert_artist_field(
+        &field("Artist", "Corv", "Clear Artist")
+            .clearable()
+            .suggesting(&["Corvid Lane"]),
+    );
+}
+
+#[test]
+fn typing_in_the_artist_field_suggests_each_matching_artist_once() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").by("Lantern Choir"),
+            song("Brasswing").by("Corvid Lane"),
+            song("Amberline").by("Corvid Lane"),
+            song("Saltglass").by("Hollow Fern"),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_artist_field("lan");
+
+    tabfinder.assert_artist_suggestions(&["Corvid Lane", "Lantern Choir"]);
+}
+
+#[test]
+fn before_typing_in_the_artist_field_nothing_is_suggested() {
+    let tabfinder =
+        TabFinder::with_folder_of_songs("/music", &[song("Wexmoor").by("Corvid Lane")]).start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_artist_suggestions(&[]);
+}
+
+#[test]
+fn artist_and_song_fields_together_list_only_songs_matching_both_and_the_counter_follows() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor Tide").by("Corvid Lane"),
+            song("Brasswing").by("Corvid Lane"),
+            song("Wexmoor").by("Hollow Fern"),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_artist_field("corvid");
+    tabfinder.musician_types_in_the_song_field("wex");
+
+    tabfinder.assert_song_titles(&["Wexmoor Tide"]);
+    tabfinder.assert_match_count("1 / 3");
+}
+
+#[test]
+fn clear_filters_empties_the_artist_field_too() {
+    let tabfinder =
+        TabFinder::with_folder_of_songs("/music", &[song("Wexmoor").by("Corvid Lane")]).start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.musician_types_in_the_artist_field("fern");
+
+    tabfinder.musician_clicks_clear_filters();
+
+    tabfinder.assert_artist_field(&field("Artist", "", "Clear Artist"));
+    tabfinder.assert_song_titles(&["Wexmoor"]);
+}
+
+#[test]
+#[ignore = "benchmark, on demand: mise run bench:tabfinder (ADR 0005)"]
+fn typing_in_the_artist_field_of_ten_thousand_songs_answers_within_16_ms() {
+    let tabfinder = TabFinder::with_ten_thousand_songs_in("/music").start();
+    tabfinder.musician_picks_folder("/music");
+
+    let answered_in = tabfinder.time_for(|| tabfinder.musician_types_in_the_artist_field("lane"));
+
+    assert_within_budget(answered_in, Duration::from_millis(16));
+}
+
+#[test]
+fn artist_suggestions_offer_only_artists_with_songs_matching_the_song_field() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").by("Corvid Lane"),
+            song("Brasswing").by("Lantern Choir"),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.musician_types_in_the_song_field("wex");
+
+    tabfinder.musician_types_in_the_artist_field("lan");
+
+    tabfinder.assert_artist_suggestions(&["Corvid Lane"]);
 }

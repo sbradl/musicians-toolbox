@@ -1,0 +1,40 @@
+name: fuzz-tabfinder
+
+on:
+  push:
+    paths:
+      - apps/tabfinder/adapters/fs/**
+      - apps/tabfinder/application/**
+      - contexts/library/**
+      - mise.toml
+      - .github/workflows/fuzz-tabfinder.yml
+
+permissions:
+  contents: read
+
+env:
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            apps/tabfinder/adapters/fs/fuzz/target
+          key: cargo-${{ github.job }}-${{ hashFiles('apps/tabfinder/adapters/fs/fuzz/Cargo.lock', 'mise.toml') }}
+          restore-keys: cargo-${{ github.job }}-
+      - run: mise run fuzz:tabfinder
+      - if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-crashes
+          path: apps/tabfinder/adapters/fs/fuzz/artifacts

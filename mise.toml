@@ -9,12 +9,15 @@ opengrep = "1.33.1"
 zig = "0.17.1"
 "github:rust-cross/cargo-zigbuild" = "0.24.1"
 "github:EmbarkStudios/cargo-about" = "0.9.3"
+"github:rust-fuzz/cargo-fuzz" = "0.13.2"
 
 [env]
 ANDROID_HOME = "{{ env.ANDROID_HOME | default(value=env.HOME ~ '/Android/Sdk') }}"
 ANDROID_NDK_HOME = "{{ env.ANDROID_HOME }}/ndk/28.2.13676358"
 
 [vars]
+fuzz_nightly = "nightly-2026-10-08"
+tabfinder_fs_fuzz = "apps/tabfinder/adapters/fs/fuzz"
 opengrep_packs = "--config p/default --config p/owasp-top-ten --config p/security-audit --config p/rust --config p/kotlin --config p/github-actions --exclude-rule java.android.security.exported_activity.exported_activity"
 
 [tasks.setup]
@@ -26,14 +29,24 @@ run = [
 [tasks.fmt]
 run = [
   "cargo fmt --all",
+  "cargo fmt --manifest-path {{vars.tabfinder_fs_fuzz}}/Cargo.toml",
   "ktlint --format '**/*.kt' '**/*.kts' '!**/build/**'",
 ]
 
 [tasks."lint:rustfmt"]
-run = "cargo fmt --all --check"
+run = [
+  "cargo fmt --all --check",
+  "cargo fmt --manifest-path {{vars.tabfinder_fs_fuzz}}/Cargo.toml --check",
+]
+
+[tasks."lint:fuzz-targets"]
+run = "sh tools/fuzz-targets/check.sh apps/tabfinder/adapters/fs/src {{vars.tabfinder_fs_fuzz}}/fuzz_targets"
 
 [tasks."lint:clippy"]
-run = "cargo clippy --workspace --all-targets --locked -- -D warnings"
+run = [
+  "cargo clippy --workspace --all-targets --locked -- -D warnings",
+  "cargo clippy --manifest-path {{vars.tabfinder_fs_fuzz}}/Cargo.toml --all-targets --locked -- -D warnings",
+]
 
 [tasks."lint:cargo-deny"]
 run = "cargo deny --locked check bans"
@@ -48,7 +61,7 @@ run = "ktlint '**/*.kt' '**/*.kts' '!**/build/**'"
 run = "git ls-files '*.rs' '*.kt' '*.kts' | xargs awk -f tools/blank-lines/check.awk"
 
 [tasks.lint]
-depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint", "lint:blank-lines"]
+depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint", "lint:blank-lines", "lint:fuzz-targets"]
 
 [tasks."test:cargo"]
 run = "cargo test --workspace --locked --quiet"
@@ -60,8 +73,12 @@ run = "./gradlew check --quiet"
 dir = "tools/blank-lines"
 run = "awk -f check.awk sample.txt | diff - expected.txt"
 
+[tasks."test:fuzz-targets"]
+dir = "tools/fuzz-targets"
+run = "sh check.sh sample/src sample/fuzz_targets | diff - expected.txt"
+
 [tasks.test]
-depends = ["test:cargo", "test:gradle", "test:blank-lines"]
+depends = ["test:cargo", "test:gradle", "test:blank-lines", "test:fuzz-targets"]
 
 [tasks."security:opengrep"]
 run = "opengrep scan --error --quiet {{vars.opengrep_packs}} ."
@@ -149,3 +166,11 @@ reports=$(find $results -name 'TEST-*.xml' | wc -l)
 if [ "$reports" -ne "$devices" ]; then echo "Android tests ran on $reports of $devices devices; see the install errors above" >&2; exit 1; fi
 if find $results -name 'TEST-*.xml' -exec grep -l '<testsuite[^>]* tests="0"' {} + | grep -q .; then echo "A device ran no Android tests" >&2; exit 1; fi
 """
+
+[tasks."fuzz:tabfinder"]
+description = "60 s per saved file TabFinder reads back (ADR 0005, Linux only)"
+dir = "{{vars.tabfinder_fs_fuzz}}"
+run = [
+  "rustup toolchain install {{vars.fuzz_nightly}} --profile minimal",
+  "for target in $(cargo fuzz list); do mkdir -p corpus/$target && cargo +{{vars.fuzz_nightly}} fuzz run --target x86_64-unknown-linux-gnu $target corpus/$target seeds/$target -- -max_total_time=60 -timeout=5 || exit 1; done",
+]

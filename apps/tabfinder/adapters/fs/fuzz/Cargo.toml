@@ -1,0 +1,81 @@
+[package]
+name = "mt-tabfinder-fs-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
+mt-tabfinder-application = { path = "../../../application" }
+mt-tabfinder-fs = { path = ".." }
+
+[lints]
+workspace = true
+
+[workspace]
+members = ["."]
+
+# Same rules as the root workspace (user decision): keep both in step.
+[workspace.lints.rust]
+rust_2018_idioms = { level = "warn", priority = -1 }
+future_incompatible = { level = "warn", priority = -1 }
+let_underscore = { level = "warn", priority = -1 }
+keyword_idents = { level = "warn", priority = -1 }
+nonstandard_style = { level = "warn", priority = -1 }
+unused = { level = "warn", priority = -1 }
+unsafe_code = "forbid"
+unreachable_pub = "warn"
+unused_crate_dependencies = "warn"
+unused_qualifications = "warn"
+unused_results = "warn"
+missing_debug_implementations = "warn"
+elided_lifetimes_in_paths = "warn"
+unused_lifetimes = "warn"
+single_use_lifetimes = "warn"
+redundant_lifetimes = "warn"
+trivial_casts = "warn"
+let_underscore_drop = "warn"
+meta_variable_misuse = "warn"
+unit_bindings = "warn"
+unnameable_types = "warn"
+variant_size_differences = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+# Docs not required (user decision): names, types and tests carry the meaning (ADR 0005).
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+# Both covered by rustc's unused_results, which flags every ignored return value (user decision).
+must_use_candidate = "allow"
+return_self_not_must_use = "allow"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+undocumented_unsafe_blocks = "warn"
+todo = "warn"
+unimplemented = "warn"
+dbg_macro = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+cognitive_complexity = "warn"
+
+[[bin]]
+name = "last-scan"
+path = "fuzz_targets/last_scan.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "remembered-library-location"
+path = "fuzz_targets/remembered_library_location.rs"
+test = false
+doc = false
+bench = false

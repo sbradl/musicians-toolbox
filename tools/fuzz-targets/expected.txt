@@ -1,0 +1,1 @@
+NotFuzzed saves through save_whole_or_nothing, but no fuzz target reads it

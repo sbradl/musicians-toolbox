@@ -51,7 +51,9 @@ impl TabFinderSetup {
             songs.push(
                 song(&format!("Wexmoor {number}"))
                     .by("Corvid Lane")
-                    .on("Saltglass"),
+                    .on("Saltglass")
+                    .tuned(&DROP_D)
+                    .tuned(&BASS_E_STANDARD),
             );
         }
 

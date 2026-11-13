@@ -3,6 +3,7 @@ use std::fs::{self, Permissions};
 use std::io;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::PermissionsExt;
+use std::time::{Duration, Instant};
 
 use mt_tabfinder_application::{LibraryFolder, LibraryFolderError, LibraryLocation, Song};
 use mt_tabfinder_fs::FsLibraryFolder;
@@ -316,4 +317,33 @@ fn a_tab_file_that_cannot_be_read_is_an_unreadable_song() -> io::Result<()> {
     folder.assert_artist_and_album("Lone Pine", Some("Corvid Lane"), None);
 
     Ok(())
+}
+
+#[test]
+#[ignore = "benchmark, on demand: mise run bench:tabfinder (ADR 0005)"]
+fn scanning_ten_thousand_tab_files_takes_under_5_s() -> io::Result<()> {
+    let folder = TempFolder::with_ten_thousand_tab_files()?;
+
+    let started = Instant::now();
+    let songs = FsLibraryFolder
+        .songs(&folder.location())
+        .unwrap_or_default();
+    let took = started.elapsed();
+
+    assert_eq!(songs.len(), 10_000);
+    assert!(took < Duration::from_secs(5), "took {took:?}, budget 5 s");
+
+    Ok(())
+}
+
+impl TempFolder {
+    fn with_ten_thousand_tab_files() -> io::Result<Self> {
+        let mut folder = Self::new("ten-thousand")?;
+        for number in 0..10_000 {
+            let artist = number / 100;
+            folder = folder.with_tab_file(&format!("Artist {artist}/Wexmoor {number}.gp5"))?;
+        }
+
+        Ok(folder)
+    }
 }

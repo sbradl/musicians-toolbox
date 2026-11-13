@@ -70,6 +70,10 @@ Run: `mise run a11y` — not wired yet: needs the Android target and an emulator
 
 Static accessibility linting: none (Touchstone needs AGP; revisit with Android).
 
+## Entry points
+
+`Main.kt` and `MainActivity` only wire tested pieces together; no failing test is needed for a wiring line. The packaged-app start in CI (`smoke:tabfinder`, `test:android`) and the release-check wizard cover it. A decision (an `if`, a wait, a fallback) moves into a tested class first.
+
 ## Enforcement
 
 | Task | pre-commit | pre-push | CI |

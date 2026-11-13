@@ -35,7 +35,8 @@ Gradle builds the FFI crate with `cargo zigbuild` against glibc 2.31 (`checkGlib
 
 ## Working rules (ADR 0005)
 
-- No production code without a failing test: use the `/tdd` skill. The user confirms the requirement; state the seams you will test in one plain line. Review via `/code-review`.
+- No production code without a failing test: use the `/tdd` skill. The user confirms the requirement; state the seams you will test in one plain line.
+- Every commit with production code goes through `/code-review` first, follow-up rounds on a finished ticket included.
 - Any lint or compiler warning: ask the user whether to fix the code or loosen the rule. Never silence or loosen it yourself.
 - Ask the user before adding any dependency.
 - Don't write comments where code can say it; a needed comment is a cue to refactor.

@@ -5,7 +5,7 @@ import kotlin.io.path.createTempFile
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.writeText
 
-class SessionBusWithoutAPortal : AutoCloseable {
+class TestSessionBus : AutoCloseable {
     private val config = busConfigThatStartsNoServices()
     private val daemon =
         ProcessBuilder("dbus-daemon", "--config-file=$config", "--nofork", "--print-address")
@@ -28,6 +28,7 @@ class SessionBusWithoutAPortal : AutoCloseable {
               <listen>unix:tmpdir=/tmp</listen>
               <policy context="default">
                 <allow send_destination="*"/>
+                <allow receive_sender="*"/>
                 <allow own="*"/>
               </policy>
             </busconfig>

@@ -1,6 +1,6 @@
 package io.github.sbradl.tabfinder.desktop
 
-import io.github.sbradl.tabfinder.desktop.support.SessionBusWithoutAPortal
+import io.github.sbradl.tabfinder.desktop.support.TestSessionBus
 import io.github.sbradl.tabfinder.ui.FolderPick
 import kotlinx.coroutines.runBlocking
 import org.freedesktop.dbus.connections.impl.DBusConnectionBuilder
@@ -19,7 +19,7 @@ class PortalFolderPickerTest {
 
     @Test
     fun withoutAPortalOnTheSessionBusThereIsNoFolderDialog() =
-        SessionBusWithoutAPortal().use { sessionBus ->
+        TestSessionBus().use { sessionBus ->
             val picker = PortalFolderPicker { DBusConnectionBuilder.forAddress(sessionBus.address).build() }
 
             val pick = runBlocking { picker.pickFolder("Choose the Library folder") }

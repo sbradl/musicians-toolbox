@@ -245,6 +245,8 @@ step "The dialog's title should be \"Choose the Library folder\"."
 step "Pick this folder: $WORK/Library"
 step "TabFinder should show 3 Songs: Brasswing, Lantern Tide, Wexmoor."
 record "Desktop folder dialog picks a Library"
+step "TabFinder should be dark if your desktop is set to dark, light if it is set to light."
+record "Desktop follows its dark/light setting"
 kill "$DESKTOP_APP" 2>/dev/null || true
 
 stage "Android: the system folder picker"
@@ -260,6 +262,14 @@ step "On the phone, TabFinder is open: tap Choose folder."
 step "Go to Music → TabFinder test Library and tap Use this folder, then Allow."
 step "TabFinder should show 3 Songs: Brasswing, Lantern Tide, Wexmoor."
 record "Android folder picker picks a Library"
+NIGHT_MODE=$("$ADB" shell cmd uimode night 2>/dev/null | awk '{print $NF}' || true)
+"$ADB" shell cmd uimode night yes >/dev/null || true
+step "The phone is now set to dark: TabFinder should be dark."
+record "Android follows the system dark setting"
+"$ADB" shell cmd uimode night no >/dev/null || true
+step "The phone is now set to light: TabFinder should be light."
+record "Android follows the system light setting"
+"$ADB" shell cmd uimode night "$NIGHT_MODE" >/dev/null || true
 
 "$ADB" shell rm -r "'/sdcard/Music/TabFinder test Library'" >/dev/null 2>&1 || true
 

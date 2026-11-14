@@ -1,7 +1,8 @@
 use mt_library::{Filter, Library, Song};
 
 use crate::{
-    Action, FilterField, Filters, LibraryViewModel, ListedLibrary, NothingMatches, SongItem, Texts,
+    Action, FilterField, Filters, LibraryViewModel, ListedLibrary, NothingMatches, SongItem,
+    SuggestionGroup, Texts,
 };
 
 impl LibraryViewModel {
@@ -17,7 +18,8 @@ impl LibraryViewModel {
         let all_songs = listed.library.songs();
         let matching = listed.items_matching(filter);
         let filters = Filters::of(filter, matching.len(), all_songs.len(), texts)
-            .with_artist_suggestions(listed.artists_suggested_by(filter));
+            .with_artist_suggestions(listed.artists_suggested_by(filter))
+            .with_tuning_suggestions(listed.tunings_suggested_by(filter, texts));
 
         Self::with_status(Self::songs_found(all_songs, texts), texts)
             .with_rescan_enabled()
@@ -91,19 +93,45 @@ impl ListedLibrary {
         Self { library, items }
     }
 
-    fn artists_suggested_by(&self, filter: &Filter) -> Vec<String> {
+    fn artists_suggested_by(&self, filter: &Filter) -> Vec<SuggestionGroup> {
         let mut suggested = Vec::new();
         for artist in self.library.artists_suggested_by(filter) {
             suggested.push(artist.to_owned());
         }
 
-        suggested
+        if suggested.is_empty() {
+            return Vec::new();
+        }
+
+        vec![SuggestionGroup {
+            heading: None,
+            suggestions: suggested,
+        }]
+    }
+
+    fn tunings_suggested_by(&self, filter: &Filter, texts: &Texts) -> Vec<SuggestionGroup> {
+        let mut groups: Vec<SuggestionGroup> = Vec::new();
+        let mut strings_of_last_group = None;
+        for tuning in self.library.tunings_suggested_by(filter) {
+            if strings_of_last_group != Some(tuning.strings()) {
+                strings_of_last_group = Some(tuning.strings());
+                groups.push(SuggestionGroup::headed(
+                    texts.tuning_group(tuning.strings()),
+                ));
+            }
+
+            if let Some(group) = groups.last_mut() {
+                group.suggestions.push(texts.tuning_badge(tuning));
+            }
+        }
+
+        groups
     }
 
     fn items_matching(&self, filter: &Filter) -> Vec<SongItem> {
         let mut matching = Vec::new();
         for (song, item) in self.library.songs().iter().zip(&self.items) {
-            if filter.matches(song) {
+            if self.library.matches(filter, song) {
                 matching.push(item.clone());
             }
         }
@@ -125,13 +153,24 @@ impl Filters {
                 filter.song_text(),
                 texts.clear_song_filter(),
             ),
+            tuning: FilterField::of(
+                texts.tuning_filter(),
+                filter.tuning_text(),
+                texts.clear_tuning_filter(),
+            ),
             match_count: texts.songs_matching(matching, all),
             nothing_matches: Self::nothing_matches(matching, all, texts),
         }
     }
 
-    fn with_artist_suggestions(mut self, suggestions: Vec<String>) -> Self {
+    fn with_artist_suggestions(mut self, suggestions: Vec<SuggestionGroup>) -> Self {
         self.artist.suggestions = suggestions;
+
+        self
+    }
+
+    fn with_tuning_suggestions(mut self, suggestions: Vec<SuggestionGroup>) -> Self {
+        self.tuning.suggestions = suggestions;
 
         self
     }
@@ -157,6 +196,15 @@ impl FilterField {
                 label: clear_label,
                 is_enabled: !text.is_empty(),
             },
+            suggestions: Vec::new(),
+        }
+    }
+}
+
+impl SuggestionGroup {
+    const fn headed(heading: String) -> Self {
+        Self {
+            heading: Some(heading),
             suggestions: Vec::new(),
         }
     }

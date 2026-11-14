@@ -98,6 +98,21 @@ impl Texts {
         self.format("clear-song-filter", None)
     }
 
+    pub(super) fn tuning_filter(&self) -> String {
+        self.format("tuning-filter", None)
+    }
+
+    pub(super) fn clear_tuning_filter(&self) -> String {
+        self.format("clear-tuning-filter", None)
+    }
+
+    pub(super) fn tuning_group(&self, strings: usize) -> String {
+        let mut args = FluentArgs::new();
+        args.set("strings", strings);
+
+        self.format("tuning-group", Some(&args))
+    }
+
     pub(super) fn no_songs_match(&self) -> String {
         self.format("no-songs-match", None)
     }

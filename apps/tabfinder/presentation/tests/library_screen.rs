@@ -3,8 +3,9 @@ pub mod support;
 use std::time::Duration;
 
 use support::{
-    BASS_E_STANDARD, DROP_D, FieldShown as _, SongRow as _, TabFinder, assert_within_budget,
-    because, field, listing, no_folder_chosen, no_folder_chosen_because, row, scanning, song,
+    BASS_E_STANDARD, DROP_D, FieldShown as _, SEVEN_STRING_DROP_A, SongRow as _, TabFinder,
+    assert_within_budget, because, field, listing, no_folder_chosen, no_folder_chosen_because, row,
+    scanning, song,
 };
 
 #[test]
@@ -578,4 +579,177 @@ fn artist_suggestions_offer_only_artists_with_songs_matching_the_song_field() {
     tabfinder.musician_types_in_the_artist_field("lan");
 
     tabfinder.assert_artist_suggestions(&["Corvid Lane"]);
+}
+
+#[test]
+fn typing_in_the_tuning_field_lists_only_songs_with_a_tuning_containing_it() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").tuned(&BASS_E_STANDARD).tuned(&DROP_D),
+            song("Brasswing").tuned(&BASS_E_STANDARD),
+            song("Amberline"),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_tuning_field("6 DROP");
+
+    tabfinder.assert_song_titles(&["Wexmoor"]);
+}
+
+#[test]
+fn the_tuning_field_shows_what_the_musician_typed_its_cross_and_suggestions_under_their_strings() {
+    let tabfinder =
+        TabFinder::with_folder_of_songs("/music", &[song("Wexmoor").tuned(&DROP_D)]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_tuning_field("drop");
+
+    tabfinder.assert_tuning_field(
+        &field("Tuning", "drop", "Clear Tuning")
+            .clearable()
+            .suggesting_under("6 strings", &["6 Drop D"]),
+    );
+}
+
+#[test]
+fn tuning_suggestions_are_grouped_by_strings_fewest_first_each_tuning_once() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").tuned(&SEVEN_STRING_DROP_A),
+            song("Brasswing").tuned(&DROP_D).tuned(&BASS_E_STANDARD),
+            song("Amberline").tuned(&DROP_D),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.musician_types_in_the_tuning_field("d");
+
+    tabfinder.assert_tuning_suggestions(&[
+        ("4 strings", &["4 E Standard"]),
+        ("6 strings", &["6 Drop D"]),
+        ("7 strings", &["7 Drop A"]),
+    ]);
+}
+
+#[test]
+fn before_typing_in_the_tuning_field_nothing_is_suggested() {
+    let tabfinder =
+        TabFinder::with_folder_of_songs("/music", &[song("Wexmoor").tuned(&DROP_D)]).start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_tuning_suggestions(&[]);
+}
+
+#[test]
+fn tuning_suggestions_offer_only_tunings_of_songs_matching_the_artist_and_song_fields() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").by("Corvid Lane").tuned(&DROP_D),
+            song("Wexmoor Tide")
+                .by("Hollow Fern")
+                .tuned(&SEVEN_STRING_DROP_A),
+            song("Brasswing").by("Corvid Lane").tuned(&BASS_E_STANDARD),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.musician_types_in_the_artist_field("corvid");
+    tabfinder.musician_types_in_the_song_field("wex");
+
+    tabfinder.musician_types_in_the_tuning_field("d");
+
+    tabfinder.assert_tuning_suggestions(&[("6 strings", &["6 Drop D"])]);
+}
+
+#[test]
+fn tuning_artist_and_song_fields_together_list_only_songs_matching_all_and_the_counter_follows() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").by("Corvid Lane").tuned(&DROP_D),
+            song("Wexmoor Tide")
+                .by("Corvid Lane")
+                .tuned(&BASS_E_STANDARD),
+            song("Brasswing").by("Corvid Lane").tuned(&DROP_D),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.musician_types_in_the_artist_field("corvid");
+    tabfinder.musician_types_in_the_song_field("wex");
+
+    tabfinder.musician_types_in_the_tuning_field("drop");
+
+    tabfinder.assert_song_titles(&["Wexmoor"]);
+    tabfinder.assert_match_count("1 / 3");
+}
+
+#[test]
+fn clear_filters_empties_the_tuning_field_too() {
+    let tabfinder =
+        TabFinder::with_folder_of_songs("/music", &[song("Wexmoor").tuned(&DROP_D)]).start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.musician_types_in_the_tuning_field("7");
+
+    tabfinder.musician_clicks_clear_filters();
+
+    tabfinder.assert_tuning_field(&field("Tuning", "", "Clear Tuning"));
+    tabfinder.assert_song_titles(&["Wexmoor"]);
+}
+
+#[test]
+#[ignore = "benchmark, on demand: mise run bench:tabfinder (ADR 0005)"]
+fn typing_in_the_tuning_field_of_ten_thousand_songs_answers_within_16_ms() {
+    let tabfinder = TabFinder::with_ten_thousand_songs_in("/music").start();
+    tabfinder.musician_picks_folder("/music");
+
+    let answered_in = tabfinder.time_for(|| tabfinder.musician_types_in_the_tuning_field("drop"));
+
+    assert_within_budget(answered_in, Duration::from_millis(16));
+}
+
+#[test]
+fn artist_suggestions_offer_only_artists_with_songs_matching_the_tuning_field() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").by("Corvid Lane").tuned(&DROP_D),
+            song("Brasswing")
+                .by("Lantern Choir")
+                .tuned(&BASS_E_STANDARD),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.musician_types_in_the_tuning_field("drop");
+
+    tabfinder.musician_types_in_the_artist_field("lan");
+
+    tabfinder.assert_artist_suggestions(&["Corvid Lane"]);
+}
+
+#[test]
+fn a_tuning_suggestion_typed_out_lists_the_songs_with_that_tuning() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[
+            song("Wexmoor").tuned(&SEVEN_STRING_DROP_A),
+            song("Brasswing").tuned(&DROP_D),
+        ],
+    )
+    .start();
+    tabfinder.musician_picks_folder("/music");
+    tabfinder.musician_types_in_the_tuning_field("7");
+    tabfinder.assert_tuning_suggestions(&[("7 strings", &["7 Drop A"])]);
+
+    tabfinder.musician_types_in_the_tuning_field("7 Drop A");
+
+    tabfinder.assert_song_titles(&["Wexmoor"]);
 }

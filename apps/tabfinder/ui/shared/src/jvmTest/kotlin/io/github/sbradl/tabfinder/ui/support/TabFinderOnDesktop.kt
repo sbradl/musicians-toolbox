@@ -130,9 +130,9 @@ class TabFinderOnDesktop(
         ui.onNode(hasSetTextAction() and hasText("Artist")).performTextInput(text)
     }
 
-    fun musicianPicksTheSuggestion(artist: String) {
-        ui.waitUntilExactlyOneExists(suggestion(artist))
-        ui.onNode(suggestion(artist)).performClick()
+    fun musicianPicksTheSuggestion(text: String) {
+        ui.waitUntilExactlyOneExists(suggestion(text))
+        ui.onNode(suggestion(text)).performClick()
     }
 
     fun musicianClearsTheArtistField() {
@@ -143,11 +143,27 @@ class TabFinderOnDesktop(
         ui.waitUntilExactlyOneExists(hasSetTextAction() and hasText(text))
     }
 
-    fun assertNoSuggestionShown(artist: String) {
-        ui.waitUntilDoesNotExist(suggestion(artist))
+    fun assertNoSuggestionShown(text: String) {
+        ui.waitUntilDoesNotExist(suggestion(text))
     }
 
-    private fun suggestion(artist: String) = hasAnyAncestor(isPopup()) and hasText(artist)
+    private fun suggestion(text: String) = hasAnyAncestor(isPopup()) and hasText(text)
+
+    fun musicianTypesInTheTuningField(text: String) {
+        ui.onNode(hasSetTextAction() and hasText("Tuning")).performTextInput(text)
+    }
+
+    fun musicianClearsTheTuningField() {
+        ui.onNodeWithContentDescription("Clear Tuning").performClick()
+    }
+
+    fun assertTuningFieldShows(text: String) {
+        ui.waitUntilExactlyOneExists(hasSetTextAction() and hasText(text))
+    }
+
+    fun assertSuggestionHeadingShown(heading: String) {
+        ui.waitUntilExactlyOneExists(suggestion(heading))
+    }
 
     fun musicianClicksClearFilters() {
         ui.onNodeWithText("Clear filters").performClick()

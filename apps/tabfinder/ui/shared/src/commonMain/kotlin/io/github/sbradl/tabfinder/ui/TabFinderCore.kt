@@ -43,6 +43,8 @@ class TabFinderCore private constructor(
 
     fun songFilterChanged(text: String) = app.songFilterChanged(text)
 
+    fun tuningFilterChanged(text: String) = app.tuningFilterChanged(text)
+
     fun clearFilters() = app.clearFilters()
 
     private fun show(viewModel: AppViewModel) {

@@ -5,6 +5,7 @@ use mt_tabfinder_fs::{FsLastScan, FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
 use presentation::{
     Action, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches, SongItem,
+    SuggestionGroup,
 };
 
 uniffi::setup_scaffolding!();
@@ -28,6 +29,7 @@ pub struct LibraryViewModel {
 pub struct Filters {
     pub artist: FilterField,
     pub song: FilterField,
+    pub tuning: FilterField,
     pub match_count: String,
     pub nothing_matches: Option<NothingMatches>,
 }
@@ -37,6 +39,12 @@ pub struct FilterField {
     pub label: String,
     pub text: String,
     pub clear: Action,
+    pub suggestions: Vec<SuggestionGroup>,
+}
+
+#[uniffi::remote(Record)]
+pub struct SuggestionGroup {
+    pub heading: Option<String>,
     pub suggestions: Vec<String>,
 }
 
@@ -225,6 +233,10 @@ impl App {
 
     pub fn song_filter_changed(&self, text: &str) {
         self.0.song_filter_changed(text);
+    }
+
+    pub fn tuning_filter_changed(&self, text: &str) {
+        self.0.tuning_filter_changed(text);
     }
 
     pub fn clear_filters(&self) {

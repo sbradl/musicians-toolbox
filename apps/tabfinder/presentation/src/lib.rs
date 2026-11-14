@@ -29,6 +29,7 @@ pub struct LibraryViewModel {
 pub struct Filters {
     pub artist: FilterField,
     pub song: FilterField,
+    pub tuning: FilterField,
     pub match_count: String,
     pub nothing_matches: Option<NothingMatches>,
 }
@@ -38,6 +39,12 @@ pub struct FilterField {
     pub label: String,
     pub text: String,
     pub clear: Action,
+    pub suggestions: Vec<SuggestionGroup>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SuggestionGroup {
+    pub heading: Option<String>,
     pub suggestions: Vec<String>,
 }
 
@@ -148,6 +155,11 @@ impl App {
 
     pub fn artist_filter_changed(&self, text: &str) {
         lock(&self.filter).set_artist(text);
+        self.show_library();
+    }
+
+    pub fn tuning_filter_changed(&self, text: &str) {
+        lock(&self.filter).set_tuning(text);
         self.show_library();
     }
 

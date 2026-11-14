@@ -175,6 +175,51 @@ class LibraryScreenTest {
         }
 
     @Test
+    fun typingInTheTuningFieldListsOnlySongsWithThatTuning() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContainsTheTabFileWithDropDAndBass("Wexmoor.gp5")
+            tabfinder.libraryFolderContains("Brasswing.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.assertStatus("2 Songs")
+
+            tabfinder.musicianTypesInTheTuningField("DROP")
+
+            tabfinder.assertShown("Wexmoor", "1 / 2")
+            tabfinder.assertNotShown("Brasswing")
+        }
+
+    @Test
+    fun pickingATuningSuggestionUnderItsStringsFillsTheTuningField() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContainsTheTabFileWithDropDAndBass("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.musicianTypesInTheTuningField("4")
+            tabfinder.assertSuggestionHeadingShown("4 strings")
+
+            tabfinder.musicianPicksTheSuggestion("4 E Standard")
+
+            tabfinder.assertTuningFieldShows("4 E Standard")
+            tabfinder.assertNoSuggestionShown("4 E Standard")
+        }
+
+    @Test
+    fun theCrossEmptiesTheTuningFieldAndListsAllSongsAgain() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContainsTheTabFileWithDropDAndBass("Wexmoor.gp5")
+            tabfinder.libraryFolderContains("Brasswing.gp5")
+            tabfinder.musicianOpensTabFinder()
+            tabfinder.musicianPicksTheLibraryFolder()
+            tabfinder.musicianTypesInTheTuningField("drop")
+            tabfinder.assertNotShown("Brasswing")
+
+            tabfinder.musicianClearsTheTuningField()
+
+            tabfinder.assertShown("Wexmoor", "Brasswing", "2 / 2")
+        }
+
+    @Test
     fun choosingAFolderWithoutSongsShowsNoSongsFound() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("notes.txt")

@@ -12,7 +12,7 @@ use mt_tabfinder_application::{
 };
 use mt_tabfinder_presentation::{
     Action, App, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches,
-    SongItem, ViewModelListener,
+    SongItem, SuggestionGroup, ViewModelListener,
 };
 
 #[derive(Debug, Default)]
@@ -159,6 +159,10 @@ impl TabFinder {
         self.app.artist_filter_changed(text);
     }
 
+    pub fn musician_types_in_the_tuning_field(&self, text: &str) {
+        self.app.tuning_filter_changed(text);
+    }
+
     pub fn musician_clicks_clear_filters(&self) {
         self.app.clear_filters();
     }
@@ -257,7 +261,27 @@ impl TabFinder {
             .filters_shown()
             .map(|filters| filters.artist.suggestions);
 
-        assert_eq!(suggestions, Some(owned_strings(expected)));
+        assert_eq!(suggestions, Some(unheaded(expected)));
+    }
+
+    #[track_caller]
+    pub fn assert_tuning_field(&self, expected: &FilterField) {
+        let tuning_field = self.filters_shown().map(|filters| filters.tuning);
+
+        assert_eq!(tuning_field.as_ref(), Some(expected));
+    }
+
+    #[track_caller]
+    pub fn assert_tuning_suggestions(&self, expected: &[(&str, &[&str])]) {
+        let mut groups = Vec::new();
+        for (heading, suggestions) in expected {
+            groups.push(headed(heading, suggestions));
+        }
+        let suggestions = self
+            .filters_shown()
+            .map(|filters| filters.tuning.suggestions);
+
+        assert_eq!(suggestions, Some(groups));
     }
 
     fn filters_shown(&self) -> Option<Filters> {
@@ -396,6 +420,7 @@ pub fn listing(status: &str, song_titles: &[&str]) -> LibraryViewModel {
         filters: Some(Filters {
             artist: field("Artist", "", "Clear Artist"),
             song: field("Song", "", "Clear Song"),
+            tuning: field("Tuning", "", "Clear Tuning"),
             match_count: format!("{0} / {0}", song_titles.len()),
             nothing_matches: None,
         }),
@@ -421,6 +446,8 @@ pub trait FieldShown {
     fn clearable(self) -> Self;
     #[must_use]
     fn suggesting(self, suggestions: &[&str]) -> Self;
+    #[must_use]
+    fn suggesting_under(self, heading: &str, suggestions: &[&str]) -> Self;
 }
 
 impl FieldShown for FilterField {
@@ -431,9 +458,33 @@ impl FieldShown for FilterField {
     }
 
     fn suggesting(mut self, suggestions: &[&str]) -> Self {
-        self.suggestions = owned_strings(suggestions);
+        self.suggestions = unheaded(suggestions);
 
         self
+    }
+
+    fn suggesting_under(mut self, heading: &str, suggestions: &[&str]) -> Self {
+        self.suggestions.push(headed(heading, suggestions));
+
+        self
+    }
+}
+
+fn unheaded(suggestions: &[&str]) -> Vec<SuggestionGroup> {
+    if suggestions.is_empty() {
+        return Vec::new();
+    }
+
+    vec![SuggestionGroup {
+        heading: None,
+        suggestions: owned_strings(suggestions),
+    }]
+}
+
+fn headed(heading: &str, suggestions: &[&str]) -> SuggestionGroup {
+    SuggestionGroup {
+        heading: Some(heading.to_owned()),
+        suggestions: owned_strings(suggestions),
     }
 }
 
@@ -496,6 +547,7 @@ impl SongRow for SongItem {
 
 pub const DROP_D: [u8; 6] = [38, 45, 50, 55, 59, 64];
 pub const BASS_E_STANDARD: [u8; 4] = [28, 33, 38, 43];
+pub const SEVEN_STRING_DROP_A: [u8; 7] = [33, 40, 45, 50, 55, 59, 64];
 
 #[must_use]
 pub fn song(title: &str) -> SongInFolder {

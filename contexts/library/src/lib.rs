@@ -1,5 +1,6 @@
+use std::borrow::Cow;
 use std::cmp::Reverse;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use mt_music_kernel::Tuning;
 
@@ -27,14 +28,20 @@ impl Song {
 #[derive(Debug)]
 pub struct Library {
     songs: Vec<Song>,
+    tunings: TuningTexts,
 }
 
 impl Library {
     pub fn of(mut songs: Vec<Song>) -> Self {
         songs.sort_by_cached_key(|song| song.title.to_lowercase());
         spell_names_as_most_songs_do(&mut songs);
+        let tunings = TuningTexts::of(&songs);
 
-        Self { songs }
+        Self { songs, tunings }
+    }
+
+    pub fn matches(&self, filter: &Filter, song: &Song) -> bool {
+        filter.matches(song, &self.tunings)
     }
 
     pub fn songs(&self) -> &[Song] {
@@ -48,7 +55,7 @@ impl Library {
     pub fn artists_suggested_by(&self, filter: &Filter) -> Vec<&str> {
         let mut artists = Vec::new();
         for song in &self.songs {
-            if let Some(artist) = filter.suggested_artist_of(song) {
+            if let Some(artist) = filter.suggested_artist_of(song, &self.tunings) {
                 artists.push(artist);
             }
         }
@@ -56,6 +63,18 @@ impl Library {
         artists.dedup();
 
         artists
+    }
+
+    pub fn tunings_suggested_by(&self, filter: &Filter) -> Vec<&Tuning> {
+        let mut distinct = HashSet::new();
+        for song in &self.songs {
+            distinct.extend(filter.suggested_tunings_of(song, &self.tunings));
+        }
+        let mut tunings: Vec<&Tuning> = distinct.into_iter().collect();
+        tunings.sort_by_key(|tuning| (tuning.strings(), self.tunings.ignoring_case(tuning)));
+        tunings.dedup_by_key(|tuning| self.tunings.ignoring_case(tuning));
+
+        tunings
     }
 }
 
@@ -169,6 +188,7 @@ impl MostUsedSpellings {
 pub struct Filter {
     song: FilterText,
     artist: FilterText,
+    tuning: FilterText,
 }
 
 impl Filter {
@@ -180,29 +200,65 @@ impl Filter {
         self.artist = FilterText::of(text);
     }
 
+    pub fn set_tuning(&mut self, text: &str) {
+        self.tuning = FilterText::of(text);
+    }
+
     pub fn song_text(&self) -> &str {
         &self.song.typed
+    }
+
+    pub fn tuning_text(&self) -> &str {
+        &self.tuning.typed
     }
 
     pub fn artist_text(&self) -> &str {
         &self.artist.typed
     }
 
-    pub fn matches(&self, song: &Song) -> bool {
-        self.song.appears_in(&song.title) && self.matches_artist_of(song)
+    fn matches(&self, song: &Song, tunings: &TuningTexts) -> bool {
+        self.matches_song_and_artist_of(song) && self.matches_tunings_of(song, tunings)
     }
 
-    fn suggested_artist_of<'song>(&self, song: &'song Song) -> Option<&'song str> {
+    fn suggested_artist_of<'song>(
+        &self,
+        song: &'song Song,
+        tunings: &TuningTexts,
+    ) -> Option<&'song str> {
         let artist = song.artist.as_deref()?;
         let is_suggested = !self.artist.typed.is_empty()
             && self.artist.appears_in(artist)
-            && self.song.appears_in(&song.title);
+            && self.song.appears_in(&song.title)
+            && self.matches_tunings_of(song, tunings);
 
         if is_suggested {
             return Some(artist);
         }
 
         None
+    }
+
+    fn suggested_tunings_of<'song>(
+        &self,
+        song: &'song Song,
+        tunings: &TuningTexts,
+    ) -> Vec<&'song Tuning> {
+        if self.tuning.typed.is_empty() || !self.matches_song_and_artist_of(song) {
+            return Vec::new();
+        }
+
+        let mut suggested = Vec::new();
+        for tuning in &song.tunings {
+            if self.tuning_appears_in(tuning, tunings) {
+                suggested.push(tuning);
+            }
+        }
+
+        suggested
+    }
+
+    fn matches_song_and_artist_of(&self, song: &Song) -> bool {
+        self.song.appears_in(&song.title) && self.matches_artist_of(song)
     }
 
     fn matches_artist_of(&self, song: &Song) -> bool {
@@ -212,6 +268,49 @@ impl Filter {
 
         self.artist.appears_in(artist)
     }
+
+    fn matches_tunings_of(&self, song: &Song, tunings: &TuningTexts) -> bool {
+        if self.tuning.typed.is_empty() {
+            return true;
+        }
+
+        song.tunings
+            .iter()
+            .any(|tuning| self.tuning_appears_in(tuning, tunings))
+    }
+
+    fn tuning_appears_in(&self, tuning: &Tuning, tunings: &TuningTexts) -> bool {
+        self.tuning
+            .appears_in_lowercased(&tunings.ignoring_case(tuning))
+    }
+}
+
+#[derive(Debug, Default)]
+struct TuningTexts(HashMap<Tuning, String>);
+
+impl TuningTexts {
+    fn of(songs: &[Song]) -> Self {
+        let mut texts = HashMap::new();
+        for tuning in songs.iter().flat_map(|song| &song.tunings) {
+            if !texts.contains_key(tuning) {
+                drop(texts.insert(tuning.clone(), text_ignoring_case(tuning)));
+            }
+        }
+
+        Self(texts)
+    }
+
+    fn ignoring_case(&self, tuning: &Tuning) -> Cow<'_, str> {
+        let Some(text) = self.0.get(tuning) else {
+            return Cow::Owned(text_ignoring_case(tuning));
+        };
+
+        Cow::Borrowed(text)
+    }
+}
+
+fn text_ignoring_case(tuning: &Tuning) -> String {
+    format!("{} {}", tuning.strings(), tuning.name()).to_lowercase()
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -229,6 +328,10 @@ impl FilterText {
     }
 
     fn appears_in(&self, text: &str) -> bool {
-        text.to_lowercase().contains(&self.ignoring_case)
+        self.appears_in_lowercased(&text.to_lowercase())
+    }
+
+    fn appears_in_lowercased(&self, lowercased: &str) -> bool {
+        lowercased.contains(&self.ignoring_case)
     }
 }

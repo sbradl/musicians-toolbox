@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.sbradl.tabfinder.core.Action
@@ -60,6 +61,7 @@ fun TabFinder(
             onRescan = core::rescan,
             onArtistFilterChanged = core::artistFilterChanged,
             onSongFilterChanged = core::songFilterChanged,
+            onTuningFilterChanged = core::tuningFilterChanged,
             onClearFilters = core::clearFilters,
             modifier = Modifier.padding(insets),
         )
@@ -74,6 +76,7 @@ internal fun LibraryScreen(
     onRescan: () -> Unit,
     onArtistFilterChanged: (String) -> Unit,
     onSongFilterChanged: (String) -> Unit,
+    onTuningFilterChanged: (String) -> Unit,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -86,7 +89,7 @@ internal fun LibraryScreen(
         val filters = viewModel.filters
 
         if (filters != null) {
-            FilterBar(filters, onArtistFilterChanged, onSongFilterChanged)
+            FilterBar(filters, onArtistFilterChanged, onSongFilterChanged, onTuningFilterChanged)
             NoSongsMatch(filters.nothingMatches, onClearFilters)
         }
         SongList(viewModel.songs)
@@ -99,6 +102,7 @@ private fun FilterBar(
     filters: Filters,
     onArtistFilterChanged: (String) -> Unit,
     onSongFilterChanged: (String) -> Unit,
+    onTuningFilterChanged: (String) -> Unit,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -107,6 +111,7 @@ private fun FilterBar(
     ) {
         FilterTextFieldWithSuggestions(filters.artist, onArtistFilterChanged)
         FilterTextField(filters.song, onSongFilterChanged)
+        FilterTextFieldWithSuggestions(filters.tuning, onTuningFilterChanged)
         Text(filters.matchCount)
     }
 }
@@ -130,14 +135,27 @@ private fun FilterTextFieldWithSuggestions(
                 .onFocusChanged { focus -> if (!focus.isFocused) wantsSuggestions = false }
         FilterTextField(field, onTyped, anchor)
         ExposedDropdownMenu(expanded = showsSuggestions, onDismissRequest = { wantsSuggestions = false }) {
-            field.suggestions.forEach { suggestion ->
-                DropdownMenuItem(text = { Text(suggestion) }, onClick = {
-                    wantsSuggestions = false
-                    onTextChanged(suggestion)
-                })
+            field.suggestions.forEach { group ->
+                group.heading?.let { heading -> SuggestionHeading(heading) }
+                group.suggestions.forEach { suggestion ->
+                    DropdownMenuItem(text = { Text(suggestion) }, onClick = {
+                        wantsSuggestions = false
+                        onTextChanged(suggestion)
+                    })
+                }
             }
         }
     }
+}
+
+@Composable
+private fun SuggestionHeading(heading: String) {
+    Text(
+        heading,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).semantics { heading() },
+    )
 }
 
 @Composable

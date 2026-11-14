@@ -9,8 +9,9 @@ use mt_score::{LARGEST_SCORE_XML, LARGEST_TAB_FILE, ScoreHeader, Unreadable, rea
 use support::{
     B_STANDARD_7, BASS_E_STANDARD, DROP_D, E_STANDARD, FileSystem, GuitarProFile, OPEN_G, ScoreXml,
     compressed_guitar_pro_6_file, guitar_pro_6_file, guitar_pro_6_file_of_compressed_bytes,
-    guitar_pro_6_file_stating_length, guitar_pro_7_file, uncompressed_guitar_pro_6_file,
-    zip_holding,
+    guitar_pro_6_file_packing, guitar_pro_6_file_stating_length, guitar_pro_7_file,
+    uncompressed_guitar_pro_6_file, with_local_header_broken, zip_holding, zip_shrinking,
+    zip_storing,
 };
 
 const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures");
@@ -419,4 +420,329 @@ fn assert_fixture(name: &str, builder: &GuitarProFile) {
         fixture == built,
         "{path} differs from the builder; write it anew with: WRITE_FIXTURES=1 cargo test -p mt-score"
     );
+}
+
+#[test]
+fn a_guitar_pro_file_whose_version_has_no_v_is_unreadable() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .stating_version("FICHIER GUITAR PRO")
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_file_whose_version_has_no_minor_number_is_unreadable() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .stating_version("FICHIER GUITAR PRO v5")
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_file_whose_version_is_no_number_is_unreadable() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .stating_version("FICHIER GUITAR PRO vX.YZ")
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn names_of_negative_size_are_not_stated_and_the_tunings_still_read() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .with_name_fields_sized(-1)
+        .with_strings(&DROP_D)
+        .bytes();
+
+    let names = read_header(&tab_file);
+    let tunings = read_header(&tab_file);
+
+    assert_names(names, [None, None, None]);
+    assert_tunings(tunings, &["6 Drop D"]);
+}
+
+#[test]
+fn names_of_size_zero_are_not_stated() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .with_name_fields_sized(0)
+        .with_strings(&DROP_D)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_names(header, [None, None, None]);
+}
+
+#[test]
+fn a_title_in_latin_1_is_read_with_its_accents() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .titled_in_bytes(b"Caf\xe9 Wexmoor")
+        .with_strings(&DROP_D)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_names(header, [Some("Café Wexmoor"), None, None]);
+}
+
+#[test]
+fn a_bar_changing_key_is_skipped() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .changing_key()
+        .with_strings(&DROP_D)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_tunings(header, &["6 Drop D"]);
+}
+
+#[test]
+fn a_track_without_strings_is_unreadable() {
+    let tab_file = GuitarProFile::version(5, 0).with_strings(&[]).bytes();
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_file_stating_a_negative_number_of_bars_is_unreadable() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .stating_bars(-1)
+        .with_strings(&DROP_D)
+        .bytes();
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_file_stating_more_than_10_000_bars_is_unreadable() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .stating_bars(10_001)
+        .with_strings(&DROP_D)
+        .bytes();
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_score_xml_tuning_of_negative_pitches_is_unreadable() {
+    let score = ScoreXml::guitar_pro(7).with_pitches_written("-1 45 50 55 59 64");
+
+    assert_eq!(
+        read_header(&guitar_pro_7_file(&score.xml())),
+        Err(Unreadable)
+    );
+}
+
+#[test]
+fn a_score_xml_tuning_above_the_highest_pitch_is_unreadable() {
+    let score = ScoreXml::guitar_pro(7).with_pitches_written("38 45 50 55 59 128");
+
+    assert_eq!(
+        read_header(&guitar_pro_7_file(&score.xml())),
+        Err(Unreadable)
+    );
+}
+
+#[test]
+fn a_score_xml_tuning_of_words_is_unreadable() {
+    let score = ScoreXml::guitar_pro(7).with_pitches_written("low E");
+
+    assert_eq!(
+        read_header(&guitar_pro_7_file(&score.xml())),
+        Err(Unreadable)
+    );
+}
+
+#[test]
+fn a_score_xml_tuning_of_blanks_is_unreadable() {
+    let score = ScoreXml::guitar_pro(7).with_pitches_written("  ");
+
+    assert_eq!(
+        read_header(&guitar_pro_7_file(&score.xml())),
+        Err(Unreadable)
+    );
+}
+
+#[test]
+fn a_score_xml_tuning_of_more_than_16_strings_is_unreadable() {
+    let score = ScoreXml::guitar_pro(7).with_pitches_written(&"40 ".repeat(17));
+
+    assert_eq!(
+        read_header(&guitar_pro_7_file(&score.xml())),
+        Err(Unreadable)
+    );
+}
+
+#[test]
+fn a_score_xml_property_without_a_name_is_skipped() {
+    let score = ScoreXml::guitar_pro(7)
+        .preceded_by("<Property><Fret>0</Fret></Property>")
+        .with_strings(&DROP_D);
+
+    let header = read_header(&guitar_pro_7_file(&score.xml()));
+
+    assert_tunings(header, &["6 Drop D"]);
+}
+
+#[test]
+fn a_score_xml_of_more_than_128_tracks_is_unreadable() {
+    let mut score = ScoreXml::guitar_pro(7);
+    for _ in 0..129 {
+        score = score.with_strings(&DROP_D);
+    }
+
+    assert_eq!(
+        read_header(&guitar_pro_7_file(&score.xml())),
+        Err(Unreadable)
+    );
+}
+
+#[test]
+fn a_score_xml_ending_inside_its_tracks_is_unreadable() {
+    let tab_file = guitar_pro_7_file(b"<GPIF><Tracks>");
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_7_file_storing_its_score_xml_uncompressed_is_read() {
+    let score = ScoreXml::guitar_pro(7).with_strings(&DROP_D);
+    let tab_file = zip_storing(&[("Content/score.gpif", &score.xml())]);
+
+    assert_tunings(read_header(&tab_file), &["6 Drop D"]);
+}
+
+#[test]
+fn a_guitar_pro_7_file_packing_its_score_xml_in_an_unknown_way_is_unreadable() {
+    let score = ScoreXml::guitar_pro(7).with_strings(&DROP_D);
+    let tab_file = zip_shrinking(&[("Content/score.gpif", &score.xml())]);
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_7_file_whose_score_xml_entry_is_broken_is_unreadable() {
+    let score = ScoreXml::guitar_pro(7).with_strings(&DROP_D);
+    let tab_file = with_local_header_broken(guitar_pro_7_file(&score.xml()), "Content/score.gpif");
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_zip_storing_its_tab_file_uncompressed_is_read() {
+    let tab_file = GuitarProFile::version(5, 0).with_strings(&DROP_D).bytes();
+    let zip = zip_storing(&[("Invented Song.gp5", &tab_file)]);
+
+    assert_tunings(read_header(&zip), &["6 Drop D"]);
+}
+
+#[test]
+fn a_zip_packing_its_tab_file_in_an_unknown_way_is_unreadable() {
+    let tab_file = GuitarProFile::version(5, 0).with_strings(&DROP_D).bytes();
+    let zip = zip_shrinking(&[("Invented Song.gp5", &tab_file)]);
+
+    assert_eq!(read_header(&zip), Err(Unreadable));
+}
+
+#[test]
+fn a_zip_whose_tab_file_entry_is_broken_is_unreadable() {
+    let tab_file = GuitarProFile::version(5, 0).with_strings(&DROP_D).bytes();
+    let zip = with_local_header_broken(
+        zip_holding(&[
+            ("readme.txt", b"not a tab"),
+            ("Invented Song.gp5", &tab_file),
+        ]),
+        "Invented Song.gp5",
+    );
+
+    assert_eq!(read_header(&zip), Err(Unreadable));
+}
+
+#[test]
+fn a_broken_zip_is_unreadable() {
+    assert_eq!(
+        read_header(b"PK\x03\x04 and then nothing a zip needs"),
+        Err(Unreadable)
+    );
+}
+
+#[test]
+fn a_zip_of_more_than_4096_entries_before_a_tab_file_is_unreadable() {
+    let mut names = Vec::new();
+    for number in 0..4097 {
+        names.push(format!("note {number}.txt"));
+    }
+    let mut files: Vec<(&str, &[u8])> = Vec::new();
+    for name in &names {
+        files.push((name, b"not a tab"));
+    }
+
+    assert_eq!(read_header(&zip_holding(&files)), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_file_too_short_to_state_its_length_is_unreadable() {
+    assert_eq!(read_header(b"BCFZ\x01\x02"), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_file_unpacking_to_no_file_system_is_unreadable() {
+    let tab_file = guitar_pro_6_file_packing(b"NOPE and more bytes");
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_file_without_a_score_xml_is_unreadable() {
+    let file_system = FileSystem::default().with_file("misc.xml", b"<Misc/>");
+    let tab_file = compressed_guitar_pro_6_file(&file_system.bytes());
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_file_system_ending_inside_an_entry_is_unreadable() {
+    let file_system = [FileSystem::default().bytes(), vec![2, 0]].concat();
+    let tab_file = compressed_guitar_pro_6_file(&file_system);
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_score_xml_ending_inside_its_tracks_is_unreadable() {
+    let tab_file = guitar_pro_6_file(b"<GPIF><Tracks>");
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_score_xml_shorter_than_its_stated_size_is_unreadable() {
+    let file_system =
+        FileSystem::default().with_file_stating_size("score.gpif", 10_000, b"<GPIF><Tracks>");
+    let tab_file = compressed_guitar_pro_6_file(&file_system.bytes());
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_6_score_xml_stored_past_the_end_is_unreadable() {
+    let file_system = FileSystem::default().with_file_past_the_end("score.gpif", 100);
+    let tab_file = compressed_guitar_pro_6_file(&file_system.bytes());
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
+}
+
+#[test]
+fn a_guitar_pro_file_ending_inside_a_number_is_unreadable() {
+    let mut tab_file = GuitarProFile::version(5, 0).with_strings(&DROP_D).bytes();
+    let version_field = 1 + 30;
+    tab_file.truncate(version_field + 2);
+
+    assert_eq!(read_header(&tab_file), Err(Unreadable));
 }

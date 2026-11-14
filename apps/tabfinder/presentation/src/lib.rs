@@ -83,7 +83,7 @@ pub struct App {
     listener: Box<dyn ViewModelListener>,
     libraries: Libraries,
     texts: Texts,
-    shown: Mutex<Option<LibraryViewModel>>,
+    shown: Mutex<LibraryViewModel>,
     library: Mutex<Option<ListedLibrary>>,
     filter: Mutex<Filter>,
 }
@@ -101,11 +101,13 @@ impl App {
         remembered_library_location: Box<dyn RememberedLibraryLocation>,
         last_scan: Box<dyn LastScan>,
     ) -> Self {
+        let texts = Texts::english();
+
         Self {
             listener,
             libraries: Libraries::new(library_folder, remembered_library_location, last_scan),
-            texts: Texts::english(),
-            shown: Mutex::new(None),
+            shown: Mutex::new(LibraryViewModel::no_folder_chosen(&texts)),
+            texts,
             library: Mutex::new(None),
             filter: Mutex::new(Filter::default()),
         }
@@ -219,14 +221,12 @@ impl App {
     }
 
     fn show(&self, library: LibraryViewModel) {
-        *lock(&self.shown) = Some(library.clone());
+        *lock(&self.shown) = library.clone();
         self.listener.on_view_model(AppViewModel { library });
     }
 
     fn shown_library(&self) -> LibraryViewModel {
-        let shown = lock(&self.shown).clone();
-
-        shown.unwrap_or_else(|| LibraryViewModel::no_folder_chosen(&self.texts))
+        lock(&self.shown).clone()
     }
 }
 

@@ -364,9 +364,19 @@ fn scanning_ten_thousand_tab_files_takes_under_5_s() -> io::Result<()> {
     let took = started.elapsed();
 
     assert_eq!(songs.len(), 10_000);
-    assert!(took < Duration::from_secs(5), "took {took:?}, budget 5 s");
+    assert_within_budget(took, Duration::from_secs(5));
 
     Ok(())
+}
+
+#[track_caller]
+#[expect(
+    clippy::print_stderr,
+    reason = "a speed check shows its time when run on demand (bench:tabfinder, ADR 0005); user decision"
+)]
+fn assert_within_budget(took: Duration, budget: Duration) {
+    eprintln!("took {took:?} of {budget:?}");
+    assert!(took < budget, "took {took:?}, budget {budget:?}");
 }
 
 impl TempFolder {

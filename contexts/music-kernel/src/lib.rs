@@ -108,11 +108,9 @@ const fn standard_intervals(strings: usize) -> Option<&'static [u8]> {
 }
 
 fn is_dropped(intervals: &[u8], standard: &[u8]) -> bool {
-    let Some((lowest, higher)) = intervals.split_first() else {
-        return false;
-    };
-    let mut raised_back = vec![*lowest];
-    for interval in higher {
+    let lowest_string = 0;
+    let mut raised_back = vec![lowest_string];
+    for interval in intervals.iter().skip(1) {
         raised_back.push(interval.wrapping_sub(2));
     }
 

@@ -15,6 +15,7 @@ Task runner: mise
 | rust | Linter | Clippy | pedantic (except `missing_errors_doc`, `missing_panics_doc`: docs not required, user decision; `must_use_candidate`, `return_self_not_must_use`: rustc `unused_results` already flags every ignored return value, user decision) + nursery + cargo + restriction picks (`allow_attributes`, `allow_attributes_without_reason`, `undocumented_unsafe_blocks`, `todo`, `unimplemented`, `dbg_macro`, `print_stdout`, `print_stderr`, `unwrap_used`, `expect_used`, `panic`, `cognitive_complexity`) |
 | rust | Linter | Opengrep | own rules (`.opengrep/`), offline |
 | rust, kotlin | Linter | `tools/blank-lines/check.awk` | blank line before every `if` and `return` unless it opens its block or continues an expression; implicit returns stay a review rule |
+| rust | Coverage | cargo-llvm-cov in `test:cargo` + `tools/coverage/check.sh` | 100 % of lines in `contexts/`, `apps/*/application/`, `apps/*/presentation/`, run by every workspace test; a line no test can reach carries `// coverage: <reason>` (ADR 0005); tests live in `tests/`, since an in-source test module builds the crate twice and its lines never merge |
 | rust | Coverage rule | `tools/fuzz-targets/check.sh` | every type saving a file through `save_whole_or_nothing` is named by a fuzz target (ADR 0005) |
 | rust | Fuzzing | cargo-fuzz (nightly, own workspace `apps/tabfinder/adapters/fs/fuzz/`) | `fuzz:tabfinder`, 60 s per target, 5 s per input; fuzz crate carries a copy of the root lint tables (`lint:same-lints` keeps it equal) and is linted in `lint:clippy` (user decision) |
 | rust | Formatter | rustfmt | defaults |
@@ -23,7 +24,7 @@ Task runner: mise
 
 | rust | Portability | `checkGlibcFloor` (Gradle, part of `check`) | the desktop Rust library (built with `cargo zigbuild` for `x86_64-unknown-linux-gnu.2.31`) needs glibc ≤ 2.31 |
 
-Exceptions: `syn` 2 + 3 duplicate allowed (UniFFI; `deny.toml` skip, `clippy.toml` allowed-duplicate-crates); workspace path deps without version allowed (`allow-wildcard-paths`).
+Exceptions: `print_stderr` expected in the speed-check helpers (`assert_within_budget`), so `bench:tabfinder` shows each time (user decision); `syn` 2 + 3 duplicate allowed (UniFFI; `deny.toml` skip, `clippy.toml` allowed-duplicate-crates); workspace path deps without version allowed (`allow-wildcard-paths`).
 | rust | Architecture rules | cargo-deny bans | deny list with layer `wrappers` + network and async-runtime crates denied, `multiple-versions = "deny"`, `wildcards = "deny"` (allowlist mode cannot combine with wrappers) |
 | rust | Dead code | rustc unused lints | `unused`, `unused_crate_dependencies`, `unreachable_pub` |
 | kotlin | Formatter + linter | ktlint 1.8.0 | `ktlint_official` |

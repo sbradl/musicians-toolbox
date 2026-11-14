@@ -49,6 +49,7 @@ _Avoid_: Refresh, reload
 
 **Filter**:
 The criteria a musician narrows a Library by: artist, song, Tuning, Written tempo range, Tags.
+A field's suggestions come only from Songs matching every other field.
 _Avoid_: Query, search
 
 ### Reorganizing

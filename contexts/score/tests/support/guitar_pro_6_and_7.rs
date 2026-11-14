@@ -1,6 +1,7 @@
 use crate::support::zip_holding;
 
 const SECTOR: usize = 0x1000;
+const SECTOR_PAST_THE_END: u32 = 0x7FFF_FFFF;
 const FILE_ENTRY: u32 = 2;
 const FILE_NAME_FIELD: usize = 0x04;
 const FILE_SIZE_FIELD: usize = 0x8C;
@@ -35,6 +36,15 @@ impl ScoreXml {
     }
 
     #[must_use]
+    pub fn with_pitches_written(mut self, pitches: &str) -> Self {
+        let instrument = "<InstrumentSet><Type>electricGuitar</Type></InstrumentSet>";
+        let properties = self.properties_listing(&tuning_property_listing(pitches));
+        self.add_track(instrument, &properties);
+
+        self
+    }
+
+    #[must_use]
     pub fn with_drums(mut self) -> Self {
         let instrument = "<InstrumentSet><Type>drumKit</Type></InstrumentSet>";
         let properties = if self.guitar_pro == 6 {
@@ -48,8 +58,10 @@ impl ScoreXml {
     }
 
     fn properties(&self, lowest_string_first: &[u8]) -> String {
-        let tuning = tuning_property(lowest_string_first);
+        self.properties_listing(&tuning_property(lowest_string_first))
+    }
 
+    fn properties_listing(&self, tuning: &str) -> String {
         if self.guitar_pro == 6 {
             return format!("<Properties>{tuning}</Properties>");
         }
@@ -107,6 +119,10 @@ fn tuning_property(lowest_string_first: &[u8]) -> String {
         .collect::<Vec<_>>()
         .join(" ");
 
+    tuning_property_listing(&pitches)
+}
+
+fn tuning_property_listing(pitches: &str) -> String {
     format!(
         "<Property name=\"CapoFret\"><Fret>0</Fret></Property>\
          <Property name=\"Tuning\"><Pitches>{pitches}</Pitches></Property>"
@@ -141,9 +157,12 @@ pub fn guitar_pro_6_file_stating_length(score_xml: &[u8], length: usize) -> Vec<
 
 #[must_use]
 pub fn compressed_guitar_pro_6_file(file_system: &[u8]) -> Vec<u8> {
-    let uncompressed = [b"BCFS".as_slice(), file_system].concat();
+    guitar_pro_6_file_packing(&[b"BCFS".as_slice(), file_system].concat())
+}
 
-    guitar_pro_6_file_of_compressed_bytes(uncompressed.len(), &compressed(&uncompressed))
+#[must_use]
+pub fn guitar_pro_6_file_packing(uncompressed: &[u8]) -> Vec<u8> {
+    guitar_pro_6_file_of_compressed_bytes(uncompressed.len(), &compressed(uncompressed))
 }
 
 #[must_use]
@@ -170,6 +189,7 @@ struct FileInSystem {
     name: String,
     stated_size: usize,
     contents: Vec<u8>,
+    is_past_the_end: bool,
 }
 
 impl FileSystem {
@@ -184,6 +204,19 @@ impl FileSystem {
             name: name.to_owned(),
             stated_size: size,
             contents: contents.to_vec(),
+            is_past_the_end: false,
+        });
+
+        self
+    }
+
+    #[must_use]
+    pub fn with_file_past_the_end(mut self, name: &str, size: usize) -> Self {
+        self.files.push(FileInSystem {
+            name: name.to_owned(),
+            stated_size: size,
+            contents: Vec::new(),
+            is_past_the_end: true,
         });
 
         self
@@ -201,6 +234,10 @@ impl FileSystem {
                 let mut sector = chunk.to_vec();
                 sector.resize(SECTOR, 0);
                 sectors.push(sector);
+            }
+
+            if file.is_past_the_end {
+                sector_list.push(SECTOR_PAST_THE_END);
             }
             sectors[entry_sector] = file_entry(file, &sector_list);
         }

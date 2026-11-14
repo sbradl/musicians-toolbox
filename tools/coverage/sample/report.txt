@@ -1,0 +1,5 @@
+Filename    Lines    Missed Lines    Cover
+TOTAL       11       2               81.82%
+
+Uncovered Lines:
+sample/reader.rs: 3, 7

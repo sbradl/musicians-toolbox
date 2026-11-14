@@ -16,8 +16,12 @@ pub const OPEN_G: [u8; 6] = [38, 43, 50, 55, 59, 62];
 pub struct GuitarProFile {
     major: u8,
     minor: u8,
+    stated_version: Option<String>,
+    stated_bars: Option<i32>,
     bars: usize,
-    title: String,
+    changes_key: bool,
+    name_fields_sized: Option<i32>,
+    title: Vec<u8>,
     artist: String,
     album: String,
     tracks: Vec<TrackInFile>,
@@ -35,8 +39,12 @@ impl GuitarProFile {
         Self {
             major,
             minor,
+            stated_version: None,
+            stated_bars: None,
             bars: 2,
-            title: String::new(),
+            changes_key: false,
+            name_fields_sized: None,
+            title: Vec::new(),
             artist: String::new(),
             album: String::new(),
             tracks: Vec::new(),
@@ -44,8 +52,41 @@ impl GuitarProFile {
     }
 
     #[must_use]
-    pub fn titled(mut self, title: &str) -> Self {
+    pub fn titled(self, title: &str) -> Self {
+        self.titled_in_bytes(title.as_bytes())
+    }
+
+    #[must_use]
+    pub fn titled_in_bytes(mut self, title: &[u8]) -> Self {
         title.clone_into(&mut self.title);
+
+        self
+    }
+
+    #[must_use]
+    pub fn stating_version(mut self, version: &str) -> Self {
+        self.stated_version = Some(version.to_owned());
+
+        self
+    }
+
+    #[must_use]
+    pub const fn stating_bars(mut self, bars: i32) -> Self {
+        self.stated_bars = Some(bars);
+
+        self
+    }
+
+    #[must_use]
+    pub const fn changing_key(mut self) -> Self {
+        self.changes_key = true;
+
+        self
+    }
+
+    #[must_use]
+    pub const fn with_name_fields_sized(mut self, size: i32) -> Self {
+        self.name_fields_sized = Some(size);
 
         self
     }
@@ -93,7 +134,10 @@ impl GuitarProFile {
         if self.major == 5 {
             file.zeros(19 * 2 + 4);
         }
-        file.count(self.bars);
+        match self.stated_bars {
+            Some(bars) => file.number(bars),
+            None => file.count(self.bars),
+        }
         file.count(self.tracks.len());
         self.write_bar_headers(&mut file);
         self.write_tracks(&mut file);
@@ -103,15 +147,9 @@ impl GuitarProFile {
     }
 
     fn write_header(&self, file: &mut Bytes) {
-        file.fixed_size_text(
-            &format!("FICHIER GUITAR PRO v{}.{:02}", self.major, self.minor),
-            30,
-        );
-        file.text(&self.title);
-        file.text("");
-        file.text(&self.artist);
-        file.text(&self.album);
-        file.text("");
+        let version = format!("FICHIER GUITAR PRO v{}.{:02}", self.major, self.minor);
+        file.fixed_size_text(self.stated_version.as_ref().unwrap_or(&version), 30);
+        self.write_names(file);
 
         if self.major == 5 {
             file.text("");
@@ -120,6 +158,21 @@ impl GuitarProFile {
         file.number(2);
         file.texts(&["made up for the tests", "not a real song"]);
         self.write_header_after_notice(file);
+    }
+
+    fn write_names(&self, file: &mut Bytes) {
+        if let Some(size) = self.name_fields_sized {
+            for _ in 0..5 {
+                file.number(size);
+            }
+
+            return;
+        }
+        file.text_in_bytes(&self.title);
+        file.text("");
+        file.text(&self.artist);
+        file.text(&self.album);
+        file.text("");
     }
 
     fn write_header_after_notice(&self, file: &mut Bytes) {
@@ -166,7 +219,11 @@ impl GuitarProFile {
     }
 
     fn write_four_four_bar_header(&self, file: &mut Bytes) {
-        file.0.extend([0x03, 4, 4]);
+        if self.changes_key {
+            file.0.extend([0x43, 4, 4, 2, 0]);
+        } else {
+            file.0.extend([0x03, 4, 4]);
+        }
 
         if self.major == 5 {
             file.zeros(4 + 1 + 1);
@@ -245,15 +302,23 @@ impl Bytes {
     }
 
     fn fixed_size_text(&mut self, text: &str, size: usize) {
+        self.fixed_size_text_in_bytes(text.as_bytes(), size);
+    }
+
+    fn fixed_size_text_in_bytes(&mut self, text: &[u8], size: usize) {
         self.0.push(u8::try_from(text.len()).unwrap_or(u8::MAX));
-        let mut field = text.as_bytes().to_vec();
+        let mut field = text.to_vec();
         field.resize(size, 0);
         self.0.extend(field);
     }
 
     fn text(&mut self, text: &str) {
+        self.text_in_bytes(text.as_bytes());
+    }
+
+    fn text_in_bytes(&mut self, text: &[u8]) {
         self.count(text.len() + 1);
-        self.fixed_size_text(text, text.len());
+        self.fixed_size_text_in_bytes(text, text.len());
     }
 
     fn texts(&mut self, texts: &[&str]) {
@@ -273,34 +338,68 @@ impl Bytes {
 
 #[must_use]
 pub fn zip_holding(files: &[(&str, &[u8])]) -> Vec<u8> {
-    zip_of(files).unwrap_or_default()
+    zip_of(files, CompressionMethod::DEFLATE).unwrap_or_default()
 }
 
-fn zip_of(files: &[(&str, &[u8])]) -> Result<Vec<u8>, rawzip::Error> {
+#[must_use]
+pub fn zip_storing(files: &[(&str, &[u8])]) -> Vec<u8> {
+    zip_of(files, CompressionMethod::STORE).unwrap_or_default()
+}
+
+#[must_use]
+pub fn zip_shrinking(files: &[(&str, &[u8])]) -> Vec<u8> {
+    zip_of(files, CompressionMethod::SHRUNK).unwrap_or_default()
+}
+
+#[must_use]
+pub fn with_local_header_broken(mut zip: Vec<u8>, name: &str) -> Vec<u8> {
+    let local_header_size = 30;
+    let name_at = zip
+        .windows(name.len())
+        .position(|window| window == name.as_bytes())
+        .unwrap_or(local_header_size);
+    zip[name_at - local_header_size] = 0;
+
+    zip
+}
+
+fn zip_of(
+    files: &[(&str, &[u8])],
+    compression: CompressionMethod,
+) -> Result<Vec<u8>, rawzip::Error> {
     let mut zip = Vec::new();
     let mut archive = ZipArchiveWriter::new(&mut zip);
     for (name, contents) in files {
-        add_deflated(&mut archive, name, contents)?;
+        add_entry(&mut archive, name, contents, compression)?;
     }
     _ = archive.finish()?;
 
     Ok(zip)
 }
 
-fn add_deflated(
+fn add_entry(
     archive: &mut ZipArchiveWriter<&mut Vec<u8>>,
     name: &str,
     contents: &[u8],
+    compression: CompressionMethod,
 ) -> Result<(), rawzip::Error> {
     let (mut entry, config) = archive
         .new_file(name)
-        .compression_method(CompressionMethod::DEFLATE)
+        .compression_method(compression)
         .start()?;
     let mut uncompressed = config.wrap(Vec::new());
     uncompressed.write_all(contents)?;
     let (_, descriptor) = uncompressed.finish()?;
-    entry.write_all(&miniz_oxide::deflate::compress_to_vec(contents, 6))?;
+    entry.write_all(&packed(contents, compression))?;
     _ = entry.finish(descriptor)?;
 
     Ok(())
+}
+
+fn packed(contents: &[u8], compression: CompressionMethod) -> Vec<u8> {
+    if compression == CompressionMethod::DEFLATE {
+        return miniz_oxide::deflate::compress_to_vec(contents, 6);
+    }
+
+    contents.to_vec()
 }

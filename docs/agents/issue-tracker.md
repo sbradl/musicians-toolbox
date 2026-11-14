@@ -22,6 +22,8 @@ File issues only into the user's own repo. Never file into `mattpocock/skills` (
 
 Acceptance criteria name **when** a behaviour applies: at start, live while the app is open, or after a restart ("follows the system setting, also while TabFinder is open").
 
+Acceptance criteria build on what the app has today (its locales, its matching rules); a missing groundwork piece becomes its own ticket that this one is blocked by.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(Set to `yes` if this repo treats external PRs as feature requests; `/triage` reads this flag.)_

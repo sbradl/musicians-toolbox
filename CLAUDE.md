@@ -25,7 +25,7 @@ Toolchain via mise: `mise run setup` once (installs tools, enables `.githooks/`)
 - `mise run release-checks:tabfinder`: wizard for the few checks only a human can do (real system pickers); posts the results on the release ticket
 - `mise run bench:tabfinder`: on-demand speed checks against the ADR 0003 budget (release build; not part of `check`, ADR 0005)
 - `mise run fuzz:tabfinder`: fuzz the files TabFinder saves; one fuzz target per saved file (lint enforces)
-- `mise run test:android`: instrumented Compose tests on the running emulator (not part of `check`)
+- `mise run test:android`: instrumented Compose tests; starts the `tabfinder29` emulator headless when no device is attached (not part of `check`); run it before committing screen changes
 - Test devices: during development, uninstalling TabFinder from a connected device or emulator (e.g. a release-signed build blocking the test install) is fine.
 - Android SDK: `ANDROID_HOME` (default `~/Android/Sdk`) needs NDK 28.2.13676358, platform 36 and build-tools; `check` verifies the APK has no `INTERNET` permission and 16 KB aligned native libraries
 - Single Rust test file: `cargo test -p mt-tabfinder-presentation --test library_screen`

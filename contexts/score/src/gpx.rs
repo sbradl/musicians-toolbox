@@ -7,6 +7,7 @@ const UNCOMPRESSED: &[u8] = b"BCFS";
 const CONTAINER_NAME_LENGTH: usize = 4;
 const NUMBER: usize = 4;
 const SECTOR: usize = 0x1000;
+const READ_AHEAD: usize = SECTOR / 2;
 const FILE_ENTRY_KIND: usize = 2;
 const FILE_NAME_FIELD: usize = 0x04;
 const LONGEST_FILE_NAME: usize = 127;
@@ -27,7 +28,7 @@ impl<'file> GuitarPro6File<'file> {
         let mut file_system = self.file_system()?;
         let score_xml = file_system.score_xml()?;
 
-        ScoreXml(BufReader::new(score_xml)).read_header()
+        ScoreXml(BufReader::with_capacity(READ_AHEAD, score_xml)).read_header()
     }
 
     fn file_system(&self) -> Result<FileSystem<'file>, Unreadable> {
@@ -120,7 +121,10 @@ impl<'file> FileSystem<'file> {
     }
 
     fn bytes(&mut self, at_in_file_system: usize, count: usize) -> &[u8] {
-        self.unpacked_bytes(at_in_file_system + CONTAINER_NAME_LENGTH, count)
+        self.unpacked_bytes(
+            at_in_file_system.saturating_add(CONTAINER_NAME_LENGTH),
+            count,
+        )
     }
 
     fn unpacked_bytes(&mut self, at: usize, count: usize) -> &[u8] {
@@ -152,9 +156,7 @@ impl FileReader<'_, '_> {
             return Ok(Vec::new());
         }
         self.sector_list += NUMBER;
-        let Some(start) = sector.checked_mul(SECTOR) else {
-            return Err(Unreadable);
-        };
+        let start = sector.saturating_mul(SECTOR);
         let bytes = self.file_system.bytes(start, SECTOR.min(self.unread));
 
         if bytes.is_empty() {

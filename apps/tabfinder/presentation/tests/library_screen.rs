@@ -753,3 +753,21 @@ fn a_tuning_suggestion_typed_out_lists_the_songs_with_that_tuning() {
 
     tabfinder.assert_song_titles(&["Wexmoor"]);
 }
+
+#[test]
+fn rescan_before_any_folder_is_chosen_changes_nothing() {
+    let tabfinder = TabFinder::without_folders().start();
+
+    tabfinder.musician_clicks_rescan();
+
+    tabfinder.assert_library_screen(&no_folder_chosen());
+    tabfinder.assert_no_message_shown();
+}
+
+#[test]
+fn debug_output_of_the_app_keeps_the_library_out() {
+    let tabfinder = TabFinder::with_folder("/music", &["Wexmoor"]).start();
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_debug_output_shows_no_library();
+}

@@ -135,7 +135,7 @@ impl Texts {
 
     fn format(&self, id: &str, args: Option<&FluentArgs<'_>>) -> String {
         let Some(pattern) = self.0.get_message(id).and_then(|message| message.value()) else {
-            return id.to_owned();
+            return id.to_owned(); // coverage: only a broken en.ftl reaches this
         };
         let mut errors = vec![];
 

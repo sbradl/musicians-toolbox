@@ -1,5 +1,5 @@
 [tools]
-rust = { version = "1.99.1", components = "rustfmt,clippy", targets = "aarch64-linux-android,x86_64-linux-android" }
+rust = { version = "1.99.1", components = "rustfmt,clippy,llvm-tools-preview", targets = "aarch64-linux-android,x86_64-linux-android" }
 java = "temurin-21.0.13+9.0.LTS"
 ktlint = "1.8.0"
 cargo-deny = "0.20.2"
@@ -10,6 +10,7 @@ zig = "0.17.1"
 "github:rust-cross/cargo-zigbuild" = "0.24.1"
 "github:EmbarkStudios/cargo-about" = "0.9.3"
 "github:rust-fuzz/cargo-fuzz" = "0.13.2"
+"github:taiki-e/cargo-llvm-cov" = "0.6.21"
 
 [env]
 ANDROID_HOME = "{{ env.ANDROID_HOME | default(value=env.HOME ~ '/Android/Sdk') }}"
@@ -58,7 +59,7 @@ run = "cargo deny --locked check bans"
 run = "opengrep scan --error --quiet --config .opengrep ."
 
 [tasks."lint:ktlint"]
-run = "ktlint '**/*.kt' '**/*.kts' '!**/build/**'"
+run = "ktlint '**/*.kt' '**/*.kts' '!**/build/**' '!target/**'"
 
 [tasks."lint:blank-lines"]
 run = "git ls-files '*.rs' '*.kt' '*.kts' | xargs awk -f tools/blank-lines/check.awk"
@@ -67,7 +68,16 @@ run = "git ls-files '*.rs' '*.kt' '*.kts' | xargs awk -f tools/blank-lines/check
 depends = ["lint:rustfmt", "lint:clippy", "lint:cargo-deny", "lint:opengrep", "lint:ktlint", "lint:blank-lines", "lint:fuzz-targets", "lint:same-lints"]
 
 [tasks."test:cargo"]
-run = "cargo test --workspace --locked --quiet"
+description = "cargo test, measuring coverage of contexts, application and presentation (ADR 0005)"
+run = """
+mkdir -p target
+cargo llvm-cov --workspace --locked --ignore-filename-regex '/(adapters|ui|tools)/' --summary-only --show-missing-lines -- --quiet > target/coverage.txt || { cat target/coverage.txt; exit 1; }
+sh tools/coverage/check.sh target/coverage.txt
+"""
+
+[tasks."test:coverage-check"]
+dir = "tools/coverage"
+run = "sh check.sh sample/report.txt | diff - expected.txt"
 
 [tasks."test:gradle"]
 run = "./gradlew check --quiet"
@@ -85,7 +95,7 @@ dir = "tools/same-lints"
 run = "sh check.sh sample/root.toml sample/copy.toml | diff - expected.txt"
 
 [tasks.test]
-depends = ["test:cargo", "test:gradle", "test:blank-lines", "test:fuzz-targets", "test:same-lints"]
+depends = ["test:cargo", "test:gradle", "test:blank-lines", "test:fuzz-targets", "test:same-lints", "test:coverage-check"]
 
 [tasks."security:opengrep"]
 run = "opengrep scan --error --quiet {{vars.opengrep_packs}} ."
@@ -161,11 +171,16 @@ run = "apps/tabfinder/release-checks.sh"
 
 [tasks."bench:tabfinder"]
 run = [
-  "cargo test --release --locked -p mt-tabfinder-presentation --test library_screen -- --ignored",
-  "cargo test --release --locked -p mt-tabfinder-fs --test library_folder -- --ignored",
+  "cargo test --release --locked -p mt-tabfinder-presentation --test library_screen -- --ignored --nocapture --test-threads 1",
+  "cargo test --release --locked -p mt-tabfinder-fs --test library_folder -- --ignored --nocapture",
 ]
 
+[tasks."emulator:tabfinder"]
+description = "Start the tabfinder29 emulator without a window unless a device is attached"
+run = "sh tools/android/start-emulator.sh"
+
 [tasks."test:android"]
+depends = ["emulator:tabfinder"]
 run = """
 results=apps/tabfinder/ui/android/build/outputs/androidTest-results/connected
 rm -rf $results

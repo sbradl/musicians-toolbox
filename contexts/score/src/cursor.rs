@@ -25,19 +25,23 @@ impl<'file> Cursor<'file> {
     }
 
     pub(super) fn byte(&mut self) -> Result<u8, Unreadable> {
-        let [byte] = self.bytes(1)? else {
-            return Err(Unreadable);
-        };
+        let [byte] = self.array()?;
 
-        Ok(*byte)
+        Ok(byte)
     }
 
     pub(super) fn number(&mut self) -> Result<i32, Unreadable> {
-        let Ok(little_endian) = self.bytes(4)?.try_into() else {
+        Ok(i32::from_le_bytes(self.array()?))
+    }
+
+    fn array<const COUNT: usize>(&mut self) -> Result<[u8; COUNT], Unreadable> {
+        let unread = self.tab_file.get(self.position..).unwrap_or_default();
+        let Some((bytes, _)) = unread.split_first_chunk::<COUNT>() else {
             return Err(Unreadable);
         };
+        self.position += COUNT;
 
-        Ok(i32::from_le_bytes(little_endian))
+        Ok(*bytes)
     }
 
     pub(super) fn count_up_to(&mut self, most: usize) -> Result<usize, Unreadable> {

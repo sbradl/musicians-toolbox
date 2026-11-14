@@ -101,12 +101,9 @@ impl HeaderSoFar {
     }
 
     fn read_text(&mut self, text: &str) -> Result<(), Unreadable> {
-        if !self.is_inside(&TRACK) {
-            return Ok(());
-        }
         let names_instrument = self.ends_with(&INSTRUMENT_TYPE);
         let lists_tuning = self.ends_with(&TUNING_PITCHES);
-        let Some(track) = self.tracks.last_mut() else {
+        let Some(track) = self.track_being_read() else {
             return Ok(());
         };
 
@@ -119,6 +116,14 @@ impl HeaderSoFar {
         }
 
         Ok(())
+    }
+
+    fn track_being_read(&mut self) -> Option<&mut TrackSoFar> {
+        if self.is_inside(&TRACK) {
+            return self.tracks.last_mut();
+        }
+
+        None
     }
 
     fn is_inside(&self, path: &[&str]) -> bool {

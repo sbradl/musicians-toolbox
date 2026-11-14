@@ -194,6 +194,11 @@ impl TabFinder {
     }
 
     #[track_caller]
+    pub fn assert_debug_output_shows_no_library(&self) {
+        assert_eq!(format!("{:?}", self.app), "App { .. }");
+    }
+
+    #[track_caller]
     pub fn assert_status(&self, expected: &str) {
         assert_eq!(self.statuses_shown().pop(), Some(expected.to_owned()));
     }
@@ -373,7 +378,12 @@ impl TabFinder {
 }
 
 #[track_caller]
+#[expect(
+    clippy::print_stderr,
+    reason = "a speed check shows its time when run on demand (bench:tabfinder, ADR 0005); user decision"
+)]
 pub fn assert_within_budget(took: Duration, budget: Duration) {
+    eprintln!("took {took:?} of {budget:?}");
     assert!(took < budget, "took {took:?}, budget {budget:?}");
 }
 

@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.4.21"
-compose = "1.9.3"
+compose = "1.12.2"
 compose-material3 = "1.9.0"
 jna = "5.19.1"
 junit = "4.13.2"
@@ -10,13 +10,13 @@ dbus-java = "5.2.2"
 agp = "9.5.1"
 android-compileSdk = "36"
 android-minSdk = "29"
-bouncycastle = "1.86"
-commons-lang3 = "3.21.0"
+bouncycastle = "1.87"
+commons-lang3 = "3.22.0"
 httpclient = "4.5.14"
 activity-compose = "1.13.0"
-lifecycle-viewmodel = "2.9.4"
+lifecycle-viewmodel = "2.11.0"
 androidx-test-runner = "1.7.0"
-androidx-compose-ui-test-manifest = "1.9.4"
+androidx-compose-ui-test-manifest = "1.12.1"
 
 [libraries]
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }

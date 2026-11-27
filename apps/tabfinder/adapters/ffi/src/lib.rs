@@ -4,8 +4,8 @@ use mt_tabfinder_application::{self as application, LibraryLocation, Pitch, Song
 use mt_tabfinder_fs::{FsLastScan, FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
 use presentation::{
-    Action, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches, SongItem,
-    SuggestionGroup,
+    Action, AppViewModel, Effect, FilterBy, FilterField, Filters, LibraryViewModel, NothingMatches,
+    SongItem, SuggestionGroup,
 };
 
 uniffi::setup_scaffolding!();
@@ -27,19 +27,26 @@ pub struct LibraryViewModel {
 
 #[uniffi::remote(Record)]
 pub struct Filters {
-    pub artist: FilterField,
-    pub song: FilterField,
-    pub tuning: FilterField,
+    pub fields: Vec<FilterField>,
     pub match_count: String,
     pub nothing_matches: Option<NothingMatches>,
 }
 
 #[uniffi::remote(Record)]
 pub struct FilterField {
+    pub by: FilterBy,
     pub label: String,
     pub text: String,
     pub clear: Action,
+    pub suggests: bool,
     pub suggestions: Vec<SuggestionGroup>,
+}
+
+#[uniffi::remote(Enum)]
+pub enum FilterBy {
+    Artist,
+    Song,
+    Tuning,
 }
 
 #[uniffi::remote(Record)]
@@ -227,16 +234,8 @@ impl App {
         self.0.rescan();
     }
 
-    pub fn artist_filter_changed(&self, text: &str) {
-        self.0.artist_filter_changed(text);
-    }
-
-    pub fn song_filter_changed(&self, text: &str) {
-        self.0.song_filter_changed(text);
-    }
-
-    pub fn tuning_filter_changed(&self, text: &str) {
-        self.0.tuning_filter_changed(text);
+    pub fn filter_changed(&self, by: FilterBy, text: &str) {
+        self.0.filter_changed(by, text);
     }
 
     pub fn clear_filters(&self) {

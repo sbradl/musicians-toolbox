@@ -1,4 +1,4 @@
-use mt_library::{Filter, Library, Song};
+use mt_library::{Filter, FilterBy, Library, Song};
 use mt_music_kernel::Tuning;
 
 fn library_of(titles: &[&str]) -> Library {
@@ -127,7 +127,7 @@ fn tuned(title: &str, lowest_string_first: &[u8]) -> Song {
 
 fn tuning_filter(text: &str) -> Filter {
     let mut filter = Filter::default();
-    filter.set_tuning(text);
+    filter.set(FilterBy::Tuning, text);
 
     filter
 }

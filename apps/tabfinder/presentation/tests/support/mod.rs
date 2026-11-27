@@ -11,8 +11,8 @@ use mt_tabfinder_application::{
     Tuning,
 };
 use mt_tabfinder_presentation::{
-    Action, App, AppViewModel, Effect, FilterField, Filters, LibraryViewModel, NothingMatches,
-    SongItem, SuggestionGroup, ViewModelListener,
+    Action, App, AppViewModel, Effect, FilterBy, FilterField, Filters, LibraryViewModel,
+    NothingMatches, SongItem, SuggestionGroup, ViewModelListener,
 };
 
 #[derive(Debug, Default)]
@@ -151,16 +151,8 @@ impl TabFinder {
         self.app.rescan();
     }
 
-    pub fn musician_types_in_the_song_field(&self, text: &str) {
-        self.app.song_filter_changed(text);
-    }
-
-    pub fn musician_types_in_the_artist_field(&self, text: &str) {
-        self.app.artist_filter_changed(text);
-    }
-
-    pub fn musician_types_in_the_tuning_field(&self, text: &str) {
-        self.app.tuning_filter_changed(text);
+    pub fn musician_types_in(&self, by: FilterBy, text: &str) {
+        self.app.filter_changed(by, text);
     }
 
     pub fn musician_clicks_clear_filters(&self) {
@@ -247,46 +239,39 @@ impl TabFinder {
     }
 
     #[track_caller]
-    pub fn assert_song_field_shows(&self, expected: &str) {
-        let song_field = self.filters_shown().map(|filters| filters.song.text);
+    pub fn assert_field_shows(&self, by: FilterBy, expected: &str) {
+        let text = self.field_shown(by).map(|field| field.text);
 
-        assert_eq!(song_field, Some(expected.to_owned()));
+        assert_eq!(text, Some(expected.to_owned()));
     }
 
     #[track_caller]
-    pub fn assert_artist_field(&self, expected: &FilterField) {
-        let artist_field = self.filters_shown().map(|filters| filters.artist);
-
-        assert_eq!(artist_field.as_ref(), Some(expected));
+    pub fn assert_field(&self, expected: &FilterField) {
+        assert_eq!(self.field_shown(expected.by).as_ref(), Some(expected));
     }
 
     #[track_caller]
-    pub fn assert_artist_suggestions(&self, expected: &[&str]) {
-        let suggestions = self
-            .filters_shown()
-            .map(|filters| filters.artist.suggestions);
+    pub fn assert_suggestions(&self, by: FilterBy, expected: &[&str]) {
+        let suggestions = self.field_shown(by).map(|field| field.suggestions);
 
         assert_eq!(suggestions, Some(unheaded(expected)));
     }
 
     #[track_caller]
-    pub fn assert_tuning_field(&self, expected: &FilterField) {
-        let tuning_field = self.filters_shown().map(|filters| filters.tuning);
-
-        assert_eq!(tuning_field.as_ref(), Some(expected));
-    }
-
-    #[track_caller]
-    pub fn assert_tuning_suggestions(&self, expected: &[(&str, &[&str])]) {
+    pub fn assert_grouped_suggestions(&self, by: FilterBy, expected: &[(&str, &[&str])]) {
         let mut groups = Vec::new();
         for (heading, suggestions) in expected {
             groups.push(headed(heading, suggestions));
         }
-        let suggestions = self
-            .filters_shown()
-            .map(|filters| filters.tuning.suggestions);
+        let suggestions = self.field_shown(by).map(|field| field.suggestions);
 
         assert_eq!(suggestions, Some(groups));
+    }
+
+    fn field_shown(&self, by: FilterBy) -> Option<FilterField> {
+        let fields = self.filters_shown()?.fields;
+
+        fields.into_iter().find(|field| field.by == by)
     }
 
     fn filters_shown(&self) -> Option<Filters> {
@@ -428,9 +413,11 @@ pub fn listing(status: &str, song_titles: &[&str]) -> LibraryViewModel {
             is_enabled: true,
         },
         filters: Some(Filters {
-            artist: field("Artist", "", "Clear Artist"),
-            song: field("Song", "", "Clear Song"),
-            tuning: field("Tuning", "", "Clear Tuning"),
+            fields: vec![
+                field(FilterBy::Artist, ""),
+                field(FilterBy::Song, ""),
+                field(FilterBy::Tuning, ""),
+            ],
             match_count: format!("{0} / {0}", song_titles.len()),
             nothing_matches: None,
         }),
@@ -439,14 +426,22 @@ pub fn listing(status: &str, song_titles: &[&str]) -> LibraryViewModel {
 }
 
 #[must_use]
-pub fn field(label: &str, text: &str, clear_label: &str) -> FilterField {
+pub fn field(by: FilterBy, text: &str) -> FilterField {
+    let (label, suggests) = match by {
+        FilterBy::Artist => ("Artist", true),
+        FilterBy::Song => ("Song", false),
+        FilterBy::Tuning => ("Tuning", true),
+    };
+
     FilterField {
+        by,
         label: label.to_owned(),
         text: text.to_owned(),
         clear: Action {
-            label: clear_label.to_owned(),
+            label: format!("Clear {label}"),
             is_enabled: false,
         },
+        suggests,
         suggestions: vec![],
     }
 }

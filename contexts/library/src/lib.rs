@@ -184,40 +184,51 @@ impl MostUsedSpellings {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum FilterBy {
+    Artist,
+    Song,
+    Tuning,
+}
+
+impl FilterBy {
+    pub const ALL: [Self; 3] = [Self::Artist, Self::Song, Self::Tuning];
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter {
-    song: FilterText,
-    artist: FilterText,
-    tuning: FilterText,
+    texts: HashMap<FilterBy, FilterText>,
 }
 
 impl Filter {
-    pub fn set_song(&mut self, text: &str) {
-        self.song = FilterText::of(text);
+    pub fn set(&mut self, by: FilterBy, text: &str) {
+        if text.is_empty() {
+            drop(self.texts.remove(&by));
+
+            return;
+        }
+
+        drop(self.texts.insert(by, FilterText::of(text)));
     }
 
-    pub fn set_artist(&mut self, text: &str) {
-        self.artist = FilterText::of(text);
-    }
+    pub fn text(&self, by: FilterBy) -> &str {
+        let Some(text) = self.texts.get(&by) else {
+            return "";
+        };
 
-    pub fn set_tuning(&mut self, text: &str) {
-        self.tuning = FilterText::of(text);
-    }
-
-    pub fn song_text(&self) -> &str {
-        &self.song.typed
-    }
-
-    pub fn tuning_text(&self) -> &str {
-        &self.tuning.typed
-    }
-
-    pub fn artist_text(&self) -> &str {
-        &self.artist.typed
+        &text.typed
     }
 
     fn matches(&self, song: &Song, tunings: &TuningTexts) -> bool {
-        self.matches_song_and_artist_of(song) && self.matches_tunings_of(song, tunings)
+        let mut every_field = FilterBy::ALL.iter();
+
+        every_field.all(|by| self.finds(*by, song, tunings))
+    }
+
+    fn may_suggest_from(&self, by: FilterBy, song: &Song, tunings: &TuningTexts) -> bool {
+        let mut every_other_field = FilterBy::ALL.iter().filter(|other| **other != by);
+
+        self.typed(by).is_some() && every_other_field.all(|other| self.finds(*other, song, tunings))
     }
 
     fn suggested_artist_of<'song>(
@@ -225,14 +236,11 @@ impl Filter {
         song: &'song Song,
         tunings: &TuningTexts,
     ) -> Option<&'song str> {
-        let artist = song.artist.as_deref()?;
-        let is_suggested = !self.artist.typed.is_empty()
-            && self.artist.appears_in(artist)
-            && self.song.appears_in(&song.title)
-            && self.matches_tunings_of(song, tunings);
+        let is_suggested = self.may_suggest_from(FilterBy::Artist, song, tunings)
+            && self.finds(FilterBy::Artist, song, tunings);
 
         if is_suggested {
-            return Some(artist);
+            return song.artist.as_deref();
         }
 
         None
@@ -243,13 +251,17 @@ impl Filter {
         song: &'song Song,
         tunings: &TuningTexts,
     ) -> Vec<&'song Tuning> {
-        if self.tuning.typed.is_empty() || !self.matches_song_and_artist_of(song) {
+        let Some(text) = self.typed(FilterBy::Tuning) else {
+            return Vec::new();
+        };
+
+        if !self.may_suggest_from(FilterBy::Tuning, song, tunings) {
             return Vec::new();
         }
 
         let mut suggested = Vec::new();
         for tuning in &song.tunings {
-            if self.tuning_appears_in(tuning, tunings) {
+            if text.appears_in_tuning(tuning, tunings) {
                 suggested.push(tuning);
             }
         }
@@ -257,31 +269,20 @@ impl Filter {
         suggested
     }
 
-    fn matches_song_and_artist_of(&self, song: &Song) -> bool {
-        self.song.appears_in(&song.title) && self.matches_artist_of(song)
-    }
-
-    fn matches_artist_of(&self, song: &Song) -> bool {
-        let Some(artist) = song.artist.as_deref() else {
-            return self.artist.typed.is_empty();
+    fn finds(&self, by: FilterBy, song: &Song, tunings: &TuningTexts) -> bool {
+        let Some(text) = self.typed(by) else {
+            return true;
         };
 
-        self.artist.appears_in(artist)
-    }
-
-    fn matches_tunings_of(&self, song: &Song, tunings: &TuningTexts) -> bool {
-        if self.tuning.typed.is_empty() {
-            return true;
+        match by {
+            FilterBy::Artist => text.appears_in_artist_of(song),
+            FilterBy::Song => text.appears_in(&song.title),
+            FilterBy::Tuning => text.appears_in_a_tuning_of(song, tunings),
         }
-
-        song.tunings
-            .iter()
-            .any(|tuning| self.tuning_appears_in(tuning, tunings))
     }
 
-    fn tuning_appears_in(&self, tuning: &Tuning, tunings: &TuningTexts) -> bool {
-        self.tuning
-            .appears_in_lowercased(&tunings.ignoring_case(tuning))
+    fn typed(&self, by: FilterBy) -> Option<&FilterText> {
+        self.texts.get(&by)
     }
 }
 
@@ -333,5 +334,27 @@ impl FilterText {
 
     fn appears_in_lowercased(&self, lowercased: &str) -> bool {
         lowercased.contains(&self.ignoring_case)
+    }
+
+    fn appears_in_artist_of(&self, song: &Song) -> bool {
+        let Some(artist) = song.artist.as_deref() else {
+            return false;
+        };
+
+        self.appears_in(artist)
+    }
+
+    fn appears_in_a_tuning_of(&self, song: &Song, tunings: &TuningTexts) -> bool {
+        for tuning in &song.tunings {
+            if self.appears_in_tuning(tuning, tunings) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn appears_in_tuning(&self, tuning: &Tuning, tunings: &TuningTexts) -> bool {
+        self.appears_in_lowercased(&tunings.ignoring_case(tuning))
     }
 }

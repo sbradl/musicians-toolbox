@@ -3,6 +3,7 @@ package io.github.sbradl.tabfinder.ui
 import io.github.sbradl.tabfinder.core.App
 import io.github.sbradl.tabfinder.core.AppViewModel
 import io.github.sbradl.tabfinder.core.Effect
+import io.github.sbradl.tabfinder.core.FilterBy
 import io.github.sbradl.tabfinder.core.LibraryFolder
 import io.github.sbradl.tabfinder.core.ViewModelListener
 import kotlinx.coroutines.CoroutineScope
@@ -39,11 +40,10 @@ class TabFinderCore private constructor(
         scope.launch { scanOffTheUiThread { app.rescan() } }
     }
 
-    fun artistFilterChanged(text: String) = app.artistFilterChanged(text)
-
-    fun songFilterChanged(text: String) = app.songFilterChanged(text)
-
-    fun tuningFilterChanged(text: String) = app.tuningFilterChanged(text)
+    fun filterChanged(
+        by: FilterBy,
+        text: String,
+    ) = app.filterChanged(by, text)
 
     fun clearFilters() = app.clearFilters()
 

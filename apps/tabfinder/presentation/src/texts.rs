@@ -1,6 +1,6 @@
 use fluent_bundle::{FluentArgs, FluentResource, concurrent::FluentBundle};
 
-use crate::Texts;
+use crate::{FilterBy, Texts};
 use mt_tabfinder_application::{LibraryFolderError, Tuning};
 use unic_langid::LanguageIdentifier;
 
@@ -82,28 +82,12 @@ impl Texts {
         self.format("unreadable-file", None)
     }
 
-    pub(super) fn artist_filter(&self) -> String {
-        self.format("artist-filter", None)
+    pub(super) fn filter_label(&self, by: FilterBy) -> String {
+        self.format(&format!("{}-filter", field_id(by)), None)
     }
 
-    pub(super) fn clear_artist_filter(&self) -> String {
-        self.format("clear-artist-filter", None)
-    }
-
-    pub(super) fn song_filter(&self) -> String {
-        self.format("song-filter", None)
-    }
-
-    pub(super) fn clear_song_filter(&self) -> String {
-        self.format("clear-song-filter", None)
-    }
-
-    pub(super) fn tuning_filter(&self) -> String {
-        self.format("tuning-filter", None)
-    }
-
-    pub(super) fn clear_tuning_filter(&self) -> String {
-        self.format("clear-tuning-filter", None)
+    pub(super) fn clear_filter(&self, by: FilterBy) -> String {
+        self.format(&format!("clear-{}-filter", field_id(by)), None)
     }
 
     pub(super) fn tuning_group(&self, strings: usize) -> String {
@@ -142,5 +126,13 @@ impl Texts {
         self.0
             .format_pattern(pattern, args, &mut errors)
             .into_owned()
+    }
+}
+
+const fn field_id(by: FilterBy) -> &'static str {
+    match by {
+        FilterBy::Artist => "artist",
+        FilterBy::Song => "song",
+        FilterBy::Tuning => "tuning",
     }
 }

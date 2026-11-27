@@ -1,4 +1,4 @@
-use mt_library::{Filter, Library, Song};
+use mt_library::{Filter, FilterBy, Library, Song};
 
 use crate::{
     Action, FilterField, Filters, LibraryViewModel, ListedLibrary, NothingMatches, SongItem,
@@ -17,9 +17,7 @@ impl LibraryViewModel {
     pub(super) fn listing(listed: &ListedLibrary, filter: &Filter, texts: &Texts) -> Self {
         let all_songs = listed.library.songs();
         let matching = listed.items_matching(filter);
-        let filters = Filters::of(filter, matching.len(), all_songs.len(), texts)
-            .with_artist_suggestions(listed.artists_suggested_by(filter))
-            .with_tuning_suggestions(listed.tunings_suggested_by(filter, texts));
+        let filters = Filters::of(listed, filter, matching.len(), all_songs.len(), texts);
 
         Self::with_status(Self::songs_found(all_songs, texts), texts)
             .with_rescan_enabled()
@@ -93,6 +91,19 @@ impl ListedLibrary {
         Self { library, items }
     }
 
+    fn suggestions_for(
+        &self,
+        by: FilterBy,
+        filter: &Filter,
+        texts: &Texts,
+    ) -> Option<Vec<SuggestionGroup>> {
+        match by {
+            FilterBy::Artist => Some(self.artists_suggested_by(filter)),
+            FilterBy::Song => None,
+            FilterBy::Tuning => Some(self.tunings_suggested_by(filter, texts)),
+        }
+    }
+
     fn artists_suggested_by(&self, filter: &Filter) -> Vec<SuggestionGroup> {
         let mut suggested = Vec::new();
         for artist in self.library.artists_suggested_by(filter) {
@@ -141,38 +152,24 @@ impl ListedLibrary {
 }
 
 impl Filters {
-    fn of(filter: &Filter, matching: usize, all: usize, texts: &Texts) -> Self {
+    fn of(
+        listed: &ListedLibrary,
+        filter: &Filter,
+        matching: usize,
+        all: usize,
+        texts: &Texts,
+    ) -> Self {
+        let mut fields = Vec::new();
+        for by in FilterBy::ALL {
+            let suggestions = listed.suggestions_for(by, filter, texts);
+            fields.push(FilterField::of(by, filter.text(by), suggestions, texts));
+        }
+
         Self {
-            artist: FilterField::of(
-                texts.artist_filter(),
-                filter.artist_text(),
-                texts.clear_artist_filter(),
-            ),
-            song: FilterField::of(
-                texts.song_filter(),
-                filter.song_text(),
-                texts.clear_song_filter(),
-            ),
-            tuning: FilterField::of(
-                texts.tuning_filter(),
-                filter.tuning_text(),
-                texts.clear_tuning_filter(),
-            ),
+            fields,
             match_count: texts.songs_matching(matching, all),
             nothing_matches: Self::nothing_matches(matching, all, texts),
         }
-    }
-
-    fn with_artist_suggestions(mut self, suggestions: Vec<SuggestionGroup>) -> Self {
-        self.artist.suggestions = suggestions;
-
-        self
-    }
-
-    fn with_tuning_suggestions(mut self, suggestions: Vec<SuggestionGroup>) -> Self {
-        self.tuning.suggestions = suggestions;
-
-        self
     }
 
     fn nothing_matches(matching: usize, all: usize, texts: &Texts) -> Option<NothingMatches> {
@@ -188,15 +185,22 @@ impl Filters {
 }
 
 impl FilterField {
-    fn of(label: String, text: &str, clear_label: String) -> Self {
+    fn of(
+        by: FilterBy,
+        text: &str,
+        suggestions: Option<Vec<SuggestionGroup>>,
+        texts: &Texts,
+    ) -> Self {
         Self {
-            label,
+            by,
+            label: texts.filter_label(by),
             text: text.to_owned(),
             clear: Action {
-                label: clear_label,
+                label: texts.clear_filter(by),
                 is_enabled: !text.is_empty(),
             },
-            suggestions: Vec::new(),
+            suggests: suggestions.is_some(),
+            suggestions: suggestions.unwrap_or_default(),
         }
     }
 }

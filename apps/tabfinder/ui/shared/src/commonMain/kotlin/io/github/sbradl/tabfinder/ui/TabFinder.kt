@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.sbradl.tabfinder.core.Action
+import io.github.sbradl.tabfinder.core.FilterBy
 import io.github.sbradl.tabfinder.core.FilterField
 import io.github.sbradl.tabfinder.core.Filters
 import io.github.sbradl.tabfinder.core.LibraryViewModel
@@ -59,9 +60,7 @@ fun TabFinder(
             appName,
             onChooseFolder = core::chooseFolder,
             onRescan = core::rescan,
-            onArtistFilterChanged = core::artistFilterChanged,
-            onSongFilterChanged = core::songFilterChanged,
-            onTuningFilterChanged = core::tuningFilterChanged,
+            onFilterChanged = core::filterChanged,
             onClearFilters = core::clearFilters,
             modifier = Modifier.padding(insets),
         )
@@ -74,9 +73,7 @@ internal fun LibraryScreen(
     appName: String,
     onChooseFolder: () -> Unit,
     onRescan: () -> Unit,
-    onArtistFilterChanged: (String) -> Unit,
-    onSongFilterChanged: (String) -> Unit,
-    onTuningFilterChanged: (String) -> Unit,
+    onFilterChanged: (FilterBy, String) -> Unit,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -89,7 +86,7 @@ internal fun LibraryScreen(
         val filters = viewModel.filters
 
         if (filters != null) {
-            FilterBar(filters, onArtistFilterChanged, onSongFilterChanged, onTuningFilterChanged)
+            FilterBar(filters, onFilterChanged)
             NoSongsMatch(filters.nothingMatches, onClearFilters)
         }
         SongList(viewModel.songs)
@@ -100,18 +97,22 @@ internal fun LibraryScreen(
 @Composable
 private fun FilterBar(
     filters: Filters,
-    onArtistFilterChanged: (String) -> Unit,
-    onSongFilterChanged: (String) -> Unit,
-    onTuningFilterChanged: (String) -> Unit,
+    onFilterChanged: (FilterBy, String) -> Unit,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        FilterTextFieldWithSuggestions(filters.artist, onArtistFilterChanged)
-        FilterTextField(filters.song, onSongFilterChanged)
-        FilterTextFieldWithSuggestions(filters.tuning, onTuningFilterChanged)
+        filters.fields.forEach { field ->
+            val onTextChanged = { text: String -> onFilterChanged(field.by, text) }
+
+            if (field.suggests) {
+                FilterTextFieldWithSuggestions(field, onTextChanged)
+            } else {
+                FilterTextField(field, onTextChanged)
+            }
+        }
         Text(filters.matchCount)
     }
 }

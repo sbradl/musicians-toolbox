@@ -5,6 +5,7 @@ use std::fmt;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use fluent_bundle::{FluentResource, concurrent::FluentBundle};
+pub use mt_library::FilterBy;
 use mt_library::{Filter, Library};
 use mt_tabfinder_application::{
     LastScan, Libraries, LibraryFolder, LibraryLocation, RememberedLibraryLocation,
@@ -27,18 +28,18 @@ pub struct LibraryViewModel {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Filters {
-    pub artist: FilterField,
-    pub song: FilterField,
-    pub tuning: FilterField,
+    pub fields: Vec<FilterField>,
     pub match_count: String,
     pub nothing_matches: Option<NothingMatches>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FilterField {
+    pub by: FilterBy,
     pub label: String,
     pub text: String,
     pub clear: Action,
+    pub suggests: bool,
     pub suggestions: Vec<SuggestionGroup>,
 }
 
@@ -150,18 +151,8 @@ impl App {
         self.listener.on_effect(Effect::ShowMessage { text });
     }
 
-    pub fn song_filter_changed(&self, text: &str) {
-        lock(&self.filter).set_song(text);
-        self.show_library();
-    }
-
-    pub fn artist_filter_changed(&self, text: &str) {
-        lock(&self.filter).set_artist(text);
-        self.show_library();
-    }
-
-    pub fn tuning_filter_changed(&self, text: &str) {
-        lock(&self.filter).set_tuning(text);
+    pub fn filter_changed(&self, by: FilterBy, text: &str) {
+        lock(&self.filter).set(by, text);
         self.show_library();
     }
 

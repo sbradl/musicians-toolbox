@@ -82,7 +82,7 @@ class LibraryScreenOnAndroidTest {
             tabfinder.musicianPicksTheLibraryFolder()
             tabfinder.assertStatus("2 Songs")
 
-            tabfinder.musicianTypesInTheSongField("LANT")
+            tabfinder.musicianTypesIn("Song", "LANT")
 
             tabfinder.assertShown("Raise Your Lanterns", "1 / 2")
             tabfinder.assertNotShown("Wexmoor")
@@ -94,10 +94,10 @@ class LibraryScreenOnAndroidTest {
             tabfinder.libraryFolderContains("Raise Your Lanterns.gp5", "Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
-            tabfinder.musicianTypesInTheSongField("lant")
+            tabfinder.musicianTypesIn("Song", "lant")
             tabfinder.assertNotShown("Wexmoor")
 
-            tabfinder.musicianClearsTheSongField()
+            tabfinder.musicianClears("Song")
 
             tabfinder.assertShown("Raise Your Lanterns", "Wexmoor", "2 / 2")
         }
@@ -108,7 +108,7 @@ class LibraryScreenOnAndroidTest {
             tabfinder.libraryFolderContains("Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
-            tabfinder.musicianTypesInTheSongField("lant")
+            tabfinder.musicianTypesIn("Song", "lant")
             tabfinder.assertShown("No Songs match")
 
             tabfinder.musicianClicksClearFilters()
@@ -125,7 +125,7 @@ class LibraryScreenOnAndroidTest {
             tabfinder.musicianPicksTheLibraryFolder()
             tabfinder.assertStatus("2 Songs")
 
-            tabfinder.musicianTypesInTheArtistField("CORV")
+            tabfinder.musicianTypesIn("Artist", "CORV")
 
             tabfinder.assertShown("Wexmoor", "1 / 2")
             tabfinder.assertNotShown("Brasswing")
@@ -137,11 +137,11 @@ class LibraryScreenOnAndroidTest {
             tabfinder.libraryFolderContains("Corvid Lane/Wexmoor.gp5", "Hollow Fern/Brasswing.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
-            tabfinder.musicianTypesInTheArtistField("corv")
+            tabfinder.musicianTypesIn("Artist", "corv")
 
             tabfinder.musicianPicksTheSuggestion("Corvid Lane")
 
-            tabfinder.assertArtistFieldShows("Corvid Lane")
+            tabfinder.assertFieldShows("Artist", "Corvid Lane")
             tabfinder.assertNoSuggestionShown("Corvid Lane")
             tabfinder.assertShown("Wexmoor", "1 / 2")
         }
@@ -152,10 +152,10 @@ class LibraryScreenOnAndroidTest {
             tabfinder.libraryFolderContains("Corvid Lane/Wexmoor.gp5", "Hollow Fern/Brasswing.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
-            tabfinder.musicianTypesInTheArtistField("corv")
+            tabfinder.musicianTypesIn("Artist", "corv")
             tabfinder.assertNotShown("Brasswing")
 
-            tabfinder.musicianClearsTheArtistField()
+            tabfinder.musicianClears("Artist")
 
             tabfinder.assertShown("Wexmoor", "Brasswing", "2 / 2")
         }
@@ -303,7 +303,7 @@ class LibraryScreenOnAndroidTest {
             tabfinder.musicianPicksTheLibraryFolder()
             tabfinder.assertStatus("2 Songs")
 
-            tabfinder.musicianTypesInTheTuningField("DROP")
+            tabfinder.musicianTypesIn("Tuning", "DROP")
 
             tabfinder.assertShown("Wexmoor", "1 / 2")
             tabfinder.assertNotShown("Brasswing")
@@ -315,12 +315,12 @@ class LibraryScreenOnAndroidTest {
             tabfinder.libraryFolderContainsTheTabFileWithDropDAndBass("Wexmoor.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
-            tabfinder.musicianTypesInTheTuningField("4")
+            tabfinder.musicianTypesIn("Tuning", "4")
             tabfinder.assertSuggestionHeadingShown("4 strings")
 
             tabfinder.musicianPicksTheSuggestion("4 E Standard")
 
-            tabfinder.assertTuningFieldShows("4 E Standard")
+            tabfinder.assertFieldShows("Tuning", "4 E Standard")
             tabfinder.assertNoSuggestionShown("4 E Standard")
         }
 
@@ -331,10 +331,10 @@ class LibraryScreenOnAndroidTest {
             tabfinder.libraryFolderContains("Brasswing.gp5")
             tabfinder.musicianOpensTabFinder()
             tabfinder.musicianPicksTheLibraryFolder()
-            tabfinder.musicianTypesInTheTuningField("drop")
+            tabfinder.musicianTypesIn("Tuning", "drop")
             tabfinder.assertNotShown("Brasswing")
 
-            tabfinder.musicianClearsTheTuningField()
+            tabfinder.musicianClears("Tuning")
 
             tabfinder.assertShown("Wexmoor", "Brasswing", "2 / 2")
         }

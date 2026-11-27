@@ -120,29 +120,27 @@ class TabFinderOnAndroid(
         ui.onNodeWithText("Rescan").performClick()
     }
 
-    fun musicianTypesInTheSongField(text: String) {
-        ui.onNode(hasSetTextAction() and hasText("Song")).performTextInput(text)
-    }
-
-    fun musicianClearsTheSongField() {
-        ui.onNodeWithContentDescription("Clear Song").performClick()
-    }
-
-    fun musicianTypesInTheArtistField(text: String) {
-        ui.onNode(hasSetTextAction() and hasText("Artist")).performTextInput(text)
-    }
-
     fun musicianPicksTheSuggestion(text: String) {
         ui.waitUntilExactlyOneExists(suggestion(text))
         ui.onNode(suggestion(text)).performClick()
     }
 
-    fun musicianClearsTheArtistField() {
-        ui.onNodeWithContentDescription("Clear Artist").performClick()
+    fun musicianTypesIn(
+        field: String,
+        text: String,
+    ) {
+        ui.onNode(hasSetTextAction() and hasText(field)).performTextInput(text)
     }
 
-    fun assertArtistFieldShows(text: String) {
-        ui.waitUntilExactlyOneExists(hasSetTextAction() and hasText(text))
+    fun musicianClears(field: String) {
+        ui.onNodeWithContentDescription("Clear $field").performClick()
+    }
+
+    fun assertFieldShows(
+        field: String,
+        text: String,
+    ) {
+        ui.waitUntilExactlyOneExists(hasSetTextAction() and hasText(field) and hasText(text))
     }
 
     fun assertNoSuggestionShown(text: String) {
@@ -150,18 +148,6 @@ class TabFinderOnAndroid(
     }
 
     private fun suggestion(text: String) = hasAnyAncestor(isPopup()) and hasText(text)
-
-    fun musicianTypesInTheTuningField(text: String) {
-        ui.onNode(hasSetTextAction() and hasText("Tuning")).performTextInput(text)
-    }
-
-    fun musicianClearsTheTuningField() {
-        ui.onNodeWithContentDescription("Clear Tuning").performClick()
-    }
-
-    fun assertTuningFieldShows(text: String) {
-        ui.waitUntilExactlyOneExists(hasSetTextAction() and hasText(text))
-    }
 
     fun assertSuggestionHeadingShown(heading: String) {
         ui.waitUntilExactlyOneExists(suggestion(heading))

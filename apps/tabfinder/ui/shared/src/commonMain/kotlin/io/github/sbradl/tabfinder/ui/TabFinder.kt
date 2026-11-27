@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -38,6 +39,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.sbradl.tabfinder.core.Action
+import io.github.sbradl.tabfinder.core.Bpm
 import io.github.sbradl.tabfinder.core.FilterBy
 import io.github.sbradl.tabfinder.core.FilterField
 import io.github.sbradl.tabfinder.core.Filters
@@ -253,15 +255,28 @@ private fun SongList(songs: List<SongItem>) {
 
 @Composable
 private fun SongRow(song: SongItem) {
-    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-        Text(song.title)
-        val artistAndAlbum = song.artistAndAlbum
+    Row(modifier = Modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(song.title)
+            val artistAndAlbum = song.artistAndAlbum
 
-        if (artistAndAlbum != null) {
-            Text(artistAndAlbum, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (artistAndAlbum != null) {
+                Text(artistAndAlbum, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Unreadable(song.unreadable)
+            TuningBadges(song.tunings)
         }
-        Unreadable(song.unreadable)
-        TuningBadges(song.tunings)
+        Bpm(song.bpm)
+    }
+}
+
+@Composable
+private fun Bpm(bpm: Bpm?) {
+    if (bpm != null) {
+        Column(horizontalAlignment = Alignment.End, modifier = Modifier.semantics(mergeDescendants = true) {}) {
+            Text(bpm.value, style = MaterialTheme.typography.titleMedium)
+            Text(bpm.unit, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

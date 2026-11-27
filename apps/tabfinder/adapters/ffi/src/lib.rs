@@ -1,11 +1,13 @@
 use std::fmt;
 
-use mt_tabfinder_application::{self as application, LibraryLocation, Pitch, Song, Tuning};
+use mt_tabfinder_application::{
+    self as application, LibraryLocation, Pitch, Song, Tuning, WrittenTempo,
+};
 use mt_tabfinder_fs::{FsLastScan, FsLibraryFolder, FsRememberedLibraryLocation};
 use mt_tabfinder_presentation as presentation;
 use presentation::{
-    Action, AppViewModel, Effect, FilterBy, FilterField, Filters, LibraryViewModel, NothingMatches,
-    SongItem, SuggestionGroup,
+    Action, AppViewModel, Bpm, Effect, FilterBy, FilterField, Filters, LibraryViewModel,
+    NothingMatches, SongItem, SuggestionGroup,
 };
 
 uniffi::setup_scaffolding!();
@@ -66,7 +68,14 @@ pub struct SongItem {
     pub title: String,
     pub artist_and_album: Option<String>,
     pub tunings: Vec<String>,
+    pub bpm: Option<Bpm>,
     pub unreadable: Option<String>,
+}
+
+#[uniffi::remote(Record)]
+pub struct Bpm {
+    pub value: String,
+    pub unit: String,
 }
 
 #[uniffi::remote(Record)]
@@ -81,6 +90,7 @@ pub struct Song {
     pub artist: Option<String>,
     pub album: Option<String>,
     pub tunings: Vec<Tuning>,
+    pub written_tempos: Vec<WrittenTempo>,
     pub is_unreadable: bool,
 }
 
@@ -93,6 +103,12 @@ uniffi::custom_type!(Pitch, u8, {
     remote,
     lower: |pitch| pitch.midi_number(),
     try_lift: |midi_number| Ok(Pitch::midi(midi_number)),
+});
+
+uniffi::custom_type!(WrittenTempo, u16, {
+    remote,
+    lower: |tempo| tempo.bpm(),
+    try_lift: |beats_per_minute| Ok(WrittenTempo::beats_per_minute(beats_per_minute)),
 });
 
 #[uniffi::remote(Enum)]

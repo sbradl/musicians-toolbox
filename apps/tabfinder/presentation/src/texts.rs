@@ -1,7 +1,7 @@
 use fluent_bundle::{FluentArgs, FluentResource, concurrent::FluentBundle};
 
 use crate::{FilterBy, Texts};
-use mt_tabfinder_application::{LibraryFolderError, Tuning};
+use mt_tabfinder_application::{LibraryFolderError, Tuning, WrittenTempo};
 use unic_langid::LanguageIdentifier;
 
 impl Texts {
@@ -76,6 +76,25 @@ impl Texts {
         args.set("tuning", tuning.name().to_string());
 
         self.format("tuning-badge", Some(&args))
+    }
+
+    pub(super) fn bpm(&self, tempo: WrittenTempo) -> String {
+        let mut args = FluentArgs::new();
+        args.set("bpm", tempo.bpm());
+
+        self.format("bpm", Some(&args))
+    }
+
+    pub(super) fn bpm_range(&self, lowest: WrittenTempo, highest: WrittenTempo) -> String {
+        let mut args = FluentArgs::new();
+        args.set("lowest", lowest.bpm());
+        args.set("highest", highest.bpm());
+
+        self.format("bpm-range", Some(&args))
+    }
+
+    pub(super) fn bpm_unit(&self) -> String {
+        self.format("bpm-unit", None)
     }
 
     pub(super) fn unreadable_file(&self) -> String {

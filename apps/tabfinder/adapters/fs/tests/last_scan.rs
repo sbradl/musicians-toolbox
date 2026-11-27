@@ -1,7 +1,7 @@
 use std::fs;
 use std::io;
 
-use mt_tabfinder_application::{LastScan, LibraryLocation, Song, Tuning};
+use mt_tabfinder_application::{LastScan, LibraryLocation, Song, Tuning, WrittenTempo};
 use mt_tabfinder_fs::FsLastScan;
 
 pub mod common;
@@ -38,6 +38,16 @@ fn song_with_tunings(title: &str, tunings: &[&[u8]]) -> Song {
     for lowest_string_first in tunings {
         song.tunings
             .push(Tuning::of_midi_numbers(lowest_string_first));
+    }
+
+    song
+}
+
+fn song_with_written_tempos(title: &str, beats_per_minute: &[u16]) -> Song {
+    let mut song = song(title, None, None);
+    for &beats in beats_per_minute {
+        song.written_tempos
+            .push(WrittenTempo::beats_per_minute(beats));
     }
 
     song
@@ -82,6 +92,44 @@ fn tunings_and_unreadable_songs_survive_a_restart() {
     last_scan(&config).keep(&tabs(), &songs);
 
     assert_eq!(last_scan(&config).songs_of(&tabs()), Some(songs.to_vec()));
+}
+
+#[test]
+fn written_tempos_survive_a_restart() {
+    let config = TempDir::new("scan-tempos");
+    let songs = [
+        song_with_written_tempos("Wexmoor", &[100, 200, 90]),
+        song_with_written_tempos("Brasswing", &[120]),
+        song_with_written_tempos("Lone Ember", &[]),
+    ];
+
+    last_scan(&config).keep(&tabs(), &songs);
+
+    assert_eq!(last_scan(&config).songs_of(&tabs()), Some(songs.to_vec()));
+}
+
+#[test]
+fn a_last_scan_kept_before_written_tempos_were_read_is_no_scan() -> io::Result<()> {
+    let config = config_with_hand_edited_last_scan(
+        "scan-before-tempos",
+        "file:///home/me/Tabs\nWexmoor\tCorvid Lane\tSaltglass\t38 45 50 55 59 64\t\n",
+    )?;
+
+    assert_eq!(last_scan(&config).songs_of(&tabs()), None);
+
+    Ok(())
+}
+
+#[test]
+fn a_last_scan_with_a_written_tempo_of_words_is_no_scan() -> io::Result<()> {
+    let config = config_with_hand_edited_last_scan(
+        "scan-tempo-words",
+        "file:///home/me/Tabs\nWexmoor\t\t\t\tfast\t\n",
+    )?;
+
+    assert_eq!(last_scan(&config).songs_of(&tabs()), None);
+
+    Ok(())
 }
 
 #[test]

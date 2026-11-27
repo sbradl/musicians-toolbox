@@ -19,3 +19,7 @@ _Avoid_: Meter, measure signature
 **Tuning**:
 The open Pitches of an instrument's strings, from lowest to highest, with its name when it has one (E Standard, Drop D) or Custom when it has none.
 _Avoid_: String set
+
+**Written tempo**:
+A tempo a Score states, in whole beats per minute (Score's word; shared so a Library's Song summary can keep it). BPM is only its unit, the word TabFinder shows beside the number.
+_Avoid_: Tempo

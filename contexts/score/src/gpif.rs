@@ -1,10 +1,10 @@
 use std::io::BufRead;
 
-use mt_music_kernel::Tuning;
+use mt_music_kernel::{Tuning, WrittenTempo};
 use quick_xml::Reader;
 use quick_xml::events::{BytesStart, Event};
 
-use crate::{MOST_TRACKS, ScoreHeader, ScoreXml, Track, Unreadable, pitch_of};
+use crate::{MOST_TRACKS, ScoreHeader, ScoreXml, Track, Unreadable, pitch_of, stated_tempo};
 
 const MOST_DEPTH: usize = 64;
 const MOST_ELEMENTS: usize = 1_000_000;
@@ -14,12 +14,23 @@ const TRACKS: [&str; 2] = ["GPIF", "Tracks"];
 const TUNING_PITCHES: [&str; 2] = ["Property name=Tuning", "Pitches"];
 const INSTRUMENT_TYPE: [&str; 2] = ["InstrumentSet", "Type"];
 const DRUM_KIT: &str = "drumKit";
+const AUTOMATION: [&str; 4] = ["GPIF", "MasterTrack", "Automations", "Automation"];
+const AUTOMATION_TYPE: [&str; 5] = ["GPIF", "MasterTrack", "Automations", "Automation", "Type"];
+const AUTOMATION_VALUE: [&str; 5] = ["GPIF", "MasterTrack", "Automations", "Automation", "Value"];
+const TEMPO: &str = "Tempo";
 
 #[derive(Debug, Default)]
 struct HeaderSoFar {
     open_elements: Vec<String>,
     elements_seen: usize,
     tracks: Vec<TrackSoFar>,
+    automations: Vec<AutomationSoFar>,
+}
+
+#[derive(Debug, Default)]
+struct AutomationSoFar {
+    is_tempo: bool,
+    value: String,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -78,15 +89,23 @@ impl HeaderSoFar {
             return Err(Unreadable);
         }
 
-        if self.open_elements == TRACK {
-            self.tracks.push(TrackSoFar::default());
-        }
+        self.start_track_or_automation();
 
         if self.tracks.len() > MOST_TRACKS {
             return Err(Unreadable);
         }
 
         Ok(())
+    }
+
+    fn start_track_or_automation(&mut self) {
+        if self.open_elements == TRACK {
+            self.tracks.push(TrackSoFar::default());
+        }
+
+        if self.open_elements == AUTOMATION {
+            self.automations.push(AutomationSoFar::default());
+        }
     }
 
     fn close(&mut self) -> Reading {
@@ -101,6 +120,7 @@ impl HeaderSoFar {
     }
 
     fn read_text(&mut self, text: &str) -> Result<(), Unreadable> {
+        self.read_automation_text(text);
         let names_instrument = self.ends_with(&INSTRUMENT_TYPE);
         let lists_tuning = self.ends_with(&TUNING_PITCHES);
         let Some(track) = self.track_being_read() else {
@@ -116,6 +136,22 @@ impl HeaderSoFar {
         }
 
         Ok(())
+    }
+
+    fn read_automation_text(&mut self, text: &str) {
+        let names_type = self.open_elements == AUTOMATION_TYPE;
+        let states_value = self.open_elements == AUTOMATION_VALUE;
+        let Some(automation) = self.automations.last_mut() else {
+            return;
+        };
+
+        if names_type {
+            automation.is_tempo = text == TEMPO;
+        }
+
+        if states_value {
+            automation.value.push_str(text);
+        }
     }
 
     fn track_being_read(&mut self) -> Option<&mut TrackSoFar> {
@@ -143,6 +179,7 @@ impl HeaderSoFar {
             title: None,
             artist: None,
             album: None,
+            written_tempos: written_tempos_of(&self.automations),
             tracks: self
                 .tracks
                 .into_iter()
@@ -150,6 +187,28 @@ impl HeaderSoFar {
                 .collect(),
         }
     }
+}
+
+fn written_tempos_of(automations: &[AutomationSoFar]) -> Vec<WrittenTempo> {
+    let mut tempos = Vec::new();
+    for automation in automations {
+        if !automation.is_tempo {
+            continue;
+        }
+
+        if let Some(tempo) = written_tempo_of(&automation.value) {
+            tempos.push(tempo);
+        }
+    }
+
+    tempos
+}
+
+fn written_tempo_of(value: &str) -> Option<WrittenTempo> {
+    let beats_per_minute = value.split_whitespace().next()?;
+    let whole_beats = beats_per_minute.split('.').next()?;
+
+    stated_tempo(whole_beats.parse().ok()?)
 }
 
 impl TrackSoFar {

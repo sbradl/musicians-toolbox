@@ -1,6 +1,10 @@
-use mt_music_kernel::Tuning;
+use mt_music_kernel::{Tuning, WrittenTempo};
 
-use crate::{Cursor, GuitarProFile, MOST_TRACKS, ScoreHeader, Track, Unreadable, pitch_of};
+mod bars;
+
+use crate::{
+    Cursor, GuitarProFile, MOST_TRACKS, ScoreHeader, Track, Unreadable, pitch_of, stated_tempo,
+};
 
 const MOST_BARS: usize = 10_000;
 const STRING_SLOTS: usize = 7;
@@ -43,9 +47,9 @@ impl Version {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct BarFlags(u8);
+struct Flags(u8);
 
-impl BarFlags {
+impl Flags {
     const fn has(self, flag: u8) -> bool {
         self.0 & flag != 0
     }
@@ -67,21 +71,18 @@ impl<'file> GuitarProFile<'file> {
         let version = read_version(&mut cursor)?;
         let [title, artist, album] = read_names(&mut cursor)?;
         skip_song_information_after_album(&mut cursor, version)?;
-        skip_page_setup_and_tempo(&mut cursor, version)?;
+        let opening_tempo = read_page_setup_and_tempo(&mut cursor, version)?;
         skip_midi_channels(&mut cursor, version)?;
         let bars = cursor.count_up_to(MOST_BARS)?;
-        let tracks = cursor.count_up_to(MOST_TRACKS)?;
-
-        if tracks == 0 {
-            return Err(Unreadable);
-        }
-        skip_bar_headers(&mut cursor, version, bars)?;
+        let tracks = read_bar_headers_and_tracks(&mut cursor, version, bars)?;
+        let bar_tracks = bars * tracks.len();
 
         Ok(ScoreHeader {
             title,
             artist,
             album,
-            tracks: read_tracks(&mut cursor, version, tracks)?,
+            tracks,
+            written_tempos: written_tempos(&mut cursor, version, opening_tempo, bar_tracks),
         })
     }
 }
@@ -159,44 +160,72 @@ fn skip_song_information_after_album(
     skip_texts(cursor, notice_lines)
 }
 
-fn skip_page_setup_and_tempo(cursor: &mut Cursor<'_>, version: Version) -> Result<(), Unreadable> {
-    let triplet_feel = 1;
-    let tempo_and_key = NUMBER + NUMBER;
-    let octave = 1;
-
-    match version.major {
-        3 => cursor.skip(triplet_feel + tempo_and_key),
-        4 => {
-            cursor.skip(triplet_feel)?;
-            skip_lyrics(cursor)?;
-
-            cursor.skip(tempo_and_key + octave)
-        }
-        _ => skip_gp5_page_setup_and_tempo(cursor, version),
-    }
-}
-
-fn skip_gp5_page_setup_and_tempo(
+fn read_bar_headers_and_tracks(
     cursor: &mut Cursor<'_>,
     version: Version,
-) -> Result<(), Unreadable> {
+    bars: usize,
+) -> Result<Vec<Track>, Unreadable> {
+    let tracks = cursor.count_up_to(MOST_TRACKS)?;
+
+    if tracks == 0 {
+        return Err(Unreadable);
+    }
+    skip_bar_headers(cursor, version, bars)?;
+
+    read_tracks(cursor, version, tracks)
+}
+
+fn written_tempos(
+    cursor: &mut Cursor<'_>,
+    version: Version,
+    opening_tempo: Option<WrittenTempo>,
+    bar_tracks: usize,
+) -> Vec<WrittenTempo> {
+    let mut tempos = Vec::from_iter(opening_tempo);
+    let changes_unless_bars_unfollowable = bars::tempo_changes(cursor, version, bar_tracks);
+    tempos.extend(changes_unless_bars_unfollowable.unwrap_or_default());
+    tempos.dedup();
+
+    tempos
+}
+
+fn read_page_setup_and_tempo(
+    cursor: &mut Cursor<'_>,
+    version: Version,
+) -> Result<Option<WrittenTempo>, Unreadable> {
+    let triplet_feel = 1;
+    let key = NUMBER;
+    let gp4_octave = usize::from(version.major == 4);
+
+    if version.is_5() {
+        return read_gp5_page_setup_and_tempo(cursor, version);
+    }
+    cursor.skip(triplet_feel)?;
+
+    if version.major == 4 {
+        skip_lyrics(cursor)?;
+    }
+    let tempo = stated_tempo(cursor.number()?.into());
+    cursor.skip(key + gp4_octave)?;
+
+    Ok(tempo)
+}
+
+fn read_gp5_page_setup_and_tempo(
+    cursor: &mut Cursor<'_>,
+    version: Version,
+) -> Result<Option<WrittenTempo>, Unreadable> {
     let tempo_name = 1;
-    let hide_tempo = 1;
+    let after_5_00 = usize::from(version.is_5_after_5_00());
+    let hide_tempo = after_5_00;
     let key_and_octave = 1 + NUMBER;
     skip_lyrics(cursor)?;
-
-    if version.is_5_after_5_00() {
-        cursor.skip(GP5_MASTER_EFFECT)?;
-    }
-    cursor.skip(GP5_PAGE_SETUP)?;
+    cursor.skip(GP5_MASTER_EFFECT * after_5_00 + GP5_PAGE_SETUP)?;
     skip_texts(cursor, GP5_HEADER_AND_FOOTER_TEXTS + tempo_name)?;
-    cursor.skip(NUMBER)?;
+    let tempo = stated_tempo(cursor.number()?.into());
+    cursor.skip(hide_tempo + key_and_octave)?;
 
-    if version.is_5_after_5_00() {
-        cursor.skip(hide_tempo)?;
-    }
-
-    cursor.skip(key_and_octave)
+    Ok(tempo)
 }
 
 fn skip_lyrics(cursor: &mut Cursor<'_>) -> Result<(), Unreadable> {
@@ -238,7 +267,7 @@ fn skip_bar_headers(
 }
 
 fn skip_bar_header(cursor: &mut Cursor<'_>, version: Version) -> Result<(), Unreadable> {
-    let flags = BarFlags(cursor.byte()?);
+    let flags = Flags(cursor.byte()?);
     skip_bar_numbers_before_marker(cursor, flags, version)?;
 
     if flags.has(BAR_HAS_MARKER) {
@@ -260,7 +289,7 @@ fn skip_bar_header(cursor: &mut Cursor<'_>, version: Version) -> Result<(), Unre
 
 fn skip_bar_numbers_before_marker(
     cursor: &mut Cursor<'_>,
-    flags: BarFlags,
+    flags: Flags,
     version: Version,
 ) -> Result<(), Unreadable> {
     let gp3_or_4_ending = flags.has(BAR_HAS_ALTERNATE_ENDING) && !version.is_5();
@@ -278,7 +307,7 @@ fn skip_bar_numbers_before_marker(
     cursor.skip(bytes)
 }
 
-fn skip_gp5_bar_header_end(cursor: &mut Cursor<'_>, flags: BarFlags) -> Result<(), Unreadable> {
+fn skip_gp5_bar_header_end(cursor: &mut Cursor<'_>, flags: Flags) -> Result<(), Unreadable> {
     let has_alternate_endings = flags.has(BAR_HAS_ALTERNATE_ENDING);
     let beam_groups = NUMBER;
     let triplet_feel = 1;

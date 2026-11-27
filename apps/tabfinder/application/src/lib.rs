@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use mt_library::Library;
 pub use mt_library::Song;
-pub use mt_music_kernel::{Pitch, Tuning};
+pub use mt_music_kernel::{Pitch, Tuning, WrittenTempo};
 pub use mt_score::LARGEST_TAB_FILE;
 use mt_score::{Track, read_header};
 
@@ -17,6 +17,7 @@ pub fn song_read_from_tab_file(mut song: Song, tab_file: Option<&[u8]>) -> Song 
     song.artist = header.artist.or(song.artist);
     song.album = header.album.or(song.album);
     song.tunings = distinct_tunings_of(header.tracks);
+    song.written_tempos = header.written_tempos;
 
     song
 }

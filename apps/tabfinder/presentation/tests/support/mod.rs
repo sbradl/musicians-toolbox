@@ -8,10 +8,10 @@ use unic_langid as _;
 
 use mt_tabfinder_application::{
     LastScan, LibraryFolder, LibraryFolderError, LibraryLocation, RememberedLibraryLocation, Song,
-    Tuning,
+    Tuning, WrittenTempo,
 };
 use mt_tabfinder_presentation::{
-    Action, App, AppViewModel, Effect, FilterBy, FilterField, Filters, LibraryViewModel,
+    Action, App, AppViewModel, Bpm, Effect, FilterBy, FilterField, Filters, LibraryViewModel,
     NothingMatches, SongItem, SuggestionGroup, ViewModelListener,
 };
 
@@ -517,6 +517,7 @@ pub fn row(title: &str) -> SongItem {
         title: title.to_owned(),
         artist_and_album: None,
         tunings: vec![],
+        bpm: None,
         unreadable: None,
     }
 }
@@ -526,6 +527,8 @@ pub trait SongRow {
     fn above(self, artist_and_album: &str) -> Self;
     #[must_use]
     fn with_badges(self, tunings: &[&str]) -> Self;
+    #[must_use]
+    fn at_bpm(self, bpm: &str) -> Self;
     #[must_use]
     fn marked(self, unreadable: &str) -> Self;
 }
@@ -539,6 +542,15 @@ impl SongRow for SongItem {
 
     fn with_badges(mut self, tunings: &[&str]) -> Self {
         self.tunings = owned_strings(tunings);
+
+        self
+    }
+
+    fn at_bpm(mut self, bpm: &str) -> Self {
+        self.bpm = Some(Bpm {
+            value: bpm.to_owned(),
+            unit: "BPM".to_owned(),
+        });
 
         self
     }
@@ -582,6 +594,17 @@ impl SongInFolder {
         self.0
             .tunings
             .push(Tuning::of_midi_numbers(lowest_string_first));
+
+        self
+    }
+
+    #[must_use]
+    pub fn at_tempos(mut self, beats_per_minute: &[u16]) -> Self {
+        for &beats in beats_per_minute {
+            self.0
+                .written_tempos
+                .push(WrittenTempo::beats_per_minute(beats));
+        }
 
         self
     }

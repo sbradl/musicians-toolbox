@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
 
-use mt_music_kernel::Tuning;
+use mt_music_kernel::{Tuning, WrittenTempo};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Song {
@@ -10,6 +10,7 @@ pub struct Song {
     pub artist: Option<String>,
     pub album: Option<String>,
     pub tunings: Vec<Tuning>,
+    pub written_tempos: Vec<WrittenTempo>,
     pub is_unreadable: bool,
 }
 
@@ -20,6 +21,7 @@ impl Song {
             artist: None,
             album: None,
             tunings: Vec::new(),
+            written_tempos: Vec::new(),
             is_unreadable: false,
         }
     }

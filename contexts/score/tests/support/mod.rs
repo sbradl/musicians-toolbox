@@ -1,4 +1,5 @@
 mod guitar_pro_6_and_7;
+mod guitar_pro_bars;
 
 use std::io::Write as _;
 
@@ -20,11 +21,20 @@ pub struct GuitarProFile {
     stated_bars: Option<i32>,
     bars: usize,
     changes_key: bool,
+    opening_tempo: i32,
+    tempo_changes: Vec<TempoChange>,
+    every_kind_of_beat: bool,
     name_fields_sized: Option<i32>,
     title: Vec<u8>,
     artist: String,
     album: String,
     tracks: Vec<TrackInFile>,
+}
+
+#[derive(Debug)]
+struct TempoChange {
+    bar: usize,
+    beats_per_minute: i32,
 }
 
 #[derive(Debug)]
@@ -43,6 +53,9 @@ impl GuitarProFile {
             stated_bars: None,
             bars: 2,
             changes_key: false,
+            opening_tempo: 120,
+            tempo_changes: Vec::new(),
+            every_kind_of_beat: false,
             name_fields_sized: None,
             title: Vec::new(),
             artist: String::new(),
@@ -73,6 +86,31 @@ impl GuitarProFile {
     #[must_use]
     pub const fn stating_bars(mut self, bars: i32) -> Self {
         self.stated_bars = Some(bars);
+
+        self
+    }
+
+    #[must_use]
+    pub const fn starting_at_tempo(mut self, beats_per_minute: i32) -> Self {
+        self.opening_tempo = beats_per_minute;
+
+        self
+    }
+
+    #[must_use]
+    pub fn changing_tempo_in_bar(mut self, bar: usize, beats_per_minute: i32) -> Self {
+        self.bars = self.bars.max(bar + 1);
+        self.tempo_changes.push(TempoChange {
+            bar,
+            beats_per_minute,
+        });
+
+        self
+    }
+
+    #[must_use]
+    pub const fn with_every_kind_of_beat(mut self) -> Self {
+        self.every_kind_of_beat = true;
 
         self
     }
@@ -141,7 +179,7 @@ impl GuitarProFile {
         file.count(self.tracks.len());
         self.write_bar_headers(&mut file);
         self.write_tracks(&mut file);
-        file.zeros(64);
+        self.write_bars(&mut file);
 
         file.0
     }
@@ -177,11 +215,16 @@ impl GuitarProFile {
 
     fn write_header_after_notice(&self, file: &mut Bytes) {
         match self.major {
-            3 => file.zeros(1 + 4 + 4),
+            3 => {
+                file.zeros(1);
+                file.number(self.opening_tempo);
+                file.zeros(4);
+            }
             4 => {
                 file.zeros(1);
                 file.lyrics();
-                file.zeros(4 + 4 + 1);
+                file.number(self.opening_tempo);
+                file.zeros(4 + 1);
             }
             _ => self.write_gp5_page_setup(file),
         }
@@ -196,7 +239,7 @@ impl GuitarProFile {
         file.zeros(2 * 4 + 4 * 4 + 4 + 2);
         file.texts(&["", "", "", "", "", "", "", "", "", ""]);
         file.text("Moderato");
-        file.number(120);
+        file.number(self.opening_tempo);
 
         if self.minor > 0 {
             file.zeros(1);

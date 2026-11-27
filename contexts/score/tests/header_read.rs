@@ -1,6 +1,6 @@
 pub mod support;
 
-use mt_music_kernel as _;
+use mt_music_kernel::WrittenTempo;
 use quick_xml as _;
 use std::fs;
 use std::time::{Duration, Instant};
@@ -58,6 +58,217 @@ fn a_guitar_pro_3_file_gives_its_tracks_tunings() {
     let header = read_header(&tab_file);
 
     assert_tunings(header, &["6 E Standard", "6 Drop D"]);
+}
+
+#[test]
+fn a_guitar_pro_5_file_gives_its_opening_written_tempo() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .starting_at_tempo(96)
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[96]);
+}
+
+#[test]
+fn a_guitar_pro_4_file_gives_its_opening_written_tempo() {
+    let tab_file = GuitarProFile::version(4, 6)
+        .starting_at_tempo(132)
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[132]);
+}
+
+#[test]
+fn a_guitar_pro_3_file_gives_its_opening_written_tempo() {
+    let tab_file = GuitarProFile::version(3, 0)
+        .starting_at_tempo(72)
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[72]);
+}
+
+#[test]
+fn a_guitar_pro_file_stating_no_opening_tempo_gives_none() {
+    let tab_file = GuitarProFile::version(5, 10)
+        .starting_at_tempo(0)
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[]);
+}
+
+#[test]
+fn a_guitar_pro_5_10_file_gives_the_tempo_changes_in_its_bars() {
+    let tab_file = GuitarProFile::version(5, 10)
+        .starting_at_tempo(100)
+        .with_every_kind_of_beat()
+        .changing_tempo_in_bar(2, 200)
+        .changing_tempo_in_bar(3, 90)
+        .with_strings(&E_STANDARD)
+        .with_strings(&BASS_E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[100, 200, 90]);
+}
+
+#[test]
+fn a_guitar_pro_5_00_file_gives_the_tempo_changes_in_its_bars() {
+    let tab_file = GuitarProFile::version(5, 0)
+        .starting_at_tempo(100)
+        .with_every_kind_of_beat()
+        .changing_tempo_in_bar(1, 200)
+        .with_strings(&E_STANDARD)
+        .with_drums()
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[100, 200]);
+}
+
+#[test]
+fn a_guitar_pro_4_file_gives_the_tempo_changes_in_its_bars() {
+    let tab_file = GuitarProFile::version(4, 6)
+        .starting_at_tempo(100)
+        .with_every_kind_of_beat()
+        .changing_tempo_in_bar(1, 200)
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[100, 200]);
+}
+
+#[test]
+fn a_guitar_pro_3_file_gives_the_tempo_changes_in_its_bars() {
+    let tab_file = GuitarProFile::version(3, 0)
+        .starting_at_tempo(100)
+        .with_every_kind_of_beat()
+        .changing_tempo_in_bar(1, 200)
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[100, 200]);
+}
+
+#[test]
+fn a_tempo_change_back_to_the_same_tempo_is_no_change() {
+    let tab_file = GuitarProFile::version(5, 10)
+        .starting_at_tempo(100)
+        .changing_tempo_in_bar(1, 100)
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[100]);
+}
+
+#[test]
+fn a_guitar_pro_file_ending_inside_its_bars_keeps_its_header_and_opening_tempo() {
+    let mut tab_file = GuitarProFile::version(5, 10)
+        .starting_at_tempo(100)
+        .with_every_kind_of_beat()
+        .changing_tempo_in_bar(1, 200)
+        .with_strings(&DROP_D)
+        .bytes();
+    let last_bar = 200;
+    tab_file.truncate(tab_file.len() - last_bar);
+
+    let tempos = read_header(&tab_file);
+    let tunings = read_header(&tab_file);
+
+    assert_written_tempos(tempos, &[100]);
+    assert_tunings(tunings, &["6 Drop D"]);
+}
+
+#[test]
+fn a_guitar_pro_7_file_gives_its_opening_written_tempo_and_its_changes() {
+    let score = ScoreXml::guitar_pro(7)
+        .with_tempo_written_in_bar(0, "100 2")
+        .with_tempo_written_in_bar(8, "200 2")
+        .with_strings(&E_STANDARD);
+
+    let header = read_header(&guitar_pro_7_file(&score.xml()));
+
+    assert_written_tempos(header, &[100, 200]);
+}
+
+#[test]
+fn a_guitar_pro_6_file_gives_its_opening_written_tempo() {
+    let score = ScoreXml::guitar_pro(6)
+        .with_tempo_written_in_bar(0, "88 2")
+        .with_strings(&E_STANDARD);
+
+    let header = read_header(&guitar_pro_6_file(&score.xml()));
+
+    assert_written_tempos(header, &[88]);
+}
+
+#[test]
+fn a_score_xml_tempo_between_whole_beats_counts_its_whole_beats() {
+    let score = ScoreXml::guitar_pro(7)
+        .with_tempo_written_in_bar(0, "92.5 2")
+        .with_strings(&E_STANDARD);
+
+    let header = read_header(&guitar_pro_7_file(&score.xml()));
+
+    assert_written_tempos(header, &[92]);
+}
+
+#[test]
+fn a_score_xml_tempo_of_words_or_none_is_skipped_and_the_tunings_still_read() {
+    let score = ScoreXml::guitar_pro(7)
+        .with_tempo_written_in_bar(0, "fast")
+        .with_tempo_written_in_bar(2, "0 2")
+        .with_tempo_written_in_bar(4, "")
+        .with_tempo_written_in_bar(6, "<!-- split -->1<!-- split -->20 2")
+        .with_strings(&E_STANDARD);
+    let tab_file = guitar_pro_7_file(&score.xml());
+
+    let tempos = read_header(&tab_file);
+    let tunings = read_header(&tab_file);
+
+    assert_written_tempos(tempos, &[120]);
+    assert_tunings(tunings, &["6 E Standard"]);
+}
+
+#[test]
+fn a_tempo_above_1000_bpm_is_not_stated() {
+    let tab_file = GuitarProFile::version(5, 10)
+        .starting_at_tempo(100)
+        .changing_tempo_in_bar(1, 25_700)
+        .with_strings(&E_STANDARD)
+        .bytes();
+
+    let header = read_header(&tab_file);
+
+    assert_written_tempos(header, &[100]);
+}
+
+#[test]
+fn a_score_xml_without_tempo_gives_none() {
+    let score = ScoreXml::guitar_pro(7).with_strings(&E_STANDARD);
+
+    let header = read_header(&guitar_pro_7_file(&score.xml()));
+
+    assert_written_tempos(header, &[]);
 }
 
 #[test]
@@ -355,6 +566,16 @@ fn assert_tunings(header: Result<ScoreHeader, Unreadable>, expected: &[&str]) {
 }
 
 #[track_caller]
+fn assert_written_tempos(header: Result<ScoreHeader, Unreadable>, expected: &[u16]) {
+    let tempos = header.map(|header| header.written_tempos);
+    let expected = expected
+        .iter()
+        .map(|&bpm| WrittenTempo::beats_per_minute(bpm));
+
+    assert_eq!(tempos, Ok(expected.collect()));
+}
+
+#[track_caller]
 fn assert_names(header: Result<ScoreHeader, Unreadable>, expected: [Option<&str>; 3]) {
     let names = header.map(|header| [header.title, header.artist, header.album]);
 
@@ -392,6 +613,8 @@ fn a_file_larger_than_the_largest_tab_file_is_unreadable() {
 fn the_fixtures_for_the_apps_tests_are_what_the_builder_writes() {
     let drop_d_and_bass = GuitarProFile::version(5, 0)
         .by(" ")
+        .with_every_kind_of_beat()
+        .changing_tempo_in_bar(15, 140)
         .with_strings(&DROP_D)
         .with_drums()
         .with_strings(&BASS_E_STANDARD)

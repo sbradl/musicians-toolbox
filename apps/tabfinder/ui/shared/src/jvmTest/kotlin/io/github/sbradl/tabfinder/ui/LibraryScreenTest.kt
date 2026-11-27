@@ -38,6 +38,17 @@ class LibraryScreenTest {
         }
 
     @Test
+    fun eachSongShowsItsBpmFromLowestToHighest() =
+        runTabFinderTest { tabfinder ->
+            tabfinder.libraryFolderContainsTheTabFileWithDropDAndBass("Wexmoor.gp5")
+            tabfinder.musicianOpensTabFinder()
+
+            tabfinder.musicianPicksTheLibraryFolder()
+
+            tabfinder.assertShown("120 → 140", "BPM")
+        }
+
+    @Test
     fun eachSongShowsTheArtistAndAlbumItsFoldersName() =
         runTabFinderTest { tabfinder ->
             tabfinder.libraryFolderContains("Corvid Lane/Saltglass/Wexmoor.gp5", "Hollow Fern/Brasswing.gp5")
@@ -313,7 +324,10 @@ class LibraryScreenTest {
     @Test
     fun songsAtDoubleTextSizeAreNeitherCutOffNorOverlapping() =
         runTabFinderTest { tabfinder ->
-            tabfinder.libraryFolderContains("The Long Ballad of the Brasswing Lighthouse Keeper and the Wexmoor Tide.gp5", "Wexmoor.gp5")
+            tabfinder.libraryFolderContains("Wexmoor.gp5")
+            tabfinder.libraryFolderContainsTheTabFileWithDropDAndBass(
+                "The Long Ballad of the Brasswing Lighthouse Keeper and the Wexmoor Tide.gp5",
+            )
             tabfinder.musicianDoublesTheTextSize()
             tabfinder.musicianOpensTabFinder()
 

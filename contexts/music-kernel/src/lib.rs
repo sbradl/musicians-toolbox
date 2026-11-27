@@ -25,6 +25,19 @@ impl Pitch {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct WrittenTempo(u16);
+
+impl WrittenTempo {
+    pub const fn beats_per_minute(beats: u16) -> Self {
+        Self(beats)
+    }
+
+    pub const fn bpm(self) -> u16 {
+        self.0
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Tuning {
     pub lowest_string_first: Vec<Pitch>,

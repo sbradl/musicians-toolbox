@@ -17,7 +17,7 @@ The foreign format a Tab file is written in, recognized by its content, not its 
 _Avoid_: Extension, type
 
 **Score header**:
-What a Tab file states before its Bars: title, artist, album, Tracks with their Tunings, the opening Written tempo. Read alone when the Bars aren't needed (ADR 0001).
+What a Tab file states before its Bars: title, artist, album, Tracks with their Tunings, and its Written tempos, the opening one and its changes. Read alone when the Bars aren't needed (ADR 0001).
 _Avoid_: Metadata
 
 **Score XML**:

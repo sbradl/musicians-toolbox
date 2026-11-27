@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use mt_tabfinder_application::{LastScan, LibraryLocation, Pitch, Song, Tuning};
+use mt_tabfinder_application::{LastScan, LibraryLocation, Pitch, Song, Tuning, WrittenTempo};
 use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, utf8_percent_encode};
 
 use crate::save_whole_or_nothing;
@@ -10,6 +10,7 @@ const ESCAPED: &AsciiSet = &CONTROLS.add(b'%');
 const FIELD_SEPARATOR: &str = "\t";
 const TUNING_SEPARATOR: &str = ",";
 const PITCH_SEPARATOR: &str = " ";
+const TEMPO_SEPARATOR: &str = " ";
 const UNREADABLE: &str = "unreadable";
 
 #[derive(Debug)]
@@ -60,6 +61,7 @@ fn line_of(song: &Song) -> String {
         encoded(song.artist.as_deref().unwrap_or_default()),
         encoded(song.album.as_deref().unwrap_or_default()),
         tunings_field(&song.tunings),
+        written_tempos_field(&song.written_tempos),
         unreadable_field(song.is_unreadable),
     ];
 
@@ -77,6 +79,15 @@ fn tunings_field(tunings: &[Tuning]) -> String {
     }
 
     fields.join(TUNING_SEPARATOR)
+}
+
+fn written_tempos_field(written_tempos: &[WrittenTempo]) -> String {
+    let mut fields = Vec::new();
+    for tempo in written_tempos {
+        fields.push(tempo.bpm().to_string());
+    }
+
+    fields.join(TEMPO_SEPARATOR)
 }
 
 fn unreadable_field(is_unreadable: bool) -> String {
@@ -98,7 +109,7 @@ fn songs_from<'contents>(lines: impl Iterator<Item = &'contents str>) -> Option<
 
 fn song_from_line(line: &str) -> Option<Song> {
     let fields: Vec<&str> = line.split(FIELD_SEPARATOR).collect();
-    let [title, artist, album, tunings, unreadable] = fields.as_slice() else {
+    let [title, artist, album, tunings, written_tempos, unreadable] = fields.as_slice() else {
         return None;
     };
 
@@ -107,6 +118,7 @@ fn song_from_line(line: &str) -> Option<Song> {
         artist: non_empty(decoded(artist)?),
         album: non_empty(decoded(album)?),
         tunings: tunings_from(tunings)?,
+        written_tempos: written_tempos_from(written_tempos)?,
         is_unreadable: is_unreadable_from(unreadable)?,
     })
 }
@@ -126,6 +138,17 @@ fn tunings_from(field: &str) -> Option<Vec<Tuning>> {
     }
 
     Some(tunings)
+}
+
+fn written_tempos_from(field: &str) -> Option<Vec<WrittenTempo>> {
+    let mut tempos = Vec::new();
+    for beats_per_minute in field.split_whitespace() {
+        tempos.push(WrittenTempo::beats_per_minute(
+            beats_per_minute.parse().ok()?,
+        ));
+    }
+
+    Some(tempos)
 }
 
 fn is_unreadable_from(field: &str) -> Option<bool> {

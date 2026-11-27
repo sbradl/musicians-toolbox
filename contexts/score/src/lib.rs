@@ -4,12 +4,13 @@ mod gpx;
 mod guitar_pro;
 mod zip;
 
-use mt_music_kernel::{Pitch, Tuning};
+use mt_music_kernel::{Pitch, Tuning, WrittenTempo};
 
 pub const LARGEST_TAB_FILE: usize = 64 * 1024 * 1024;
 pub const LARGEST_SCORE_XML: usize = 32 * 1024 * 1024;
 const MOST_TRACKS: usize = 128;
 const HIGHEST_MIDI_NUMBER: u8 = 127;
+const MOST_BEATS_PER_MINUTE: u16 = 1000;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ScoreHeader {
@@ -17,6 +18,7 @@ pub struct ScoreHeader {
     pub artist: Option<String>,
     pub album: Option<String>,
     pub tracks: Vec<Track>,
+    pub written_tempos: Vec<WrittenTempo>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -61,6 +63,18 @@ fn pitch_of(midi_number: i32) -> Result<Pitch, Unreadable> {
     }
 
     Ok(Pitch::midi(midi_number))
+}
+
+fn stated_tempo(beats_per_minute: i64) -> Option<WrittenTempo> {
+    let Ok(beats_per_minute) = u16::try_from(beats_per_minute) else {
+        return None;
+    };
+
+    if beats_per_minute == 0 || beats_per_minute > MOST_BEATS_PER_MINUTE {
+        return None;
+    }
+
+    Some(WrittenTempo::beats_per_minute(beats_per_minute))
 }
 
 #[derive(Debug)]

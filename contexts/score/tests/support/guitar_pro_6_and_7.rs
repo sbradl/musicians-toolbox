@@ -12,6 +12,7 @@ const LONGEST_COPY: usize = (1 << 12) - 1;
 pub struct ScoreXml {
     guitar_pro: u8,
     before_tracks: String,
+    automations: Vec<String>,
     tracks: Vec<String>,
     after_tracks: String,
 }
@@ -22,6 +23,7 @@ impl ScoreXml {
         Self {
             guitar_pro: major,
             before_tracks: String::new(),
+            automations: Vec::new(),
             tracks: Vec::new(),
             after_tracks: String::new(),
         }
@@ -70,6 +72,16 @@ impl ScoreXml {
     }
 
     #[must_use]
+    pub fn with_tempo_written_in_bar(mut self, bar: usize, value: &str) -> Self {
+        self.automations.push(format!(
+            "<Automation><Type>Tempo</Type><Linear>false</Linear><Bar>{bar}</Bar>\
+             <Position>0</Position><Visible>true</Visible><Value>{value}</Value></Automation>"
+        ));
+
+        self
+    }
+
+    #[must_use]
     pub fn preceded_by(mut self, xml_before_tracks: &str) -> Self {
         xml_before_tracks.clone_into(&mut self.before_tracks);
 
@@ -100,11 +112,14 @@ impl ScoreXml {
             "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<GPIF>{}\
              <GPVersion>{}</GPVersion>\
              <Score><Title><![CDATA[Invented Song]]></Title></Score>\
-             <MasterTrack><Tracks>{track_ids}</Tracks></MasterTrack>\
+             <MasterTrack><Tracks>{track_ids}</Tracks>\
+             <Automations><Automation><Type>Volume</Type><Value>0.5</Value></Automation>{}</Automations>\
+             </MasterTrack>\
              <Tracks>{}</Tracks>{}\
              <MasterBars><MasterBar><Time>4/4</Time></MasterBar></MasterBars></GPIF>",
             self.before_tracks,
             self.guitar_pro,
+            self.automations.concat(),
             self.tracks.concat(),
             self.after_tracks,
         )

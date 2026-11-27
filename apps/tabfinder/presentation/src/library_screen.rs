@@ -1,7 +1,7 @@
 use mt_library::{Filter, FilterBy, Library, Song};
 
 use crate::{
-    Action, FilterField, Filters, LibraryViewModel, ListedLibrary, NothingMatches, SongItem,
+    Action, Bpm, FilterField, Filters, LibraryViewModel, ListedLibrary, NothingMatches, SongItem,
     SuggestionGroup, Texts,
 };
 
@@ -220,6 +220,7 @@ impl SongItem {
             title: song.title.clone(),
             artist_and_album: Self::artist_and_album(song, texts),
             tunings: Self::badges(song, texts),
+            bpm: Self::bpm(song, texts),
             unreadable: Self::unreadable(song, texts),
         }
     }
@@ -231,6 +232,21 @@ impl SongItem {
         }
 
         badges
+    }
+
+    fn bpm(song: &Song, texts: &Texts) -> Option<Bpm> {
+        let lowest = song.written_tempos.iter().min()?;
+        let highest = song.written_tempos.iter().max()?;
+        let value = if lowest == highest {
+            texts.bpm(*lowest)
+        } else {
+            texts.bpm_range(*lowest, *highest)
+        };
+
+        Some(Bpm {
+            value,
+            unit: texts.bpm_unit(),
+        })
     }
 
     fn unreadable(song: &Song, texts: &Texts) -> Option<String> {

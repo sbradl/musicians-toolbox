@@ -60,7 +60,14 @@ pub struct SongItem {
     pub title: String,
     pub artist_and_album: Option<String>,
     pub tunings: Vec<String>,
+    pub bpm: Option<Bpm>,
     pub unreadable: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Bpm {
+    pub value: String,
+    pub unit: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

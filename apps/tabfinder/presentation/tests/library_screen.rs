@@ -303,6 +303,30 @@ fn each_song_row_shows_a_badge_per_tuning_with_its_strings() {
 }
 
 #[test]
+fn each_song_row_shows_its_bpm() {
+    let tabfinder = TabFinder::with_folder_of_songs(
+        "/music",
+        &[song("Wexmoor").at_tempos(&[120]), song("Brasswing")],
+    )
+    .start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_song_rows(&[row("Brasswing"), row("Wexmoor").at_bpm("120")]);
+}
+
+#[test]
+fn a_song_whose_tempo_changes_shows_its_lowest_to_its_highest_bpm() {
+    let tabfinder =
+        TabFinder::with_folder_of_songs("/music", &[song("Wexmoor").at_tempos(&[100, 200, 90])])
+            .start();
+
+    tabfinder.musician_picks_folder("/music");
+
+    tabfinder.assert_song_rows(&[row("Wexmoor").at_bpm("90 → 200")]);
+}
+
+#[test]
 fn an_unreadable_song_stays_listed_and_says_its_file_could_not_be_read() {
     let tabfinder = TabFinder::with_folder_of_songs(
         "/music",

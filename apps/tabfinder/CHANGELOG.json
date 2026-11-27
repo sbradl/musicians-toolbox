@@ -61,6 +61,12 @@
           "en": "On a Linux desktop with a scaled display, such as 170 % on a 4K screen, TabFinder opens at that scale instead of tiny.",
           "de": "Auf einem Linux-Desktop mit skalierter Anzeige, etwa 170 % auf einem 4K-Bildschirm, öffnet sich TabFinder in dieser Größe statt winzig.",
           "fr": "Sur un bureau Linux à affichage mis à l'échelle, par exemple 170 % sur un écran 4K, TabFinder s'ouvre à cette échelle au lieu d'être minuscule."
+        },
+        {
+          "id": "bpm-on-song-rows",
+          "en": "Each Song shows its BPM on the right, such as \"120\", or \"90 → 200\" from its lowest to its highest tempo when the tempo changes, read from Guitar Pro 3 to 8 files. The first start after updating scans your folder once more to read the tempos.",
+          "de": "Jeder Song zeigt rechts sein BPM, etwa „120“, oder „90 → 200“ vom langsamsten bis zum schnellsten Tempo, wenn sich das Tempo ändert, gelesen aus Guitar-Pro-3- bis -8-Dateien. Der erste Start nach dem Update scannt deinen Ordner noch einmal, um die Tempi zu lesen.",
+          "fr": "Chaque morceau affiche son BPM à droite, comme « 120 », ou « 90 → 200 » du tempo le plus lent au plus rapide quand le tempo change, lu dans les fichiers Guitar Pro 3 à 8. Le premier démarrage après la mise à jour scanne votre dossier une fois de plus pour lire les tempos."
         }
       ]
     }

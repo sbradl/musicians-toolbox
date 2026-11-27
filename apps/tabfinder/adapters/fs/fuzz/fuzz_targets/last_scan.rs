@@ -2,7 +2,7 @@
 
 use libfuzzer_sys::arbitrary::{Arbitrary as _, Unstructured};
 use libfuzzer_sys::fuzz_target;
-use mt_tabfinder_application::{LastScan, LibraryLocation, Song, Tuning};
+use mt_tabfinder_application::{LastScan, LibraryLocation, Song, Tuning, WrittenTempo};
 use mt_tabfinder_fs::FsLastScan;
 use mt_tabfinder_fs_fuzz::{config_dir, config_dir_with};
 
@@ -37,14 +37,27 @@ fn location_and_songs(bytes: &[u8]) -> Option<(LibraryLocation, Vec<Song>)> {
     Some((LibraryLocation::new(&location), songs))
 }
 
-type SongFields = (String, Option<String>, Option<String>, Vec<Vec<u8>>, bool);
+type SongFields = (
+    String,
+    Option<String>,
+    Option<String>,
+    Vec<Vec<u8>>,
+    Vec<u16>,
+    bool,
+);
 
-fn song_as_found_in_a_folder((title, artist, album, tunings, is_unreadable): SongFields) -> Song {
+fn song_as_found_in_a_folder(
+    (title, artist, album, tunings, written_tempos, is_unreadable): SongFields,
+) -> Song {
     Song {
         title,
         artist: artist.filter(|name| !name.is_empty()),
         album: album.filter(|name| !name.is_empty()),
         tunings: tunings_with_strings(tunings),
+        written_tempos: written_tempos
+            .into_iter()
+            .map(WrittenTempo::beats_per_minute)
+            .collect(),
         is_unreadable,
     }
 }

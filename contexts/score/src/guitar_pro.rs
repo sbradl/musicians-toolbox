@@ -3,7 +3,8 @@ use mt_music_kernel::{Tuning, WrittenTempo};
 mod bars;
 
 use crate::{
-    Cursor, GuitarProFile, MOST_TRACKS, ScoreHeader, Track, Unreadable, pitch_of, stated_tempo,
+    Cursor, GuitarProFile, MOST_TRACKS, ScoreHeader, Track, Unreadable, decoded, pitch_of, stated,
+    stated_tempo,
 };
 
 const MOST_BARS: usize = 10_000;
@@ -128,25 +129,6 @@ fn read_name(cursor: &mut Cursor<'_>) -> Result<Option<String>, Unreadable> {
     let text = &text[..usize::from(length).min(text.len())];
 
     Ok(stated(&decoded(text)))
-}
-
-// shortcut: Latin-1 stands in for Windows-1252 (differs in 0x80-0x9F: curly quotes, €), upgrade if such names show wrong signs.
-fn decoded(text: &[u8]) -> String {
-    if let Ok(utf8) = str::from_utf8(text) {
-        return utf8.to_owned();
-    }
-
-    text.iter().map(|&byte| char::from(byte)).collect()
-}
-
-fn stated(name: &str) -> Option<String> {
-    let name = name.trim();
-
-    if name.is_empty() {
-        return None;
-    }
-
-    Some(name.to_owned())
 }
 
 fn skip_song_information_after_album(

@@ -1,4 +1,4 @@
-use std::io::{self, BufReader, Read};
+use std::io::{self, BufRead, BufReader, Read};
 
 use miniz_oxide::inflate::decompress_to_vec_with_limit;
 use miniz_oxide::inflate::stream::{InflateState, inflate};
@@ -6,11 +6,18 @@ use miniz_oxide::{DataFormat, MZFlush};
 use rawzip::{CompressionMethod, ZipArchive, ZipFileHeaderRecord, ZipSliceArchive};
 
 use crate::{
-    LARGEST_SCORE_XML, LARGEST_TAB_FILE, ScoreHeader, ScoreXml, Unreadable, Zip,
+    LARGEST_SCORE_XML, LARGEST_TAB_FILE, ScoreHeader, ScoreXml, TuxGuitarXml, Unreadable, Zip,
     read_unzipped_header,
 };
 
 const SCORE_XML_PATH: &[u8] = b"Content/score.gpif";
+const TUX_GUITAR_XML_PATH: &[u8] = b"content.xml";
+
+#[derive(Clone, Copy, Debug)]
+enum PackedXml {
+    Score,
+    TuxGuitar,
+}
 const MOST_ENTRIES: usize = 4096;
 const TAB_FILE_EXTENSIONS: [&[u8]; 8] =
     [b"gp3", b"gp4", b"gp5", b"gpx", b"gp", b"gtp", b"tg", b"ptb"];
@@ -34,17 +41,42 @@ impl<'file> Zip<'file> {
                 return Err(Unreadable);
             };
 
-            if entry.file_path().as_bytes() == SCORE_XML_PATH {
-                return read_score_xml_header(&archive, &entry);
-            }
-
-            if is_tab_file(&entry) {
-                return read_unzipped_header(&unpacked(&archive, &entry)?);
+            if let Some(header) = header_in(&archive, &entry) {
+                return header;
             }
         }
 
         Err(Unreadable)
     }
+}
+
+fn header_in(
+    archive: &ZipSliceArchive<&[u8]>,
+    entry: &ZipFileHeaderRecord<'_>,
+) -> Option<Result<ScoreHeader, Unreadable>> {
+    match packed_xml(entry) {
+        Some(PackedXml::Score) => Some(read_xml_header(archive, entry, PackedXml::Score)),
+        Some(PackedXml::TuxGuitar) => tux_guitar_header_in(archive, entry),
+        None if is_tab_file(entry) => Some(read_tab_file_header(archive, entry)),
+        None => None,
+    }
+}
+
+fn tux_guitar_header_in(
+    archive: &ZipSliceArchive<&[u8]>,
+    entry: &ZipFileHeaderRecord<'_>,
+) -> Option<Result<ScoreHeader, Unreadable>> {
+    match read_xml_header(archive, entry, PackedXml::TuxGuitar) {
+        Ok(header) => Some(Ok(header)),
+        Err(Unreadable) => None,
+    }
+}
+
+fn read_tab_file_header(
+    archive: &ZipSliceArchive<&[u8]>,
+    entry: &ZipFileHeaderRecord<'_>,
+) -> Result<ScoreHeader, Unreadable> {
+    read_unzipped_header(&unpacked(archive, entry)?)
 }
 
 fn is_tab_file(entry: &ZipFileHeaderRecord<'_>) -> bool {
@@ -56,9 +88,18 @@ fn is_tab_file(entry: &ZipFileHeaderRecord<'_>) -> bool {
     !entry.is_dir() && TAB_FILE_EXTENSIONS.contains(&&name[dot + 1..])
 }
 
-fn read_score_xml_header(
+fn packed_xml(entry: &ZipFileHeaderRecord<'_>) -> Option<PackedXml> {
+    match entry.file_path().as_bytes() {
+        SCORE_XML_PATH => Some(PackedXml::Score),
+        TUX_GUITAR_XML_PATH => Some(PackedXml::TuxGuitar),
+        _ => None,
+    }
+}
+
+fn read_xml_header(
     archive: &ZipSliceArchive<&[u8]>,
     entry: &ZipFileHeaderRecord<'_>,
+    xml: PackedXml,
 ) -> Result<ScoreHeader, Unreadable> {
     let Ok(found) = archive.get_entry(entry.wayfinder()) else {
         return Err(Unreadable);
@@ -66,9 +107,18 @@ fn read_score_xml_header(
     let data = found.data();
 
     match entry.compression_method() {
-        CompressionMethod::STORE => ScoreXml(data).read_header(),
-        CompressionMethod::DEFLATE => ScoreXml(BufReader::new(Inflating::over(data))).read_header(),
+        CompressionMethod::STORE => xml.read_header(data),
+        CompressionMethod::DEFLATE => xml.read_header(BufReader::new(Inflating::over(data))),
         _ => Err(Unreadable),
+    }
+}
+
+impl PackedXml {
+    fn read_header(self, xml: impl BufRead) -> Result<ScoreHeader, Unreadable> {
+        match self {
+            Self::Score => ScoreXml(xml).read_header(),
+            Self::TuxGuitar => TuxGuitarXml(xml).read_header(),
+        }
     }
 }
 

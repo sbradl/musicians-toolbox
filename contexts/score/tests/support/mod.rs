@@ -1,11 +1,13 @@
 mod guitar_pro_6_and_7;
 mod guitar_pro_bars;
+mod tux_guitar_and_power_tab;
 
 use std::io::Write as _;
 
 use rawzip::{CompressionMethod, ZipArchiveWriter};
 
 pub use guitar_pro_6_and_7::*;
+pub use tux_guitar_and_power_tab::*;
 
 pub const E_STANDARD: [u8; 6] = [40, 45, 50, 55, 59, 64];
 pub const DROP_D: [u8; 6] = [38, 45, 50, 55, 59, 64];

@@ -34,7 +34,7 @@ impl<'file> Cursor<'file> {
         Ok(i32::from_le_bytes(self.array()?))
     }
 
-    fn array<const COUNT: usize>(&mut self) -> Result<[u8; COUNT], Unreadable> {
+    pub(super) fn array<const COUNT: usize>(&mut self) -> Result<[u8; COUNT], Unreadable> {
         let unread = self.tab_file.get(self.position..).unwrap_or_default();
         let Some((bytes, _)) = unread.split_first_chunk::<COUNT>() else {
             return Err(Unreadable);

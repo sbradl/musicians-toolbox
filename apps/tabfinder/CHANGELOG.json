@@ -67,6 +67,12 @@
           "en": "Each Song shows its BPM on the right, such as \"120\", or \"90 → 200\" from its lowest to its highest tempo when the tempo changes, read from Guitar Pro 3 to 8 files. The first start after updating scans your folder once more to read the tempos.",
           "de": "Jeder Song zeigt rechts sein BPM, etwa „120“, oder „90 → 200“ vom langsamsten bis zum schnellsten Tempo, wenn sich das Tempo ändert, gelesen aus Guitar-Pro-3- bis -8-Dateien. Der erste Start nach dem Update scannt deinen Ordner noch einmal, um die Tempi zu lesen.",
           "fr": "Chaque morceau affiche son BPM à droite, comme « 120 », ou « 90 → 200 » du tempo le plus lent au plus rapide quand le tempo change, lu dans les fichiers Guitar Pro 3 à 8. Le premier démarrage après la mise à jour scanne votre dossier une fois de plus pour lire les tempos."
+        },
+        {
+          "id": "tuxguitar-and-power-tab-files",
+          "en": "TuxGuitar and Power Tab files are no longer marked \"Couldn't read this file\": their Songs show the title, artist and album stated in the file, and TuxGuitar 2 files also show their tunings. Power Tab 1.0 files and Power Tab files with Unicode names still can't be read.",
+          "de": "TuxGuitar- und Power-Tab-Dateien sind nicht mehr mit „Couldn't read this file“ markiert: Ihre Songs zeigen Titel, Künstler und Album aus der Datei, und TuxGuitar-2-Dateien zeigen auch ihre Stimmungen. Power-Tab-1.0-Dateien und Power-Tab-Dateien mit Unicode-Namen lassen sich weiterhin nicht lesen.",
+          "fr": "Les fichiers TuxGuitar et Power Tab ne sont plus marqués « Couldn't read this file » : leurs morceaux affichent le titre, l'artiste et l'album indiqués dans le fichier, et les fichiers TuxGuitar 2 affichent aussi leurs accordages. Les fichiers Power Tab 1.0 et les fichiers Power Tab aux noms Unicode restent illisibles."
         }
       ]
     }

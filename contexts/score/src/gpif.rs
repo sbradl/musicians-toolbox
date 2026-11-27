@@ -4,11 +4,11 @@ use mt_music_kernel::{Tuning, WrittenTempo};
 use quick_xml::Reader;
 use quick_xml::events::{BytesStart, Event};
 
-use crate::{MOST_TRACKS, ScoreHeader, ScoreXml, Track, Unreadable, pitch_of, stated_tempo};
+use crate::{
+    MOST_STRINGS, MOST_TRACKS, OpenElements, ScoreHeader, ScoreXml, Track, Unreadable, pitch_of,
+    stated_tempo,
+};
 
-const MOST_DEPTH: usize = 64;
-const MOST_ELEMENTS: usize = 1_000_000;
-const MOST_STRINGS: usize = 16;
 const TRACK: [&str; 3] = ["GPIF", "Tracks", "Track"];
 const TRACKS: [&str; 2] = ["GPIF", "Tracks"];
 const TUNING_PITCHES: [&str; 2] = ["Property name=Tuning", "Pitches"];
@@ -21,8 +21,7 @@ const TEMPO: &str = "Tempo";
 
 #[derive(Debug, Default)]
 struct HeaderSoFar {
-    open_elements: Vec<String>,
-    elements_seen: usize,
+    open_elements: OpenElements,
     tracks: Vec<TrackSoFar>,
     automations: Vec<AutomationSoFar>,
 }
@@ -82,13 +81,7 @@ impl HeaderSoFar {
     }
 
     fn open(&mut self, element: &BytesStart<'_>) -> Result<(), Unreadable> {
-        self.elements_seen += 1;
-        self.open_elements.push(tag_of(element));
-
-        if self.open_elements.len() > MOST_DEPTH || self.elements_seen > MOST_ELEMENTS {
-            return Err(Unreadable);
-        }
-
+        self.open_elements.open(tag_of(element))?;
         self.start_track_or_automation();
 
         if self.tracks.len() > MOST_TRACKS {
@@ -99,18 +92,18 @@ impl HeaderSoFar {
     }
 
     fn start_track_or_automation(&mut self) {
-        if self.open_elements == TRACK {
+        if self.open_elements.are(&TRACK) {
             self.tracks.push(TrackSoFar::default());
         }
 
-        if self.open_elements == AUTOMATION {
+        if self.open_elements.are(&AUTOMATION) {
             self.automations.push(AutomationSoFar::default());
         }
     }
 
     fn close(&mut self) -> Reading {
-        let closes_tracks = self.open_elements == TRACKS;
-        drop(self.open_elements.pop());
+        let closes_tracks = self.open_elements.are(&TRACKS);
+        self.open_elements.close();
 
         if closes_tracks {
             return Reading::TracksComplete;
@@ -121,8 +114,8 @@ impl HeaderSoFar {
 
     fn read_text(&mut self, text: &str) -> Result<(), Unreadable> {
         self.read_automation_text(text);
-        let names_instrument = self.ends_with(&INSTRUMENT_TYPE);
-        let lists_tuning = self.ends_with(&TUNING_PITCHES);
+        let names_instrument = self.open_elements.end_with(&INSTRUMENT_TYPE);
+        let lists_tuning = self.open_elements.end_with(&TUNING_PITCHES);
         let Some(track) = self.track_being_read() else {
             return Ok(());
         };
@@ -139,8 +132,8 @@ impl HeaderSoFar {
     }
 
     fn read_automation_text(&mut self, text: &str) {
-        let names_type = self.open_elements == AUTOMATION_TYPE;
-        let states_value = self.open_elements == AUTOMATION_VALUE;
+        let names_type = self.open_elements.are(&AUTOMATION_TYPE);
+        let states_value = self.open_elements.are(&AUTOMATION_VALUE);
         let Some(automation) = self.automations.last_mut() else {
             return;
         };
@@ -155,23 +148,11 @@ impl HeaderSoFar {
     }
 
     fn track_being_read(&mut self) -> Option<&mut TrackSoFar> {
-        if self.is_inside(&TRACK) {
+        if self.open_elements.are_inside(&TRACK) {
             return self.tracks.last_mut();
         }
 
         None
-    }
-
-    fn is_inside(&self, path: &[&str]) -> bool {
-        let open = &self.open_elements;
-
-        open.len() > path.len() && open[..path.len()] == *path
-    }
-
-    fn ends_with(&self, path: &[&str]) -> bool {
-        let open = &self.open_elements;
-
-        open.len() >= path.len() && open[open.len() - path.len()..] == *path
     }
 
     fn into_score_header(self) -> ScoreHeader {
